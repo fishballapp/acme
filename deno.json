@@ -1,0 +1,13 @@
+{
+  "name": "@fishball/acme",
+  "version": "0.1.0",
+  "exports": "./src/mod.ts",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "useUnknownInCatchVariables": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "imports": {},
+  "license": "MIT"
+}

@@ -1,0 +1,41 @@
+{
+  "version": "3",
+  "packages": {
+    "specifiers": {
+      "jsr:@std/assert@^1.0.6": "jsr:@std/assert@1.0.6",
+      "jsr:@std/encoding": "jsr:@std/encoding@1.0.5",
+      "jsr:@std/expect": "jsr:@std/expect@1.0.4",
+      "jsr:@std/internal@^1.0.4": "jsr:@std/internal@1.0.4",
+      "jsr:@std/testing": "jsr:@std/testing@1.0.3"
+    },
+    "jsr": {
+      "@std/assert@1.0.6": {
+        "integrity": "1904c05806a25d94fe791d6d883b685c9e2dcd60e4f9fc30f4fc5cf010c72207",
+        "dependencies": [
+          "jsr:@std/internal@^1.0.4"
+        ]
+      },
+      "@std/encoding@1.0.5": {
+        "integrity": "ecf363d4fc25bd85bd915ff6733a7e79b67e0e7806334af15f4645c569fefc04"
+      },
+      "@std/expect@1.0.4": {
+        "integrity": "97f68a445a9de0d9670200d2b7a19a7505a01b2cb390a983ba8d97d90ce30c4f",
+        "dependencies": [
+          "jsr:@std/assert@^1.0.6",
+          "jsr:@std/internal@^1.0.4"
+        ]
+      },
+      "@std/internal@1.0.4": {
+        "integrity": "62e8e4911527e5e4f307741a795c0b0a9e6958d0b3790716ae71ce085f755422"
+      },
+      "@std/testing@1.0.3": {
+        "integrity": "f98c2bee53860a5916727d7e7d3abe920dd6f9edace022e2d059f00d05c2cf42",
+        "dependencies": [
+          "jsr:@std/assert@^1.0.6",
+          "jsr:@std/internal@^1.0.4"
+        ]
+      }
+    }
+  },
+  "remote": {}
+}
