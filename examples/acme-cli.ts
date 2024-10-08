@@ -1,3 +1,4 @@
+import { ACME_DIRECTORY_URLS } from "../src/ACME_DIRECTORY_URLS.ts";
 import { AcmeClient } from "../src/AcmeClient.ts";
 import { Dns01ChallengeUtils } from "../src/Dns01ChallengeUtils.ts";
 
@@ -5,7 +6,9 @@ export const DOMAIN = "dynm.link";
 const EMAIL = "dev@dynm.link";
 
 console.log("Initializing acme client... (this fetches the directory)");
-const acmeClient = await AcmeClient.init("lets-encrypt-staging");
+const acmeClient = await AcmeClient.init(
+  ACME_DIRECTORY_URLS.LETS_ENCRYPT_STAGING,
+);
 
 console.log("Creating account...");
 const acmeAccount = await acmeClient.createAccount({ email: EMAIL });
@@ -101,16 +104,6 @@ await acmeOrder
   );
 
 console.log("Order finalized. Downloading certificate...");
-
-if (acmeOrder.orderResponse.status !== "valid") {
-  throw new Error(
-    `Expected order status to be valid. Got ${acmeOrder.orderResponse.status} instead.`,
-  );
-}
-
-if (acmeOrder.orderResponse.certificate === undefined) {
-  throw new Error("order is finalized but certificate is 'undefined'");
-}
 
 const certificate = await acmeOrder.getCertificate();
 console.log("\nCertificate is ready:");

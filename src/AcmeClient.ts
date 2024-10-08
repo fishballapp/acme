@@ -5,14 +5,6 @@ import { jwsFetch } from "./utils/jws.ts";
 
 export const REPLAY_NONCE_HEADER_KEY = "Replay-Nonce";
 
-const DIRECTORY_URLS = {
-  "lets-encrypt": "https://acme-v02.api.letsencrypt.org/directory",
-  "lets-encrypt-staging":
-    "https://acme-staging-v02.api.letsencrypt.org/directory",
-} as const;
-
-export type CertificateAuthority = keyof typeof DIRECTORY_URLS;
-
 export type ACMEDirectory = {
   keyChange: string;
   newAccount: string;
@@ -30,9 +22,9 @@ export class AcmeClient {
     this.directory = directory;
   }
 
-  static async init(ca: CertificateAuthority): Promise<AcmeClient> {
+  static async init(directoryUrl: string): Promise<AcmeClient> {
     return new AcmeClient({
-      directory: await (await fetch(DIRECTORY_URLS[ca])).json(),
+      directory: await (await fetch(directoryUrl)).json(),
     });
   }
 

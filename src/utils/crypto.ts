@@ -1,9 +1,6 @@
 export async function generateKeyPair(): Promise<CryptoKeyPair> {
   return await crypto.subtle.generateKey(
-    {
-      name: "ECDSA",
-      namedCurve: "P-256",
-    },
+    { name: "ECDSA", namedCurve: "P-256" },
     true,
     ["sign", "verify"],
   );
