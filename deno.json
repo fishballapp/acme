@@ -1,6 +1,6 @@
 {
   "name": "@fishball/acme",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "exports": "./src/mod.ts",
   "compilerOptions": {
     "strict": true,
@@ -10,7 +10,7 @@
   },
   "publish": {
     "include": ["src", "LICENSE", "README.md"],
-    "exclude": ["*.test.ts"]
+    "exclude": ["**/*.test.ts"]
   },
   "imports": {},
   "license": "MIT"
