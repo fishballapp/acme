@@ -1,10 +1,11 @@
 import type { AcmeAccount } from "./AcmeAccount.ts";
 import type { AcmeAuthorization } from "./AcmeAuthorization.ts";
 import type { AcmeClient } from "./AcmeClient.ts";
+import type { AcmeOrder } from "./AcmeOrder.ts";
 import { encodeBase64Url } from "./utils/encoding.ts";
 
 export type AcmeChallengeType = "http-01" | "dns-01" | "tls-alpn-01"; // the type of challenge (common types shown)
-export type RawAcmeChallengeObject = {
+export type AcmeChallengeObjectSnapshot = {
   type: AcmeChallengeType;
   status: "pending" | "processing" | "valid" | "invalid"; // the status of the challenge
   url: string; // URL for the challenge resource
@@ -17,19 +18,33 @@ export type RawAcmeChallengeObject = {
   }[];
 };
 
-export class AcmeChallenge {
+export type AcmeChallengeInit = {
   authorization: AcmeAuthorization;
-  challengeObject: RawAcmeChallengeObject;
+  token: string;
+  type: AcmeChallengeType;
+  url: string;
+};
 
+/**
+ * Represents a way to proof control over a domain as offered by the Certificate Authority's (CA).
+ */
+export class AcmeChallenge {
+  readonly authorization: AcmeAuthorization;
+  readonly token: string;
+  readonly type: AcmeChallengeType;
+  readonly url: string;
+
+  /** @internal {@link AcmeChallenge} is created when the {@link AcmeAuthorization} is initialized */
   constructor({
     authorization,
-    challengeObject,
-  }: {
-    authorization: AcmeAuthorization;
-    challengeObject: RawAcmeChallengeObject;
-  }) {
+    token,
+    type,
+    url,
+  }: AcmeChallengeInit) {
     this.authorization = authorization;
-    this.challengeObject = challengeObject;
+    this.token = token;
+    this.type = type;
+    this.url = url;
   }
 
   get client(): AcmeClient {
@@ -38,6 +53,23 @@ export class AcmeChallenge {
 
   get account(): AcmeAccount {
     return this.authorization.order.account;
+  }
+
+  get order(): AcmeOrder {
+    return this.authorization.order;
+  }
+
+  async fetch(): Promise<AcmeChallengeObjectSnapshot> {
+    const authorization = await this.authorization.fetch();
+    const challengeObject = authorization.challenges.find(({ url }) =>
+      url === this.url
+    );
+
+    if (challengeObject === undefined) {
+      throw new Error("Cannot find challenge object");
+    }
+
+    return challengeObject;
   }
 
   async digestToken(): Promise<string> {
@@ -50,7 +82,7 @@ export class AcmeChallenge {
       await crypto.subtle.digest(
         "SHA-256",
         new TextEncoder().encode(
-          `${this.challengeObject.token}.${await getJWKThumbprint(
+          `${this.token}.${await getJWKThumbprint(
             publicKeyJwk,
           )}`,
         ),
@@ -59,11 +91,11 @@ export class AcmeChallenge {
   }
 
   async submit(): Promise<unknown> {
-    const response = await this.client.jwsFetch(this.challengeObject.url, {
-      privateKey: this.account.keyPair.privateKey,
-      protected: {
-        kid: this.account.url,
-      },
+    const response = await this.account.jwsFetch(this.url, {
+      /**
+       * We must send {} to signify submit
+       * {@link https://datatracker.ietf.org/doc/html/rfc8555#section-7.5.1}
+       */
       payload: {},
     });
 

@@ -6,7 +6,7 @@ async function cryptoKeyToPem(key: CryptoKey) {
   const isPrivateKey = key.type === "private";
   const exportFormat = isPrivateKey ? "pkcs8" : "spki";
 
-  const exported = await window.crypto.subtle.exportKey(exportFormat, key);
+  const exported = await globalThis.crypto.subtle.exportKey(exportFormat, key);
 
   const base64String = encodeBase64(exported);
 
@@ -27,10 +27,11 @@ async function exec(
   bin: string,
   args: string[],
   stdin?: string,
-): Promise<string> {
+): Promise<{ stdout: string; stderr: string }> {
   const command = new Deno.Command(bin, {
     args,
     stdout: "piped",
+    stderr: "piped",
     stdin: stdin === undefined ? "null" : "piped",
   });
 
@@ -42,26 +43,62 @@ async function exec(
     writer.close();
   }
 
-  const [status, { stdout }] = await Promise.all([
-    process.status,
-    process.output(),
-  ]);
+  const { stdout, stderr, code } = await process.output();
 
-  if (!status.success) {
+  if (code !== 0) {
+    console.log(new TextDecoder().decode(stdout));
+    console.error(new TextDecoder().decode(stderr));
     throw new Error(`OpenSSL command failed`);
   }
 
-  return new TextDecoder().decode(stdout);
+  return {
+    stdout: new TextDecoder().decode(stdout),
+    stderr: new TextDecoder().decode(stderr),
+  };
 }
 
-const getOpenSSLInfo = async (csrPem: string): Promise<string> => {
-  return await exec("openssl", [
-    "req",
-    "-in",
-    "-",
-    "-noout",
-    "-text",
-  ], csrPem);
+const openssl = {
+  generateCSR: async ({ domains, privateKey }: {
+    domains: string[];
+    privateKey: CryptoKey;
+  }) => {
+    return (
+      await exec(
+        "openssl",
+        [
+          "req",
+          "-new",
+          "-key",
+          "/dev/stdin",
+          "-subj",
+          `/CN=${domains[0]}`,
+          "-addext",
+          `subjectAltName="${
+            domains.map((domain) => `DNS:${domain}`).join(",")
+          }"`,
+        ],
+        await cryptoKeyToPem(privateKey),
+      )
+    ).stdout;
+  },
+  getCSRInfo: async (csrPem: string): Promise<string> => {
+    return (
+      await exec(
+        "openssl",
+        ["req", "-in", "-", "-noout", "-text"],
+        csrPem,
+      )
+    ).stdout;
+  },
+
+  verifyCSR: async (csrPem: string): Promise<string> => {
+    const { stdout, stderr } = await exec(
+      "openssl",
+      ["req", "-in", "-", "-verify", "-noout"],
+      csrPem,
+    );
+    return stdout || stderr; // strage issue with -verify https://github.com/openssl/openssl/issues/20728
+  },
 };
 
 const removeSignatureValueFromCSRInfo = (csrInfo: string) =>
@@ -88,33 +125,18 @@ describe("generateCSR", () => {
 
     // Compare the relevant CSR content (excluding the signature as it changes every time)
     expect(
-      removeSignatureValueFromCSRInfo(await getOpenSSLInfo(generatedCSR)),
+      removeSignatureValueFromCSRInfo(await openssl.getCSRInfo(generatedCSR)),
     ).toBe(
       removeSignatureValueFromCSRInfo(
-        await getOpenSSLInfo(
-          await exec("openssl", [
-            "req",
-            "-new",
-            "-key",
-            "/dev/stdin",
-            "-subj",
-            `/CN=${domain}`,
-            "-addext",
-            `subjectAltName="DNS:${domain}"`,
-          ], await cryptoKeyToPem(privateKey)),
+        await openssl.getCSRInfo(
+          await openssl.generateCSR({ domains: [domain], privateKey }),
         ),
       ),
     );
 
     // Verify the OpenSSL CSR signature
     expect(
-      await exec("openssl", [
-        "req",
-        "-in",
-        "-",
-        "-verify",
-        "-noout",
-      ], generatedCSR),
+      await openssl.verifyCSR(generatedCSR),
     ).toContain("verify OK");
   });
 
@@ -137,35 +159,18 @@ describe("generateCSR", () => {
 
     // Compare the relevant CSR content (excluding the signature as it changes every time)
     expect(
-      removeSignatureValueFromCSRInfo(await getOpenSSLInfo(generatedCSR)),
+      removeSignatureValueFromCSRInfo(await openssl.getCSRInfo(generatedCSR)),
     ).toBe(
       removeSignatureValueFromCSRInfo(
-        await getOpenSSLInfo(
-          await exec("openssl", [
-            "req",
-            "-new",
-            "-key",
-            "/dev/stdin",
-            "-subj",
-            `/CN=${domains[0]}`,
-            "-addext",
-            `subjectAltName="${
-              domains.map((domain) => `DNS:${domain}`).join(",")
-            }"`,
-          ], await cryptoKeyToPem(privateKey)),
+        await openssl.getCSRInfo(
+          await openssl.generateCSR({ domains, privateKey }),
         ),
       ),
     );
 
     // Verify the OpenSSL CSR signature
     expect(
-      await exec("openssl", [
-        "req",
-        "-in",
-        "-",
-        "-verify",
-        "-noout",
-      ], generatedCSR),
+      await openssl.verifyCSR(generatedCSR),
     ).toContain("verify OK");
   });
 });

@@ -1,5 +1,4 @@
 import { AcmeAccount } from "./AcmeAccount.ts";
-import { AcmeOrder, type RawAcmeOrderResponse } from "./AcmeOrder.ts";
 import { generateKeyPair } from "./utils/crypto.ts";
 import { jwsFetch } from "./utils/jws.ts";
 
@@ -14,6 +13,18 @@ export type ACMEDirectory = {
   revokeCert: string;
 };
 
+/**
+ * The entry point of the ACME process. {@link AcmeClient} would interact with the Certificate Authority (CA) based on the provided directory url.
+ *
+ * You can find some commone CA directories in ACME_DIRECTORY_URLS
+ *
+ * @example Creating AcmeClient with Let's Encrypt's directory
+ * ```ts
+ * import { ACME_DIRECTORY_URLS, AcmeClient } from "@fishballpkg/acme";
+ *
+ * const acmeClient = await AcmeClient.init(ACME_DIRECTORY_URLS.LETS_ENCRYPT)
+ * ```
+ */
 export class AcmeClient {
   public readonly directory: ACMEDirectory;
   #nextNonce: string | undefined = undefined;
@@ -28,6 +39,9 @@ export class AcmeClient {
     });
   }
 
+  /**
+   * Fetch a url where the data are signed with the provided private key using JSON Web Signature (JWS).
+   */
   async jwsFetch(
     url: string,
     {
@@ -102,42 +116,6 @@ export class AcmeClient {
       client: this,
       url: accountUrl,
       keyPair,
-    });
-  }
-
-  async createOrder(
-    { domains, account }: { domains: string[]; account: AcmeAccount },
-  ): Promise<AcmeOrder> {
-    const response = await this.jwsFetch(this.directory.newOrder, {
-      privateKey: account.keyPair.privateKey,
-      protected: { kid: account.url },
-      payload: {
-        identifiers: domains.map((domain) => ({
-          type: "dns",
-          value: domain,
-        })),
-      },
-    });
-
-    if (!response.ok) {
-      throw await response.json();
-    }
-
-    const orderUrl = response.headers.get("Location");
-    if (orderUrl === null) {
-      console.error(await response.json());
-      throw new Error(
-        "Cannot find order url which should have been in the 'Location' response header.",
-      );
-    }
-
-    const orderResponse: RawAcmeOrderResponse = await response.json();
-
-    return new AcmeOrder({
-      account,
-      domains,
-      url: orderUrl,
-      orderResponse,
     });
   }
 }

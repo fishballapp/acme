@@ -5,8 +5,8 @@ import { generateKeyPair } from "./utils/crypto.ts";
 import { encodeBase64Url } from "./utils/encoding.ts";
 import { generateCSR } from "./utils/generateCSR.ts";
 
-export type RawAcmeOrderResponse = {
-  status: "pending" | "ready" | "processing" | "valid" | "invalid"; // the status of the order
+export type AcmeOrderObjectSnapshot = {
+  status: AcmeOrderStatus;
   expires: string; // the expiry date of the order
   identifiers: {
     type: "dns"; // the identifier type, usually DNS
@@ -17,77 +17,99 @@ export type RawAcmeOrderResponse = {
   certificate?: string; // URL to download the certificate, available if status is 'valid'
 };
 
-export class AcmeOrder {
-  account: AcmeAccount;
-  url: string; // The order url
-  orderResponse: RawAcmeOrderResponse;
-  domains: string[];
+export type AcmeOrderStatus =
+  | "pending"
+  | "ready"
+  | "processing"
+  | "valid"
+  | "invalid";
 
-  constructor({
+const fetchOrder = async (
+  { url, account }: Pick<AcmeOrder, "url" | "account">,
+): Promise<AcmeOrderObjectSnapshot> => {
+  const response = await account.jwsFetch(url);
+
+  return await response.json();
+};
+
+export type AcmeOrderInit = {
+  account: AcmeAccount;
+  domains: string[];
+  url: string; // The order url
+};
+
+/**
+ * Represents your request for a certificate.
+ */
+export class AcmeOrder {
+  readonly account: AcmeAccount;
+  readonly url: string; // The order url
+  readonly domains: string[];
+  #authorizations?: readonly AcmeAuthorization[];
+
+  get authorizations(): readonly AcmeAuthorization[] {
+    if (this.#authorizations === undefined) {
+      throw new Error(
+        "authorizations are not initiated. Was this AcmeOrder object created with `await AcmeOrder.init(...)`?",
+      );
+    }
+
+    return this.#authorizations;
+  }
+
+  private constructor({
     account,
     domains,
     url,
-    orderResponse,
-  }: {
-    account: AcmeAccount;
-    domains: string[];
-    url: string; // The order url
-    orderResponse: RawAcmeOrderResponse;
-  }) {
+  }: AcmeOrderInit) {
     this.account = account;
     this.url = url;
-    this.orderResponse = orderResponse;
     this.domains = domains;
+  }
+
+  /** @internal */
+  static async init(
+    {
+      account,
+      domains,
+      url,
+      authorizationUrls,
+    }: AcmeOrderInit & { authorizationUrls?: string[] },
+  ): Promise<AcmeOrder> {
+    const order = new AcmeOrder({
+      account,
+      domains,
+      url,
+    });
+
+    authorizationUrls ??= (await order.fetch()).authorizations;
+
+    order.init({
+      authorizations: await Promise.all(
+        authorizationUrls.map(async (url) =>
+          await AcmeAuthorization.init({ order, url })
+        ),
+      ),
+    });
+
+    return order;
+  }
+
+  /** @internal */
+  init({
+    authorizations,
+  }: {
+    authorizations: readonly AcmeAuthorization[];
+  }) {
+    this.#authorizations = authorizations;
   }
 
   get client(): AcmeClient {
     return this.account.client;
   }
 
-  async getAuthorizations(): Promise<AcmeAuthorization[]> {
-    const responses = await Promise.all(
-      this.orderResponse.authorizations.map((authorizationUrl) =>
-        this.client.jwsFetch(authorizationUrl, {
-          privateKey: this.account.keyPair.privateKey,
-          protected: {
-            kid: this.account.url,
-          },
-        })
-      ),
-    );
-
-    if (!responses.every(({ ok }) => ok)) {
-      console.error(
-        "Error responses when fetching authorizations:",
-        ...await Promise.all(
-          responses.filter(({ ok }) => !ok).map((response) => response.json()),
-        ),
-      );
-      throw new Error("Some authorizations responded with errors");
-    }
-
-    return await Promise.all(
-      responses.map(async (response) =>
-        new AcmeAuthorization({
-          order: this,
-          authorizationResponse: await response.json(),
-        })
-      ),
-    );
-  }
-
-  async fetch(): Promise<RawAcmeOrderResponse> {
-    const response = await this.client.jwsFetch(this.url, {
-      privateKey: this.account.keyPair.privateKey,
-      protected: {
-        kid: this.account.url,
-        url: this.url,
-      },
-    });
-
-    this.orderResponse = await response.json();
-
-    return this.orderResponse;
+  async fetch(): Promise<AcmeOrderObjectSnapshot> {
+    return await fetchOrder(this);
   }
 
   async pollOrderStatus({
@@ -95,10 +117,10 @@ export class AcmeOrder {
     onBeforeAttempt,
     onAfterFailAttempt,
   }: {
-    pollUntil: RawAcmeOrderResponse["status"];
+    pollUntil: AcmeOrderObjectSnapshot["status"];
     onBeforeAttempt?: () => void;
-    onAfterFailAttempt?: (order: RawAcmeOrderResponse) => void;
-  }): Promise<RawAcmeOrderResponse> {
+    onAfterFailAttempt?: (order: AcmeOrderObjectSnapshot) => void;
+  }): Promise<AcmeOrderObjectSnapshot> {
     while (true) {
       onBeforeAttempt?.();
       const orderResponse = await this.fetch();
@@ -111,7 +133,10 @@ export class AcmeOrder {
   }
 
   async finalize(): Promise<CryptoKeyPair> {
-    const csrKeyPair = await generateKeyPair();
+    const [csrKeyPair, orderResponse] = await Promise.all([
+      generateKeyPair(),
+      this.fetch(),
+    ]);
     const csr = encodeBase64Url(
       await generateCSR({
         domains: this.domains,
@@ -119,11 +144,7 @@ export class AcmeOrder {
       }),
     );
 
-    const response = await this.client.jwsFetch(this.orderResponse.finalize, {
-      privateKey: this.account.keyPair.privateKey,
-      protected: {
-        kid: this.account.url,
-      },
+    const response = await this.account.jwsFetch(orderResponse.finalize, {
       payload: { csr },
     });
 
@@ -131,25 +152,17 @@ export class AcmeOrder {
       console.error(await response.json());
       throw new Error("Error when submitting csr.");
     }
-    console.log(await response.json());
 
     return csrKeyPair;
   }
 
   async getCertificate(): Promise<string> {
-    if (typeof this.orderResponse.certificate !== "string") {
+    const orderResponse = await this.fetch();
+    if (typeof orderResponse.certificate !== "string") {
       throw new Error("Cannot find certificate url. Is the order finalized?");
     }
 
-    const response = await this.client.jwsFetch(
-      this.orderResponse.certificate,
-      {
-        privateKey: this.account.keyPair.privateKey,
-        protected: {
-          kid: this.account.url,
-        },
-      },
-    );
+    const response = await this.account.jwsFetch(orderResponse.certificate);
 
     return await response.text();
   }

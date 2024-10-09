@@ -1,6 +1,8 @@
-import { ACME_DIRECTORY_URLS } from "../src/ACME_DIRECTORY_URLS.ts";
-import { AcmeClient } from "../src/AcmeClient.ts";
-import { Dns01ChallengeUtils } from "../src/Dns01ChallengeUtils.ts";
+import {
+  ACME_DIRECTORY_URLS,
+  AcmeClient,
+  Dns01ChallengeUtils,
+} from "../src/mod.ts";
 
 export const DOMAIN = "dynm.link";
 const EMAIL = "dev@dynm.link";
@@ -14,13 +16,10 @@ console.log("Creating account...");
 const acmeAccount = await acmeClient.createAccount({ email: EMAIL });
 
 console.log(`Creating order for "${DOMAIN}"...`);
-const acmeOrder = await acmeClient.createOrder({
-  domains: [DOMAIN],
-  account: acmeAccount,
-});
+const acmeOrder = await acmeAccount.createOrder({ domains: [DOMAIN] });
 
 console.log(`Digesting authorization...`);
-const [authorization] = await acmeOrder.getAuthorizations();
+const [authorization] = acmeOrder.authorizations;
 
 if (authorization === undefined) {
   throw new Error("cannot find authorization");
