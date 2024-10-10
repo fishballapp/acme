@@ -26,7 +26,7 @@ const ECDSA_WITH_SHA256_SIGNATURE_ALGOTRITHM_SEQUENCE = encodeSequence(
 );
 
 export async function generateCSR(
-  { domains, keyPair }: { domains: string[]; keyPair: CryptoKeyPair },
+  { domains, keyPair }: { domains: readonly string[]; keyPair: CryptoKeyPair },
 ): Promise<Uint8Array> {
   const certificationRequestInfoSequence =
     await generateCertificationRequestInfoSequence({
@@ -60,7 +60,7 @@ export async function generateCSR(
 }
 
 async function generateCertificationRequestInfoSequence(
-  { domains, keyPair }: { domains: string[]; keyPair: CryptoKeyPair },
+  { domains, keyPair }: { domains: readonly string[]; keyPair: CryptoKeyPair },
 ): Promise<Uint8Array> {
   const [mainDomain] = domains;
   if (mainDomain === undefined) {
@@ -122,7 +122,7 @@ async function generateCertificationRequestInfoSequence(
   );
 }
 
-function encodeSubjectAlternativeName(domains: string[]): Uint8Array {
+function encodeSubjectAlternativeName(domains: readonly string[]): Uint8Array {
   function encodeSanDns(str: string) {
     const strBytes = new TextEncoder().encode(str);
     const lengthBytes = encodeLength(strBytes.length);

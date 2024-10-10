@@ -4,44 +4,80 @@ import {
   type AcmeChallengeObjectSnapshot,
   type AcmeChallengeType,
 } from "./AcmeChallenge.ts";
-import type { AcmeClient } from "./AcmeClient.ts";
 import type { AcmeOrder } from "./AcmeOrder.ts";
 
+/**
+ * Represents the status of an authorization.
+ *
+ * - `pending`: Waiting for challenge completion.
+ * - `valid`: Challenge successfully completed.
+ * - `invalid`: Certificate Authority (CA) cannot verify challenge and gave up.
+ * - `deactivated`: Manually deactivated.
+ * - `expired`: Not used in time.
+ * - `revoked`: Revoked for security reasons.
+ *
+ * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.1.6
+ */
+export type AcmeAuthorizationStatus =
+  | "pending"
+  | "valid"
+  | "invalid"
+  | "deactivated"
+  | "expired"
+  | "revoked";
+
+/**
+ * A snapshot of the authorization object retrieved from a Certificate Authority (CA).
+ *
+ * This can be retrieved by {@link AcmeAuthorization.fetch}
+ *
+ * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.1.4
+ */
 export type AcmeAuthorizationObjectSnapshot = {
   /**
-   * - `pending`: Waiting for challenge completion.
-   * - `valid`: Challenge successfully completed.
-   * - `invalid`: Certificate Authority (CA) cannot verify challenge and gave up.
-   * - `deactivated`: Manually deactivated.
-   * - `expired`: Not used in time.
-   * - `revoked`: Revoked for security reasons.
-   * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.1.6
+   * The status of the authorization.
    */
-  status:
-    | "pending"
-    | "valid"
-    | "invalid"
-    | "deactivated"
-    | "expired"
-    | "revoked";
-  expires?: string; // the expiry date of the authorization, optional if not applicable
+  status: AcmeAuthorizationStatus;
+  /**
+   * The timestamp after which the server will consider this authorization `invalid`.
+   *
+   * This field is REQUIRED for objects with `valid` in the `status` field.
+   *
+   * Format: ISO 8601 (e.g., `2024-10-10T14:30:00Z`).
+   */
+  expires?: string;
+
+  /**
+   * The domain for which the certificate is being requested.
+   *
+   * Each object contains the type (typically "dns") and the value,
+   * which is the domain name.
+   */
   identifier: {
-    type: "dns"; // identifier type, usually DNS
-    value: string; // the domain name
+    type: "dns";
+    /**
+     * The domain for this authorization.
+     *
+     * For wildcard authorizations, the value will be the base domain
+     * without the `*.` prefix. Instead, {@link AcmeAuthorizationObjectSnapshot.wildcard}
+     * will be set to `true`.
+     */
+    value: string;
   };
+
+  /**
+   * A list of challenge objects for this authorization.
+   *
+   * Each challenge object contains details about a specific type
+   * of ACME challenge (e.g., DNS-01). The client must complete
+   * one of the challenges to prove control over the domain.
+   */
   challenges: AcmeChallengeObjectSnapshot[];
-  wildcard?: boolean; // optional, true if the identifier is a wildcard domain
-};
 
-const fetchAuthorization = async (
-  { url, account }: {
-    url: string;
-    account: AcmeAccount;
-  },
-): Promise<AcmeAuthorizationObjectSnapshot> => {
-  const response = await account.jwsFetch(url);
-
-  return await response.json();
+  /**
+   * Whether the authorization is for a wildcard domain.
+   */
+  wildcard?: boolean;
 };
 
 /**
@@ -50,10 +86,15 @@ const fetchAuthorization = async (
  * Tip: Think of it as a containment of some {@link AcmeChallenge}.
  */
 export class AcmeAuthorization {
+  /** The {@link AcmeOrder} this authorization belongs to. */
   readonly order: AcmeOrder;
+  /** The authorization url uniquely identifies the authorization and for retrieving {@link AcmeAuthorizationObjectSnapshot}. */
   readonly url: string;
   #challenges?: readonly AcmeChallenge[];
 
+  /**
+   * A list of {@link AcmeChallenge} the Certificate Authority can accept to verify control over this authorization / domain.
+   */
   get challenges(): readonly AcmeChallenge[] {
     if (this.#challenges === undefined) {
       throw new Error(
@@ -75,7 +116,10 @@ export class AcmeAuthorization {
     this.url = url;
   }
 
-  /** @internal */
+  /**
+   * Initialize the AcmeAuthorization object by fetching from the given authorization url and instantiate a list of {@link AcmeChallenge} accessible from {@link AcmeAuthorization.challenges}.
+   * @internal
+   */
   static async init({ order, url }: {
     order: AcmeOrder;
     url: string;
@@ -87,44 +131,37 @@ export class AcmeAuthorization {
 
     const authorizationResponse = await authorization.fetch();
 
-    authorization.init({
-      challenges: authorizationResponse.challenges.map(
-        ({ token, type, url }) =>
-          new AcmeChallenge({
-            authorization,
-            token,
-            type,
-            url,
-          }),
-      ),
-    });
+    authorization.#challenges = authorizationResponse.challenges.map(
+      ({ token, type, url }) =>
+        new AcmeChallenge({
+          authorization,
+          token,
+          type,
+          url,
+        }),
+    );
 
     return authorization;
   }
 
-  /**
-   * @internal
-   */
-  init({
-    challenges,
-  }: {
-    challenges: AcmeChallenge[];
-  }) {
-    this.#challenges = challenges;
-  }
-
-  get client(): AcmeClient {
-    return this.order.client;
-  }
-
-  get account(): AcmeAccount {
+  get #account(): AcmeAccount {
     return this.order.account;
   }
 
+  /**
+   * Fetches a snapshot of the authorization object from the Certificate Authority (CA).
+   */
   async fetch(): Promise<AcmeAuthorizationObjectSnapshot> {
-    return await fetchAuthorization(this);
+    const response = await this.#account.jwsFetch(this.url);
+
+    return await response.json();
   }
 
+  /**
+   * Find the {@link AcmeChallenge} as specified in `type`.
+   *
+   * To get the list of challenges, use {@link AcmeAuthorization.challenges}
+   */
   findChallenge(type: AcmeChallengeType): AcmeChallenge | undefined {
     return this.challenges.find((challenge) => {
       return challenge.type === type;

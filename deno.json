@@ -1,9 +1,9 @@
 {
   "name": "@fishballpkg/acme",
   "version": "0.2.0",
-  "exports": "./src/mod.ts",
-  "tasks": {
-    "check": "deno check ."
+  "exports": {
+    ".": "./src/mod.ts",
+    "./Dns01ChallengeUtils": "./src/Dns01ChallengeUtils.ts"
   },
   "compilerOptions": {
     "strict": true,

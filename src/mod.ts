@@ -3,7 +3,7 @@ export * from "./AcmeAuthorization.ts";
 export * from "./AcmeChallenge.ts";
 export * from "./AcmeClient.ts";
 export * from "./AcmeOrder.ts";
-export * from "./Dns01ChallengeUtils.ts";
+export * as Dns01ChallengeUtils from "./Dns01ChallengeUtils.ts";
 
 export * from "./ACME_DIRECTORY_URLS.ts";
 

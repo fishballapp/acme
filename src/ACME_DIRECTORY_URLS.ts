@@ -1,3 +1,6 @@
+/**
+ * A Collection of common Certificate Authorities (CA) directories.
+ */
 export const ACME_DIRECTORY_URLS = {
   BUYPASS: "https://api.buypass.com/acme/directory",
   BUYPASS_STAGING: "https://api.test4.buypass.no/acme/directory",
