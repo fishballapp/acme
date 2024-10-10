@@ -1,17 +1,6 @@
 /**
- * @module Dns01ChallengeUtils
- *
- * Some utility functions to help you with dns-01 challenge.
- */
-
-/**
  * Lookup the DNS `TXT` record for `domain` every `interval`
  * (in ms, default: 5000) until the record matches `pollUntil`.
- *
- * @example
- * ```ts
- * import { pollDnsTxtRecord } from "@fishballpkg/acme/Dns01ChallengeUtils"
- * ```
  *
  * The lookups are done with the Authoritative Name Server of the `domain`.
  *
@@ -22,6 +11,26 @@
  *
  * Note: To avoid issues with DNS-01 challenges, consider waiting an additional
  * 15-30 seconds after this succeeds before submitting the challenge.
+ *
+ * @example
+ * ```ts
+ * import { pollDnsTxtRecord } from "@fishballpkg/acme/Dns01ChallengeUtils";
+ *
+ * pollDnsTxtRecord({
+ *  domain: "sub.example.com",
+ *  pollUntil: "some-secret-text",
+ *  onBeforeAttempt: () => {
+ *    console.log(`Looking up DNS records...`);
+ *  },
+ *  onAfterFailAttempt: (recordss) => {
+ *    for (const [i, records] of recordss.entries()) {
+ *      console.log(`Record in Authoritative Name Server ${i}`);
+ *      console.log(records);
+ *    }
+ *    console.log("Retrying later...");
+ *  },
+ * });
+ * ```
  */
 export const pollDnsTxtRecord: (payload: {
   domain: string;

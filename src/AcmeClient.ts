@@ -4,8 +4,12 @@ import { AcmeAccount } from "./AcmeAccount.ts";
 import { generateKeyPair } from "./utils/crypto.ts";
 import { jwsFetch } from "./utils/jws.ts";
 
-export const REPLAY_NONCE_HEADER_KEY = "Replay-Nonce";
+const REPLAY_NONCE_HEADER_KEY = "Replay-Nonce";
 
+/**
+ * The directory object.
+ * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.1.1
+ */
 export type AcmeDirectory = {
   keyChange: string;
   newAccount: string;

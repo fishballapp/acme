@@ -25,6 +25,11 @@ const ECDSA_WITH_SHA256_SIGNATURE_ALGOTRITHM_SEQUENCE = encodeSequence(
   encodeOID(OIDS.ECDSA_WITH_SHA256),
 );
 
+/**
+ * Generate a Certificate Signing Request (CSR) in DER format.
+ *
+ * @see https://datatracker.ietf.org/doc/html/rfc2986
+ */
 export async function generateCSR(
   { domains, keyPair }: { domains: readonly string[]; keyPair: CryptoKeyPair },
 ): Promise<Uint8Array> {

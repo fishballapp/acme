@@ -80,13 +80,6 @@ export type AcmeOrderStatus =
   | "valid"
   | "invalid";
 
-export type AcmeOrderInit = {
-  account: AcmeAccount;
-  url: string;
-  domains?: string[];
-  authorizationUrls?: string[];
-};
-
 /**
  * Represents your request for a certificate.
  */
@@ -151,7 +144,12 @@ export class AcmeOrder {
       domains,
       url,
       authorizationUrls,
-    }: AcmeOrderInit,
+    }: {
+      account: AcmeAccount;
+      url: string;
+      domains?: string[];
+      authorizationUrls?: string[];
+    },
   ): Promise<AcmeOrder> {
     const order = new AcmeOrder({
       account,
