@@ -16,7 +16,7 @@
  * ```ts
  * import { pollDnsTxtRecord } from "@fishballpkg/acme/Dns01ChallengeUtils";
  *
- * pollDnsTxtRecord({
+ * await pollDnsTxtRecord({
  *  domain: "sub.example.com",
  *  pollUntil: "some-secret-text",
  *  onBeforeAttempt: () => {
@@ -30,6 +30,8 @@
  *    console.log("Retrying later...");
  *  },
  * });
+ *
+ * // dns record verified!
  * ```
  */
 export const pollDnsTxtRecord: (payload: {
