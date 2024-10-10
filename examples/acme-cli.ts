@@ -2,7 +2,7 @@ import {
   ACME_DIRECTORY_URLS,
   AcmeClient,
   Dns01ChallengeUtils,
-} from "../src/mod.ts";
+} from "@fishballpkg/acme";
 
 export const DOMAIN = "dynm.link";
 const EMAIL = "dev@dynm.link";
@@ -49,7 +49,7 @@ console.log("Polling DNS to verify txt is updated...");
 await Dns01ChallengeUtils.pollDnsTxtRecord({
   domain: expectedRecord.domain,
   pollUntil: expectedRecord.content,
-  onBeforeEachAttempt: () => {
+  onBeforeAttempt: () => {
     console.log(`Looking up DNS records for ${expectedRecord.domain}...`);
   },
   onAfterFailAttempt: (records) => {
@@ -70,11 +70,14 @@ await Dns01ChallengeUtils.pollDnsTxtRecord({
 
 console.log("Records found!");
 
+console.log("Waiting for a further 15 before submitting, just to be safe...");
+await new Promise((res) => setTimeout(res, 15000));
+
 console.log("Submitting challenge...");
 await dns01Challenge.submit();
 
 console.log('Polling order status until "ready"...');
-await acmeOrder.pollOrderStatus(
+await acmeOrder.pollStatus(
   {
     pollUntil: "ready",
     onBeforeAttempt: () => console.log("Fetching order..."),
@@ -92,7 +95,7 @@ const _csrKeyPair = await acmeOrder.finalize();
 console.log("CSR submitted! Polling order till certificate is ready...");
 
 await acmeOrder
-  .pollOrderStatus(
+  .pollStatus(
     {
       pollUntil: "valid",
       onBeforeAttempt: () => console.log("polling order status..."),

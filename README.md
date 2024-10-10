@@ -217,7 +217,7 @@ This value is computed with
 
 await challenge.submit();
 
-await order.pollOrderStatus({
+await order.pollStatus({
   pollUntil: "ready",
   onBeforeAttempt: () => {
     console.log("this runs before every attempt");
@@ -231,16 +231,15 @@ const csrKeyPair = await order.finalize();
 ```
 
 Once you have updated your DNS record according to the
-`await challenge.digestToken()`, you can now submit the challenges!
+`await challenge.digestToken()`, you can now submit the challenge!
 
-You can use the `pollOrderStatus()` which return a promise that resolves when
-the order status becomes `"ready"`, meaning that the CA has acknowledge your
-completion of the challenges.
+After submitting the challenge, you can use `acmeOrder.pollStatus()` to ensure
+your order is `"ready"`, meaning that the CA has verified your challenge.
 
-When the order status is `"ready"`, finalize the order by calling
+Once the order status is `"ready"`, finalize the order by calling
 `order.finalize()`. Under the hood, a
 [Certificate Signing Request (CSR)](https://datatracker.ietf.org/doc/html/rfc2986)
-will be generated and submit it to the CA. The CA would then verify and sign it,
+is generated and submit it to the CA. The CA would then verify and sign it,
 that's your certificate.
 
 The private key for the CSR / the certificate you are going to obtain is
@@ -249,7 +248,9 @@ available at `csrKeyPair.privateKey`.
 ### 0x06: Download your CERTIFICATE!!!!
 
 ```ts
-await order.pollOrderStatus({ pollUntil: "valid" });
+//...
+
+await order.pollStatus({ pollUntil: "valid" });
 
 const certificatePemContent = await order.getCertificate();
 ```

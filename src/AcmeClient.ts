@@ -1,10 +1,12 @@
+// deno-lint-ignore no-unused-vars
+import type { ACME_DIRECTORY_URLS } from "./ACME_DIRECTORY_URLS.ts"; // imported for jsdoc
 import { AcmeAccount } from "./AcmeAccount.ts";
 import { generateKeyPair } from "./utils/crypto.ts";
 import { jwsFetch } from "./utils/jws.ts";
 
 export const REPLAY_NONCE_HEADER_KEY = "Replay-Nonce";
 
-export type ACMEDirectory = {
+export type AcmeDirectory = {
   keyChange: string;
   newAccount: string;
   newNonce: string;
@@ -14,25 +16,33 @@ export type ACMEDirectory = {
 };
 
 /**
- * The entry point of the ACME process. {@link AcmeClient} would interact with the Certificate Authority (CA) based on the provided directory url.
- *
- * You can find some commone CA directories in ACME_DIRECTORY_URLS
- *
- * @example Creating AcmeClient with Let's Encrypt's directory
- * ```ts
- * import { ACME_DIRECTORY_URLS, AcmeClient } from "@fishballpkg/acme";
- *
- * const acmeClient = await AcmeClient.init(ACME_DIRECTORY_URLS.LETS_ENCRYPT)
- * ```
+ * The entry point of the ACME process. {@link AcmeClient} interacts with the
+ * Certificate Authority (CA) based on the provided {@link AcmeDirectory}.
  */
 export class AcmeClient {
-  public readonly directory: ACMEDirectory;
+  public readonly directory: AcmeDirectory;
   #nextNonce: string | undefined = undefined;
 
-  private constructor({ directory }: { directory: ACMEDirectory }) {
+  /** @internal Use {@link AcmeClient.init} instead */
+  private constructor({ directory }: { directory: AcmeDirectory }) {
     this.directory = directory;
   }
 
+  /**
+   * Initiate the AcmeClient.
+   *
+   * This function fetches the given `directoryUrl` and use the result to
+   * create a AcmeClient.
+   *
+   * You can find some commone CA directories in {@link ACME_DIRECTORY_URLS}
+   *
+   * @example Creating AcmeClient with Let's Encrypt's directory
+   * ```ts
+   * import { ACME_DIRECTORY_URLS, AcmeClient } from "@fishballpkg/acme";
+   *
+   * const acmeClient = await AcmeClient.init(ACME_DIRECTORY_URLS.LETS_ENCRYPT)
+   * ```
+   */
   static async init(directoryUrl: string): Promise<AcmeClient> {
     return new AcmeClient({
       directory: await (await fetch(directoryUrl)).json(),
@@ -80,6 +90,15 @@ export class AcmeClient {
     })();
   }
 
+  /**
+   * Create an account with the Certificate Authority (CA) that AcmeClient was initialized with.
+   *
+   * You must provide an `email`. Although this is not required by the ACME specification and some CAs,
+   * it is generally considered a good practice to do so as it allows the CA to reach out for important
+   * notifications, such as certificate expiration reminders or policy changes.
+   *
+   * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.3
+   */
   async createAccount({ email }: { email: string }): Promise<AcmeAccount> {
     const keyPair = await generateKeyPair();
 

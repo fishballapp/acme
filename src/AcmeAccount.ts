@@ -2,15 +2,15 @@ import type { AcmeClient } from "./AcmeClient.ts";
 import { AcmeOrder, type AcmeOrderObjectSnapshot } from "./AcmeOrder.ts";
 
 /**
- * {@link AcmeAccount} represents an account you have created with {@link AcmeClient#createAccount}.
+ * {@link AcmeAccount} represents an account you have created with {@link AcmeClient.createAccount}.
  */
 export class AcmeAccount {
-  client: AcmeClient;
-  keyPair: CryptoKeyPair;
-  url: string;
+  readonly client: AcmeClient;
+  readonly keyPair: CryptoKeyPair;
+  readonly url: string;
 
   /**
-   * @internal AcmeAccount should be constructed with {@link AcmeClient#createAccount}
+   * @internal AcmeAccount should be constructed with {@link AcmeClient.createAccount}
    */
   constructor({ client, keyPair, url }: {
     client: AcmeClient;
@@ -45,14 +45,19 @@ export class AcmeAccount {
     });
   }
 
+  /**
+   * Create a certificate order to the Certificate Authority.
+   */
   async createOrder(
-    { domains }: { domains: string[] },
+    {
+      domains,
+    }: {
+      domains: string[];
+    },
   ): Promise<AcmeOrder> {
-    const response = await this.client.jwsFetch(
+    const response = await this.jwsFetch(
       this.client.directory.newOrder,
       {
-        privateKey: this.keyPair.privateKey,
-        protected: { kid: this.url },
         payload: {
           identifiers: domains.map((domain) => ({
             type: "dns",
