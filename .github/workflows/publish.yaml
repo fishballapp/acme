@@ -21,16 +21,20 @@ jobs:
   publish-npm:
     runs-on: ubuntu-latest
 
+    permissions:
+      id-token: write
+
     steps:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x # Run with latest stable Deno.
       - uses: actions/setup-node@v4
+        with:
+          registry-url: 'https://registry.npmjs.org'
       - uses: actions/checkout@v4
       - name: Build for NPM
         run: deno task build:npm
-      - run: cd dist-npm
       - name: Publish to npm
-        run: npm publish
+        run: cd dist-npm && npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.FISHBALLPKG_NPM_TOKEN }}
