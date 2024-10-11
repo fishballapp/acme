@@ -1,5 +1,5 @@
-// deno-lint-ignore no-unused-vars
-import type { ACME_DIRECTORY_URLS } from "./ACME_DIRECTORY_URLS.ts"; // imported for jsdoc
+// deno-lint-ignore no-unused-vars -- imported for jsdoc
+import type { ACME_DIRECTORY_URLS } from "./ACME_DIRECTORY_URLS.ts";
 import { AcmeAccount } from "./AcmeAccount.ts";
 import { generateKeyPair } from "./utils/crypto.ts";
 import { jwsFetch } from "./utils/jws.ts";

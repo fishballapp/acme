@@ -92,7 +92,7 @@ function encodeCertificationRequestInfo(
     ),
     // attributes
     ASN1.encode(
-      0b1000_0000, // Tag: [0]. context specific => most significant bit is 1 therefore 0b1000_0000
+      0xA0, // Tag: [0].
       ASN1.encodeSequence(
         ASN1.encodeOID(OIDS.EXTENSION_REQUET),
         ASN1.encodeSet(

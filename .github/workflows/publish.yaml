@@ -5,7 +5,7 @@ on:
       - main
 
 jobs:
-  publish:
+  publish-jsr:
     runs-on: ubuntu-latest
 
     permissions:
@@ -17,3 +17,20 @@ jobs:
 
       - name: Publish package
         run: npx jsr publish
+
+  publish-npm:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x # Run with latest stable Deno.
+      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - name: Build for NPM
+        run: deno task build:npm
+      - run: cd dist-npm
+      - name: Publish to npm
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.FISHBALLPKG_NPM_TOKEN }}

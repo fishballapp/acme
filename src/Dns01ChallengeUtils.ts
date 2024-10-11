@@ -33,27 +33,97 @@
  *
  * // dns record verified!
  * ```
+ *
+ * ### For Deno
+ *
+ * There is no need to pass the `resolveDns` option. `Deno.resolveDns` will be used by default.
+ *
+ * ----------
+ *
+ * ### For Other Platforms
+ *
+ * `pollDnsTxtRecord` performs lookup on 3 record types:
+ * - `NS`: Used to find out the authoritative name servers of your domain.
+ *   - Expected return type `Promise<string[]>`
+ * - `A`: Used to find out the IP addresses of your authoritative name servers.
+ *   - Expected return type `Promise<string[]>`
+ * - `TXT`: Used to find out the TXT record of your domain.
+ *   - Expected return type `Promise<string[][]>`, where each record is in chunks of strings.
+ *
+ * You should provide an implementation that resolves the DNS record accordingly.
+ *
+ * You must *at least* provide an implementation that resolves `TXT` records.
+ * In which case, the DNS lookups are not guarnateed to use the authoritative name servers.
+ *
+ * #### Node.js
+ *
+ * @see https://nodejs.org/api/dns.html#dnspromisesresolvetxthostname
+ *
+ * In Node.js, you can use the `node:dns` module to implement the `resolveDns` option.
+ *
+ * @example Node.js
+ * ```ts ignore
+ * const resolveDns = (domain, recordType, options) => {
+ *     const resolver = new require('node:dns').promises.Resolver();
+ *     if (options?.nameServer?.ipAddr) {
+ *         resolver.setServers([options?.nameServer?.ipAddr]);
+ *     }
+ *     switch (recordType) {
+ *         case 'A':
+ *             return resolver.resolve(domain);
+ *         case 'TXT':
+ *             return resolver.resolveTxt(domain);
+ *         case 'NS':
+ *             return resolver.resolveNs(domain);
+ *     }
+ * };
+ * ```
+ *
+ * Or if you prefer a simpler implementation, and don't care about
+ * which name server you resolve the TXT record from, you could use:
+ *
+ * @example
+ * ```ts ignore
+ * const resolveDns = (domain, recordType) => {
+ *     if (recordType !== 'TXT') {
+ *         throw new Error('any error would mean not found, message is ignored');
+ *     }
+ *     return new require('node:dns').promises.resolveTxt(domain);
+ * };
+ * ```
  */
-export const pollDnsTxtRecord: (payload: {
+export const pollDnsTxtRecord = async ({
+  domain,
+  pollUntil,
+  interval = 5000,
+  onAfterFailAttempt,
+  onBeforeAttempt,
+  /** */
+  resolveDns: resolveDnsProp,
+}: {
   domain: string;
   pollUntil: string;
   interval?: number;
   onBeforeAttempt?: () => void;
   onAfterFailAttempt?: (recordss: string[][]) => void;
-}) => Promise<void> = (() => {
+  resolveDns?: (query: string, recordType: string, options?: {
+    nameServer?: {
+      ipAddr: string;
+    };
+  }) => Promise<string[] | string[][]>;
+}): Promise<void> => {
+  const resolveDns = resolveDnsProp as (typeof Deno.resolveDns | undefined) ??
+    Deno.resolveDns;
+
   const getAuthoritativeNameServerIps = async (
     domain: string,
   ): Promise<string[]> => {
     while (domain.includes(".")) { // continue the loop if we haven't reached TLD
       const nameServers = await (async () => {
         try {
-          return await Deno.resolveDns(domain, "NS");
-        } catch (e) {
-          if (e instanceof Deno.errors.NotFound) {
-            return null;
-          }
-
-          throw e;
+          return await resolveDns(domain, "NS");
+        } catch {
+          return null;
         }
       })();
 
@@ -62,55 +132,58 @@ export const pollDnsTxtRecord: (payload: {
         continue;
       }
 
-      const ips = (await Promise.all(nameServers.map((ns) =>
-        Deno.resolveDns(ns, "A")
-      )))
-        .flat();
-      return ips;
+      const ips = (await Promise.all(nameServers.map(async (ns) => {
+        try {
+          return await resolveDns(ns, "A");
+        } catch {
+          return [];
+        }
+      }))).flat();
+
+      return [...new Set(ips)];
     }
 
-    throw new Deno.errors.NotFound(
-      `Cannot find NS records for ${domain} and all its parent domain.`,
-    );
+    return [];
   };
 
   const resolveDnsTxt = async (
     domain: string,
-    nameServerIp: string,
+    nameServerIp?: string,
   ): Promise<string[]> => {
-    const records = await Deno.resolveDns(domain, "TXT", {
-      nameServer: { ipAddr: nameServerIp },
-    });
+    const records = await resolveDns(
+      domain,
+      "TXT",
+      nameServerIp === undefined ? undefined : {
+        nameServer: { ipAddr: nameServerIp },
+      },
+    );
 
     return records.map((chunks) => chunks.join("")); // long txt are chunked
   };
 
-  return async ({
-    domain,
-    pollUntil,
-    interval = 5000,
-    onAfterFailAttempt,
-    onBeforeAttempt,
-  }) => {
-    while (true) {
-      onBeforeAttempt?.();
-      const authoritativeNameServerIps = await getAuthoritativeNameServerIps(
-        domain,
-      );
+  while (true) {
+    onBeforeAttempt?.();
+    const authoritativeNameServerIps = await getAuthoritativeNameServerIps(
+      domain,
+    );
 
-      const recordss = await Promise.all(
-        authoritativeNameServerIps.map(async (publicNameserverIp) =>
-          await resolveDnsTxt(domain, publicNameserverIp)
+    const recordss = await Promise.all(
+      authoritativeNameServerIps.length <= 0
+        ? [resolveDnsTxt(domain)] // no authoritative NS found, just try looking up without it
+        : authoritativeNameServerIps.map(
+          async (publicNameserverIp) =>
+            await resolveDnsTxt(domain, publicNameserverIp),
         ),
-      );
+    );
 
-      if (recordss.every((records) => records.includes(pollUntil))) {
-        // successful!
-        return;
-      }
-
-      onAfterFailAttempt?.(recordss);
-      await new Promise((res) => setTimeout(res, interval));
+    if (
+      recordss.every((records) => records.includes(pollUntil))
+    ) {
+      // successful!
+      return;
     }
-  };
-})();
+
+    onAfterFailAttempt?.(recordss);
+    await new Promise((res) => setTimeout(res, interval));
+  }
+};

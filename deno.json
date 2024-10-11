@@ -1,10 +1,13 @@
 {
   "name": "@fishballpkg/acme",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "exports": {
     ".": "./src/mod.ts",
     "./Dns01ChallengeUtils": "./src/Dns01ChallengeUtils.ts",
     "./generateCSR": "./src/utils/generateCSR.ts"
+  },
+  "tasks": {
+    "build:npm": "deno -A scripts/build-npm.ts"
   },
   "compilerOptions": {
     "strict": true,
@@ -16,6 +19,7 @@
     "include": ["src", "LICENSE", "README.md"],
     "exclude": ["**/*.test.ts"]
   },
+  "exclude": ["dist*"],
   "imports": {},
   "license": "MIT"
 }
