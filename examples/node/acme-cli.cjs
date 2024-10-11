@@ -10,8 +10,8 @@ const { runAcmeCli } = require("../shared/run-acme-cli.cjs");
 
 (async () => {
   await runAcmeCli({
-    EMAIL: "dev@dynm.link",
-    DOMAIN: "dynm.link",
+    EMAIL: "dev@fishball.xyz",
+    DOMAIN: "fishball.xyz",
     ACME_DIRECTORY_URLS,
     AcmeClient,
     Dns01ChallengeUtils,

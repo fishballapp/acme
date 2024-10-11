@@ -171,8 +171,13 @@ export const pollDnsTxtRecord = async ({
       authoritativeNameServerIps.length <= 0
         ? [resolveDnsTxt(domain)] // no authoritative NS found, just try looking up without it
         : authoritativeNameServerIps.map(
-          async (publicNameserverIp) =>
-            await resolveDnsTxt(domain, publicNameserverIp),
+          async (publicNameserverIp) => {
+            try {
+              return await resolveDnsTxt(domain, publicNameserverIp);
+            } catch {
+              return [];
+            }
+          },
         ),
     );
 

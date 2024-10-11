@@ -6,8 +6,8 @@ import {
 import { runAcmeCli } from "../shared/run-acme-cli.mjs";
 
 await runAcmeCli({
-  EMAIL: "dev@dynm.link",
-  DOMAIN: "dynm.link",
+  EMAIL: "dev@fishball.xyz",
+  DOMAIN: "fishball.xyz",
   ACME_DIRECTORY_URLS,
   AcmeClient,
   Dns01ChallengeUtils,
