@@ -30,7 +30,7 @@ jobs:
           deno-version: v2.x # Run with latest stable Deno.
       - uses: actions/setup-node@v4
         with:
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: "https://registry.npmjs.org"
       - uses: actions/checkout@v4
       - name: Build for NPM
         run: deno task build:npm

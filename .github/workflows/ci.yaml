@@ -12,5 +12,5 @@ jobs:
           deno-version: v2.x # Run with latest stable Deno.
       - run: deno fmt --check
       - run: deno lint
-      - run: deno check --doc .
+      - run: deno check --doc src examples/deno
       - run: deno test -A
