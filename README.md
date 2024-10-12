@@ -1,14 +1,14 @@
 # @fishballpkg/acme
 
+[![JSR](https://jsr.io/badges/@fishballpkg/acme)](https://jsr.io/@fishballpkg/acme)
+[![NPM](https://img.shields.io/npm/v/@fishballpkg/acme.svg)](https://www.npmjs.com/package/@fishballpkg/acme)
+
 [![CI](https://github.com/fishballapp/acme/actions/workflows/ci.yaml/badge.svg)](https://github.com/fishballapp/acme/actions/workflows/ci.yaml)
 [![E2E](https://github.com/fishballapp/acme/actions/workflows/e2e.yaml/badge.svg)](https://github.com/fishballapp/acme/actions/workflows/e2e.yaml)
 [![Publish](https://github.com/fishballapp/acme/actions/workflows/publish.yaml/badge.svg)](https://github.com/fishballapp/acme/actions/workflows/publish.yaml)
 
 > This package is still under active development. Feel free to experiment with
 > it and I would love to hear your feedback.
-
-Published on: [JSR](https://jsr.io/@fishballpkg/acme) |
-[NPM](https://www.npmjs.com/package/@fishballpkg/acme)
 
 `@fishballpkg/acme` is a zero-dependency, minimalistic, opiniated Automatic
 Certificate Management Environment (ACME) client written in TypeScript from
