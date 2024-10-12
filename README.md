@@ -1,6 +1,7 @@
 # @fishballpkg/acme
 
 [![CI](https://github.com/fishballapp/acme/actions/workflows/ci.yaml/badge.svg)](https://github.com/fishballapp/acme/actions/workflows/ci.yaml)
+[![E2E](https://github.com/fishballapp/acme/actions/workflows/e2e.yaml/badge.svg)](https://github.com/fishballapp/acme/actions/workflows/e2e.yaml)
 [![Publish](https://github.com/fishballapp/acme/actions/workflows/publish.yaml/badge.svg)](https://github.com/fishballapp/acme/actions/workflows/publish.yaml)
 
 > This package is still under active development. Feel free to experiment with
