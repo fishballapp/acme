@@ -97,14 +97,15 @@ This package is for you if you are:
 ## Roadmap
 
 - [ ] Account
-  - [x] Creation
+  - [x] Creation (`AcmeClient#createAccount`)
+  - [x] Retrieval (`AcmeClient#login`)
   - [ ] Update
   - [ ] Key Rollover
   - [ ] Recovery
 - [ ] Challenges
   - [x] DNS-01
-  - ~~[ ] HTTP-01~~
-  - ~~[ ] TLS-ALPN-01~~
+  - [ ] ~~HTTP-01~~
+  - [ ] ~~TLS-ALPN-01~~
 - [ ] Certificate Management
   - [x] CSR Generation
   - [x] Certificate Issuance
@@ -114,7 +115,7 @@ This package is for you if you are:
   - [ ] Revocation
 - [ ] Key and Algorithm Support
   - [x] ECDSA P-256
-  - ~~[ ] RSA~~
+  - [ ] ~~RSA~~
 - [ ] ACME Server Interaction
   - [x] ACME Directory Support (staging, production)
   - [ ] Error Handling and Retries
@@ -123,7 +124,7 @@ This package is for you if you are:
   - [ ] REST API? (REST ENCRYPT? 😂)
   - [ ] Plugin?
 
-## Brief introduction to ACME process and our APIs
+## Brief introduction to ACME process and the APIs
 
 We have built a [simple CLI tool](./examples/acme-cli.ts) that would allow you
 to obtain a certificate by following the steps of ACME.
@@ -157,15 +158,12 @@ in the [`ACME_DIRECTORY_URLS` object](./src/ACME_DIRECTORY_URLS.ts).
 
 [ACME directory]: https://datatracker.ietf.org/doc/html/rfc8555#section-7.1
 
-### 0x02: Create an account and place an order
+### 0x02: Create an account
 
 ```ts
 // ...
 
 const account = await acmeClient.createAccount({ email: "yo@fishball.app" });
-const order = await account.createOrder({
-  domains: ["fishball.app"],
-});
 ```
 
 To create an account with the CA, you must provide an email address. Although
@@ -174,48 +172,47 @@ considered a good practice to do so as it allows the CA to reach out for
 important notifications, such as certificate expiration reminders or policy
 changes.
 
+### 0x03: Create order and get the challenges
+
+```ts
+// ...
+
+const order = await account.createOrder({
+  domains: ["fishball.app"],
+});
+
+const dns01Challenges = order.authorizations.map((authorization) =>
+  authorization.findDns01Challenge()
+);
+```
+
 You can provide multiple domains when creating an order. The first domain in the
 list will be used in the Common Name (CN) of the certificate and the whole list
 of domains (including the first) would be used in Subject Alternative Name (SAN)
 field of the certificate. This allows the certificate you obtain later to work
 for all those domains.
 
-### 0x03: Get the authorizations and challenges
+`AcmeOrder#authorizations` represent "your proof of control over the domains in
+the order". For each domain you provide, you will get an authorization object.
+
+`authorization.findDns01Challenge()` finds you the `dns-01` challenge in that
+authorization.
+
+### 0x04: Find out how to update your DNS record
 
 ```ts
 // ...
-
-const authorizations = await order.getAuthorizations();
-
-const challenges = authorizations.map((authorization) =>
-  authorization.findChallenge("dns-01")
-);
+const {
+  type, // "TXT"
+  name, // "_acme-challenge.yourdomain.com"
+  content, // A string value to put into your DNS record to prove your control over the domain.
+} = await dns01Challenge.getDnsRecordAnswer();
+// or
+const txtRecordContent = await dns01Challenge.digestToken();
 ```
 
-Authorizations in an order represent "ways you can prove control over the
-domains in the order". For each domain you provide, you will get an
-authorization object. You can call `authorization.findChallenge("dns-01")` which
-get the `dns-01` challenge. You can also find challenges of different types, but
-as mentioned above, there's no intention to support other types at the moment.
-
-The challenge object contains information about the challenge, most noticeably
-the `token` value, accessible via `challenge.challengeObject.token`. This is the
-value that'll be "digested" later to produce a value you put into your DNS TXT
-record.
-
-### 0x04: Get the digested token for your DNS TXT record
-
-```ts
-// ...
-const txtRecordContent = await challenge.digestToken();
-```
-
-This method would produce a digested token. It is the value you should put into
-your DNS `TXT` record for `_acme-challenge.your.domain.com`.
-
-This value is computed with
-`encodeBase64Url(sha256(token + "." + publicKeyJWKThumbprint))`, as outlined in
-[RFC8555](https://datatracker.ietf.org/doc/html/rfc8555#section-8.1).
+These 2 methods basically does the same thing, except `.getDnsRecordAnswer()`
+provides slightly more guidance on how to the DNS record should be set up.
 
 ### 0x05: Submit challenges and finalize it!
 
@@ -234,7 +231,7 @@ await order.pollStatus({
   },
 });
 
-const csrKeyPair = await order.finalize();
+const certKeyPair = await order.finalize();
 ```
 
 Once you have updated your DNS record according to the
@@ -250,7 +247,7 @@ is generated and submit it to the CA. The CA would then verify and sign it,
 that's your certificate.
 
 The private key for the CSR / the certificate you are going to obtain is
-available at `csrKeyPair.privateKey`.
+available at `certKeyPair.privateKey`.
 
 ### 0x06: Download your CERTIFICATE!!!!
 
@@ -265,7 +262,56 @@ const certificatePemContent = await order.getCertificate();
 After finalizing the order, poll for order status `valid`. Once it's valid, the
 certificate is ready to be fetched! Simply call `await order.getCertificate()`
 
-## Secret Pride 🤫
+## Workflows
+
+Workflows are some predefined common patterns to interact with the ACME client.
+
+### `requestCertificate`
+
+This workflow will perform these steps:
+
+1. Create a new order
+2. Set the dns records required for the challenges
+3. Poll the dns until the records are verified
+4. Submit the challenge
+5. Poll until the order is `ready`
+6. Finalize the order by submitting a Certificate Signing Request (CSR)
+7. Poll until the order is `valid`
+8. Retrieve the certificate
+
+This workflow essentially bundles step `0x02` all the way to `0x06` in 1
+function call.
+
+```ts
+import {
+  ACME_DIRECTORY_URLS,
+  AcmeClient,
+  AcmeOrder,
+  AcmeWorkflows,
+} from "@fishballpkg/acme";
+
+const client = await AcmeClient.init(
+  ACME_DIRECTORY_URLS.LETS_ENCRYPT_STAGING,
+);
+
+const acmeAccount = await client.createAccount({ email: EMAIL });
+
+const {
+  certificate,
+  certKeyPair,
+  acmeOrder,
+} = await AcmeWorkflows.requestCertificate({
+  acmeAccount,
+  domains: DOMAINS,
+  updateDnsRecords: async (dnsRecords) => {
+    // ... update dns records
+  },
+});
+
+console.log(certificate); // Logs the certificate in PEM format
+```
+
+## 🤫
 
 I have to admit — though I suppose it's no longer a secret — I'm particularly
 proud of the CSR generation. It's something I never imagined myself

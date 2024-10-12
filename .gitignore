@@ -1,3 +1,5 @@
 dist-npm
 .env.local
 .env.*.local
+
+docs

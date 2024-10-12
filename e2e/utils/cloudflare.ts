@@ -1,3 +1,5 @@
+import { afterEach, dotenv, path } from "../../test_deps.ts";
+
 type CreateDnsRecordResponse = {
   success: true;
   result: {
@@ -11,15 +13,35 @@ export class CloudflareZone {
   readonly #zoneId: string;
   #createdDnsRecordIds: string[] = [];
 
-  constructor({
-    apiKey,
-    zoneId,
-  }: {
-    apiKey: string;
-    zoneId: string;
-  }) {
+  private constructor({ apiKey, zoneId }: { apiKey: string; zoneId: string }) {
     this.#apiKey = apiKey;
     this.#zoneId = zoneId;
+
+    afterEach(async () => {
+      console.log("🧹 Cleaning up test DNS records...");
+      await this.cleanup();
+    });
+  }
+
+  static async init() {
+    await dotenv.load({
+      envPath: path.join(import.meta.dirname!, "../../.env.e2e.local"),
+      export: true,
+    });
+
+    return new CloudflareZone({
+      apiKey: Deno.env.get("CLOUDFLARE_API_KEY") ?? (() => {
+        throw new Error(
+          "Cannot find cloudflare API key (`CLOUDFLARE_API_KEY`)",
+        );
+      })(),
+      zoneId: Deno.env.get("CLOUDFLARE_FISHBALL_XYZ_ZONE_ID") ??
+        (() => {
+          throw new Error(
+            "Cannot find cloudflare zone id for fishball.xyz (`CLOUDFLARE_FISHBALL_XYZ_ZONE_ID`)",
+          );
+        })(),
+    });
   }
   async #fetch(
     url: string,
@@ -74,6 +96,7 @@ export class CloudflareZone {
     type: "TXT";
     content: string;
   }): Promise<CreateDnsRecordResponse["result"]> {
+    console.log(`⏳ Creating ${type} Record for ${name} - ${content}...`);
     const response = await this.#fetch(
       `${CLOUDFLARE_ENDPOINT}/zones/${this.#zoneId}/dns_records`,
       {
@@ -86,7 +109,7 @@ export class CloudflareZone {
             content,
             ttl: 60,
             comment: `GENERATED ${
-              new Date().toDateString()
+              new Date().toISOString()
             } BY @fishballpkg/acme E2E`,
           },
         ),
@@ -99,6 +122,7 @@ export class CloudflareZone {
     }
 
     const { result }: CreateDnsRecordResponse = await response.json();
+    console.log(`✅ DNS record created`, result);
     this.#createdDnsRecordIds.push(result.id);
     return result;
   }

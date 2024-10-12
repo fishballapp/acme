@@ -25,7 +25,14 @@ export type AcmeDirectory = {
  */
 export class AcmeClient {
   public readonly directory: AcmeDirectory;
-  #nextNonce: string | undefined = undefined;
+  #nonceQueue: string[] = [];
+
+  async #fetchNonce(): Promise<string> {
+    const response = await fetch(this.directory.newNonce, { method: "HEAD" });
+    return response.headers.get(REPLAY_NONCE_HEADER_KEY) ?? (() => {
+      throw new Error("Failed to get new nonce :'(");
+    })();
+  }
 
   /** @internal Use {@link AcmeClient.init} instead */
   private constructor({ directory }: { directory: AcmeDirectory }) {
@@ -68,8 +75,7 @@ export class AcmeClient {
       payload?: Record<PropertyKey, unknown>;
     },
   ): Promise<Response> {
-    const nonce = this.#nextNonce ?? await this.#fetchNonce();
-    this.#nextNonce = undefined;
+    const nonce = this.#nonceQueue.shift() ?? await this.#fetchNonce();
 
     const response = await jwsFetch(url, {
       privateKey,
@@ -81,17 +87,12 @@ export class AcmeClient {
       payload,
     });
 
-    this.#nextNonce = response.headers.get(REPLAY_NONCE_HEADER_KEY) ??
-      await this.#fetchNonce();
+    this.#nonceQueue.push(
+      response.headers.get(REPLAY_NONCE_HEADER_KEY) ??
+        await this.#fetchNonce(),
+    );
 
     return response;
-  }
-
-  async #fetchNonce(): Promise<string> {
-    const response = await fetch(this.directory.newNonce, { method: "HEAD" });
-    return response.headers.get(REPLAY_NONCE_HEADER_KEY) ?? (() => {
-      throw new Error("Failed to get new nonce :'(");
-    })();
   }
 
   /**
@@ -132,8 +133,37 @@ export class AcmeClient {
       );
     }
 
-    this.#nextNonce = response.headers.get(REPLAY_NONCE_HEADER_KEY) ??
-      await this.#fetchNonce();
+    return new AcmeAccount({
+      client: this,
+      url: accountUrl,
+      keyPair,
+    });
+  }
+
+  /**
+   * Login with an existing account with a keyPair
+   *
+   * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.3.1
+   */
+  async login({ keyPair }: { keyPair: CryptoKeyPair }): Promise<AcmeAccount> {
+    const response = await this.jwsFetch(this.directory.newAccount, {
+      privateKey: keyPair.privateKey,
+      protected: {
+        jwk: await crypto.subtle.exportKey("jwk", keyPair.publicKey),
+      },
+    });
+
+    if (!response.ok) {
+      throw await response.json();
+    }
+
+    const accountUrl = response.headers.get("Location");
+    if (accountUrl === null) {
+      console.error(await response.json());
+      throw new Error(
+        "Cannot find account url which should have been in the 'Location' response header.",
+      );
+    }
 
     return new AcmeAccount({
       client: this,

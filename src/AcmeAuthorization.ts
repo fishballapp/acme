@@ -3,6 +3,7 @@ import {
   AcmeChallenge,
   type AcmeChallengeObjectSnapshot,
   type AcmeChallengeType,
+  Dns01Challenge,
 } from "./AcmeChallenge.ts";
 import type { AcmeOrder } from "./AcmeOrder.ts";
 
@@ -90,7 +91,22 @@ export class AcmeAuthorization {
   readonly order: AcmeOrder;
   /** The authorization url uniquely identifies the authorization and for retrieving {@link AcmeAuthorizationObjectSnapshot}. */
   readonly url: string;
+  #domain?: string;
   #challenges?: readonly AcmeChallenge[];
+
+  /**
+   * The domain associated with this authorization
+   *
+   * Analogous to the `value` in {@link AcmeAuthorizationObjectSnapshot.identifier}
+   */
+  get domain(): string {
+    if (this.#domain === undefined) {
+      throw new Error(
+        "domain is not initiated. Was this AcmeAuthorization object created with `await AcmeAuthorization.init(...)`?",
+      );
+    }
+    return this.#domain;
+  }
 
   /**
    * A list of {@link AcmeChallenge} the Certificate Authority can accept to verify control over this authorization / domain.
@@ -107,7 +123,10 @@ export class AcmeAuthorization {
 
   /** @internal {@link AcmeAuthorization} is created when the {@link AcmeOrder} is initialized */
   private constructor(
-    { order, url }: {
+    {
+      order,
+      url,
+    }: {
       url: string;
       order: AcmeOrder;
     },
@@ -132,14 +151,21 @@ export class AcmeAuthorization {
     const authorizationResponse = await authorization.fetch();
 
     authorization.#challenges = authorizationResponse.challenges.map(
-      ({ token, type, url }) =>
-        new AcmeChallenge({
+      ({ token, type, url }) => {
+        return new AcmeChallenge({
           authorization,
           token,
           type,
           url,
-        }),
+        });
+      },
     );
+
+    if (authorizationResponse.identifier.type !== "dns") {
+      throw new Error("Unsupported identifier type");
+    }
+
+    authorization.#domain = authorizationResponse.identifier.value;
 
     return authorization;
   }
@@ -162,9 +188,20 @@ export class AcmeAuthorization {
    *
    * To get the list of challenges, use {@link AcmeAuthorization.challenges}
    */
-  findChallenge(type: AcmeChallengeType): AcmeChallenge | undefined {
+  findChallenge(
+    type: AcmeChallengeType,
+  ): AcmeChallenge | undefined {
     return this.challenges.find((challenge) => {
       return challenge.type === type;
     });
+  }
+
+  findDns01Challenge(): Dns01Challenge | undefined {
+    const challenge = this.findChallenge("dns-01");
+    if (challenge === undefined) {
+      return undefined;
+    }
+
+    return Dns01Challenge.from(challenge);
   }
 }

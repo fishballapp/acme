@@ -5,15 +5,105 @@
  */
 
 /**
+ * Basically the type of `Deno.resolveDns`. But redefined in case the environment is not in Deno.
+ */
+export type ResolveDnsFunction = (query: string, recordType: string, options?: {
+  nameServer?: {
+    ipAddr: string;
+  };
+}) => Promise<string[] | string[][]>;
+
+/**
+ * Config object for {@link pollDnsTxtRecord}
+ */
+export type PollDnsTxtRecordConfig = {
+  /**
+   * The domain to poll `TXT` record for.
+   */
+  domain: string;
+  /**
+   * The content of the `TXT` to stop polling.
+   */
+  pollUntil: string;
+  /**
+   * The number of milliseconds to wait before the next lookup happen. (Default: 5000)
+   */
+  interval?: number;
+  /**
+   * A callback that executes before each DNS lookup.
+   */
+  onBeforeAttempt?: () => void;
+  /**
+   * A callback that executes after each "fail" lookup, where no matching `TXT` record is found. It receives the `TXT` records found in this attempt from every authoritative name server.
+   */
+  onAfterFailAttempt?: (recordss: string[][]) => void;
+  /**
+   * A function that resolves DNS record.
+   *
+   * ### For Deno
+   *
+   * There is no need to pass the `resolveDns` option. `Deno.resolveDns` will be used by default.
+   *
+   * ### For Other Platforms
+   *
+   * `pollDnsTxtRecord` performs lookup on 3 record types:
+   * - `NS`: Used to find out the authoritative name servers of your domain.
+   *   - Expected return type `Promise<string[]>`
+   * - `A`: Used to find out the IP addresses of your authoritative name servers.
+   *   - Expected return type `Promise<string[]>`
+   * - `TXT`: Used to find out the TXT record of your domain.
+   *   - Expected return type `Promise<string[][]>`, where each record is in chunks of strings.
+   *
+   * You should provide an implementation that resolves the DNS record accordingly.
+   *
+   * You must *at least* provide an implementation that resolves `TXT` records.
+   * In which case, the DNS lookups are not guarnateed to use the authoritative name servers.
+   *
+   * #### Node.js
+   *
+   * In Node.js, you can use the [`node:dns`](https://nodejs.org/api/dns.html#dnspromisesresolvetxthostname) module to implement the `resolveDns` option.
+   *
+   * @example
+   * ```ts ignore
+   * const resolveDns = (domain, recordType, options) => {
+   *     const resolver = new require('node:dns').promises.Resolver();
+   *     if (options?.nameServer?.ipAddr) {
+   *         resolver.setServers([options?.nameServer?.ipAddr]);
+   *     }
+   *     switch (recordType) {
+   *         case 'A':
+   *             return resolver.resolve(domain);
+   *         case 'TXT':
+   *             return resolver.resolveTxt(domain);
+   *         case 'NS':
+   *             return resolver.resolveNs(domain);
+   *     }
+   * };
+   * ```
+   *
+   * @example
+   * ```ts ignore
+   * // Simpler implementation, but do not try to use authoritative name servers
+   * const resolveDns = (domain, recordType) => {
+   *     if (recordType !== 'TXT') {
+   *         throw new Error('any error would mean not found, message is ignored');
+   *     }
+   *     return new require('node:dns').promises.resolveTxt(domain);
+   * };
+   * ```
+   */
+  resolveDns?: ResolveDnsFunction;
+  /**
+   * The number of milliseconds to poll before giving up and throw an error. (Default: 30000)
+   */
+  timeout?: number;
+};
+
+/**
  * Lookup the DNS `TXT` record for `domain` every `interval`
  * (in ms, default: 5000) until the record matches `pollUntil`.
  *
- * The lookups are done with the Authoritative Name Server of the `domain`.
- *
- * - `onBeforeAttempt` is called before *each* DNS lookup happens.
- * - `onAfterFailAttempt` is called after *each* failed lookup, where no matching
- *    `TXT` record is found. It receives the `TXT` records found in this attempt
- *    from every authoritative name server.
+ * The lookups are done using the Authoritative Name Server of the `domain`.
  *
  * Note: To avoid issues with DNS-01 challenges, consider waiting an additional
  * 15-30 seconds after this succeeds before submitting the challenge.
@@ -39,64 +129,6 @@
  *
  * // dns record verified!
  * ```
- *
- * ### For Deno
- *
- * There is no need to pass the `resolveDns` option. `Deno.resolveDns` will be used by default.
- *
- * ----------
- *
- * ### For Other Platforms
- *
- * `pollDnsTxtRecord` performs lookup on 3 record types:
- * - `NS`: Used to find out the authoritative name servers of your domain.
- *   - Expected return type `Promise<string[]>`
- * - `A`: Used to find out the IP addresses of your authoritative name servers.
- *   - Expected return type `Promise<string[]>`
- * - `TXT`: Used to find out the TXT record of your domain.
- *   - Expected return type `Promise<string[][]>`, where each record is in chunks of strings.
- *
- * You should provide an implementation that resolves the DNS record accordingly.
- *
- * You must *at least* provide an implementation that resolves `TXT` records.
- * In which case, the DNS lookups are not guarnateed to use the authoritative name servers.
- *
- * #### Node.js
- *
- * @see https://nodejs.org/api/dns.html#dnspromisesresolvetxthostname
- *
- * In Node.js, you can use the `node:dns` module to implement the `resolveDns` option.
- *
- * @example Node.js
- * ```ts ignore
- * const resolveDns = (domain, recordType, options) => {
- *     const resolver = new require('node:dns').promises.Resolver();
- *     if (options?.nameServer?.ipAddr) {
- *         resolver.setServers([options?.nameServer?.ipAddr]);
- *     }
- *     switch (recordType) {
- *         case 'A':
- *             return resolver.resolve(domain);
- *         case 'TXT':
- *             return resolver.resolveTxt(domain);
- *         case 'NS':
- *             return resolver.resolveNs(domain);
- *     }
- * };
- * ```
- *
- * Or if you prefer a simpler implementation, and don't care about
- * which name server you resolve the TXT record from, you could use:
- *
- * @example
- * ```ts ignore
- * const resolveDns = (domain, recordType) => {
- *     if (recordType !== 'TXT') {
- *         throw new Error('any error would mean not found, message is ignored');
- *     }
- *     return new require('node:dns').promises.resolveTxt(domain);
- * };
- * ```
  */
 export const pollDnsTxtRecord = async ({
   domain,
@@ -104,20 +136,9 @@ export const pollDnsTxtRecord = async ({
   interval = 5000,
   onAfterFailAttempt,
   onBeforeAttempt,
-  /** */
   resolveDns: resolveDnsProp,
-}: {
-  domain: string;
-  pollUntil: string;
-  interval?: number;
-  onBeforeAttempt?: () => void;
-  onAfterFailAttempt?: (recordss: string[][]) => void;
-  resolveDns?: (query: string, recordType: string, options?: {
-    nameServer?: {
-      ipAddr: string;
-    };
-  }) => Promise<string[] | string[][]>;
-}): Promise<void> => {
+  timeout = 30_000,
+}: PollDnsTxtRecordConfig): Promise<void> => {
   const resolveDns = resolveDnsProp as (typeof Deno.resolveDns | undefined) ??
     Deno.resolveDns;
 
@@ -167,13 +188,15 @@ export const pollDnsTxtRecord = async ({
     return records.map((chunks) => chunks.join("")); // long txt are chunked
   };
 
-  while (true) {
+  const timeoutTime = Date.now() + timeout;
+  let latestRecordss: string[][] | undefined;
+  while (Date.now() <= timeoutTime) {
     onBeforeAttempt?.();
     const authoritativeNameServerIps = await getAuthoritativeNameServerIps(
       domain,
     );
 
-    const recordss = await Promise.all(
+    latestRecordss = await Promise.all(
       authoritativeNameServerIps.length <= 0
         ? [resolveDnsTxt(domain)] // no authoritative NS found, just try looking up without it
         : authoritativeNameServerIps.map(
@@ -188,13 +211,26 @@ export const pollDnsTxtRecord = async ({
     );
 
     if (
-      recordss.every((records) => records.includes(pollUntil))
+      latestRecordss.every((records) => records.includes(pollUntil))
     ) {
       // successful!
       return;
     }
 
-    onAfterFailAttempt?.(recordss);
+    onAfterFailAttempt?.(latestRecordss);
     await new Promise((res) => setTimeout(res, interval));
   }
+
+  throw new Error(`Timeout: giving up on polling dns txt record
+Latest records:
+${JSON.stringify(latestRecordss, null, 2)}
+
+Expected record: ${pollUntil}`);
+};
+
+/**
+ * A collection of utility functions to help you with `dns-01` challenge
+ */
+export const Dns01ChallengeUtils = {
+  pollDnsTxtRecord,
 };
