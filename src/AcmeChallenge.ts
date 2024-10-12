@@ -182,7 +182,7 @@ export class Dns01Challenge extends AcmeChallenge {
   /**
    * @internal create a {@link Dns01Challenge} from an {@link AcmeChallenge}
    */
-  static from(challenge: AcmeChallenge) {
+  static from(challenge: AcmeChallenge): Dns01Challenge {
     if (challenge.type !== "dns-01") {
       throw new Error("Not a dns-01 challenge!");
     }
