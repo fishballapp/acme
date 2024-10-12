@@ -14,4 +14,3 @@ jobs:
         env:
           CLOUDFLARE_API_KEY: ${{secrets.CLOUDFLARE_API_KEY}}
           CLOUDFLARE_FISHBALL_XYZ_ZONE_ID: ${{secrets.CLOUDFLARE_FISHBALL_XYZ_ZONE_ID}}
-
