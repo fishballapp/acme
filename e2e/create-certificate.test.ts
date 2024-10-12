@@ -4,6 +4,7 @@ import {
   AcmeAuthorization,
   AcmeClient,
   AcmeOrder,
+  Dns01Challenge,
   Dns01ChallengeUtils,
 } from "@fishballpkg/acme";
 import { expect, it } from "../test_deps.ts";
@@ -37,28 +38,26 @@ it("can talk to ACME server and successfully create an account, order then all t
   expect(authorization instanceof AcmeAuthorization).toBe(true);
   console.log("✅ Order > Authorization(s)");
 
-  const dns01Challenge = authorization.findChallenge("dns-01");
+  const dns01Challenge = authorization.findDns01Challenge();
   expectToBeDefined(dns01Challenge);
+  expect(dns01Challenge instanceof Dns01Challenge).toBe(true);
   console.log("✅ Order > Authorization(s) > dns-01 challenge (found!)");
 
-  const expectedRecord = {
-    domain: `_acme-challenge.${DOMAIN}`,
-    content: await dns01Challenge.digestToken(),
-  };
+  const expectedRecord = await dns01Challenge.getDnsRecordAnswer();
   console.log("✅ Challenge token digested!");
 
   await cloudflareZone.createDnsRecord({
-    type: "TXT",
-    name: expectedRecord.domain,
+    type: expectedRecord.type,
+    name: expectedRecord.name,
     content: expectedRecord.content,
   });
   console.log("⏳ Creating DNS record for _acme-challenge...");
 
   await Dns01ChallengeUtils.pollDnsTxtRecord({
-    domain: expectedRecord.domain,
+    domain: expectedRecord.name,
     pollUntil: expectedRecord.content,
     onBeforeAttempt: () =>
-      console.log(`⏳ Polling dns record for ${expectedRecord.domain}...`),
+      console.log(`⏳ Polling dns record for ${expectedRecord.name}...`),
     onAfterFailAttempt: (recordss) => {
       console.log(
         `⏳ Received DNS recordss: `,
