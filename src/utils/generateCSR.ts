@@ -1,3 +1,9 @@
+/**
+ * @module
+ *
+ * Utility function to generate a Certificate Signing Request (CSR) in DER format
+ */
+
 import { splitAtIndex } from "./array.ts";
 import { ASN1 } from "./ASN1.ts";
 import { sign } from "./crypto.ts";

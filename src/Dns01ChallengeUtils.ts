@@ -1,4 +1,10 @@
 /**
+ * @module
+ *
+ * Utility functions to help you with `dns-01` challenge
+ */
+
+/**
  * Lookup the DNS `TXT` record for `domain` every `interval`
  * (in ms, default: 5000) until the record matches `pollUntil`.
  *
