@@ -234,7 +234,7 @@ await order.pollStatus({
   },
 });
 
-const csrKeyPair = await order.finalize();
+const certKeyPair = await order.finalize();
 ```
 
 Once you have updated your DNS record according to the
@@ -250,7 +250,7 @@ is generated and submit it to the CA. The CA would then verify and sign it,
 that's your certificate.
 
 The private key for the CSR / the certificate you are going to obtain is
-available at `csrKeyPair.privateKey`.
+available at `certKeyPair.privateKey`.
 
 ### 0x06: Download your CERTIFICATE!!!!
 

@@ -163,3 +163,51 @@ async function getJWKThumbprint(jwk: JsonWebKey): Promise<string> {
   // Step 3: Convert the binary hash to base64url encoding
   return encodeBase64Url(hash);
 }
+
+/**
+ * Represents a `dns-01` challenge and provides additional methods specifically for it.
+ *
+ * You can retrieve this by calling {@link AcmeAuthorization.findDns01Challenge}.
+ */
+export class Dns01Challenge extends AcmeChallenge {
+  private constructor(init: {
+    authorization: AcmeAuthorization;
+    token: string;
+    type: AcmeChallengeType;
+    url: string;
+  }) {
+    super(init);
+  }
+
+  /**
+   * @internal create a {@link Dns01Challenge} from an {@link AcmeChallenge}
+   */
+  static from(challenge: AcmeChallenge) {
+    if (challenge.type !== "dns-01") {
+      throw new Error("Not a dns-01 challenge!");
+    }
+
+    return new Dns01Challenge(challenge);
+  }
+
+  /**
+   * Digest the challenge token and return a `Promise` that resolves to the
+   * {@link DnsTxtRecord} needed to be set to fulfill the challenge.
+   */
+  async getDnsRecordAnswer(): Promise<DnsTxtRecord> {
+    return {
+      name: `_acme-challenge.${this.authorization.domain}`,
+      type: "TXT",
+      content: await this.digestToken(),
+    };
+  }
+}
+
+/**
+ * Represents a DNS `TXT` record
+ */
+export interface DnsTxtRecord {
+  name: string;
+  type: "TXT";
+  content: string;
+}

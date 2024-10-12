@@ -4,11 +4,12 @@
   "exports": {
     ".": "./src/mod.ts",
     "./Dns01ChallengeUtils": "./src/Dns01ChallengeUtils.ts",
-    "./generateCSR": "./src/utils/generateCSR.ts"
+    "./generateCSR": "./src/utils/generateCSR.ts",
+    "./workflows": "./src/AcmeWorkflows.ts"
   },
   "tasks": {
-    "test:e2e": "deno test -A e2e",
-    "test:unit": "deno test -A src",
+    "test:e2e": "deno test -A e2e --parallel",
+    "test:unit": "deno test -A src --parallel",
     "build:npm": "deno run -A scripts/build-npm.ts"
   },
   "compilerOptions": {

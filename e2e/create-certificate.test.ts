@@ -6,36 +6,15 @@ import {
   AcmeOrder,
   Dns01ChallengeUtils,
 } from "@fishballpkg/acme";
-import { afterEach, dotenv, expect, it, path } from "../test_deps.ts";
+import { expect, it } from "../test_deps.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
 import { expectToBeDefined } from "./utils/expectToBeDefined.ts";
-
-await dotenv.load({
-  envPath: path.join(import.meta.dirname!, "../.env.e2e.local"), // Uses .env_prod instead of .env
-  export: true, // Exports all variables to the environment
-});
+import { randomFishballTestingSubdomain } from "./utils/randomFishballTestingSubdomain.ts";
 
 const EMAIL = "e2e@test.acme.pkg.fishball.xyz";
-const DOMAIN = "test.acme.pkg.fishball.xyz";
+const DOMAIN = randomFishballTestingSubdomain();
 
-const CLOUDFLARE_SECRETS = {
-  API_KEY: Deno.env.get("CLOUDFLARE_API_KEY") ?? (() => {
-    throw new Error("Cannot find cloudflare API key (`CLOUDFLARE_API_KEY`)");
-  })(),
-  FISHBALL_XYZ_ZONE_ID: Deno.env.get("CLOUDFLARE_FISHBALL_XYZ_ZONE_ID") ??
-    (() => {
-      throw new Error(
-        "Cannot find cloudflare zone id for fishball.xyz (`CLOUDFLARE_FISHBALL_XYZ_ZONE_ID`)",
-      );
-    })(),
-};
-
-const cloudflareZone = new CloudflareZone({
-  apiKey: CLOUDFLARE_SECRETS.API_KEY,
-  zoneId: CLOUDFLARE_SECRETS.FISHBALL_XYZ_ZONE_ID,
-});
-
-afterEach(async () => await cloudflareZone.cleanup());
+const cloudflareZone = await CloudflareZone.init();
 
 it("can talk to ACME server and successfully create an account, order then all the way to retrieve the certificate for 1 domain", async () => {
   const acmeClient = await AcmeClient.init(
@@ -63,7 +42,7 @@ it("can talk to ACME server and successfully create an account, order then all t
   console.log("✅ Order > Authorization(s) > dns-01 challenge (found!)");
 
   const expectedRecord = {
-    domain: `_acme-challenge.${DOMAIN}.`,
+    domain: `_acme-challenge.${DOMAIN}`,
     content: await dns01Challenge.digestToken(),
   };
   console.log("✅ Challenge token digested!");
@@ -105,9 +84,9 @@ it("can talk to ACME server and successfully create an account, order then all t
   });
   console.log("✅ acmeOrder.pollStatus(ready) - Order is `ready`!");
 
-  const csrKeyPair = await acmeOrder.finalize();
-  expect(csrKeyPair.privateKey).toBeInstanceOf(CryptoKey);
-  expect(csrKeyPair.publicKey).toBeInstanceOf(CryptoKey);
+  const certKeyPair = await acmeOrder.finalize();
+  expect(certKeyPair.privateKey).toBeInstanceOf(CryptoKey);
+  expect(certKeyPair.publicKey).toBeInstanceOf(CryptoKey);
   console.log("✅ Order finalized");
 
   await acmeOrder.pollStatus({
@@ -121,6 +100,7 @@ it("can talk to ACME server and successfully create an account, order then all t
   console.log("✅ acmeOrder.pollStatus(valid) - Order is `valid`!");
 
   const certificate = await acmeOrder.getCertificate();
-  console.log(certificate);
+  // TODO: verify with openssl
   console.log("✅ Certificate retrieved!");
+  console.log(certificate);
 });

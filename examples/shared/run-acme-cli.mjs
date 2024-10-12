@@ -93,7 +93,7 @@ export const runAcmeCli = async (
   console.log("Order is ready. Finalizing...");
   console.log("Submiting CSR");
   // use the CryptoKeyPair if you need to?
-  const _csrKeyPair = await acmeOrder.finalize();
+  const _certKeyPair = await acmeOrder.finalize();
 
   console.log("CSR submitted! Polling order till certificate is ready...");
 

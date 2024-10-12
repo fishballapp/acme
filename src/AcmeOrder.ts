@@ -63,6 +63,26 @@ export type AcmeOrderObjectSnapshot = {
 };
 
 /**
+ * A conifguration object for polling order status.
+ */
+export type AcmeOrderPollStatusConfig = {
+  /** The order status to resolve the returned promise. */
+  pollUntil: AcmeOrderStatus;
+  /**
+   * The number of milliseconds to wait before the next lookup happen. (Default: 5000)
+   */
+  interval?: number;
+  /** A callback that fires before *every* fetch attempt. */
+  onBeforeAttempt?: () => void;
+  /** A callback that fires after *every* fetch attempt that does not produce {@link pollUntil}. */
+  onAfterFailAttempt?: (order: AcmeOrderObjectSnapshot) => void;
+  /**
+   * The number of milliseconds to poll before giving up and throw an error. (Default: 30000)
+   */
+  timeout?: number;
+};
+
+/**
  * The status of this order.
  *
  * - `pending`: The order has been created, but the necessary challenges have not yet been completed.
@@ -183,31 +203,33 @@ export class AcmeOrder {
 
   /**
    * Fetches the order every {@link interval} until its status is {@link pollUntil}.
+   *
+   * @param pollStatusConfig A configuration object.
    */
   async pollStatus({
     pollUntil,
-    interval = 5000,
+    interval = 5_000,
     onBeforeAttempt,
     onAfterFailAttempt,
-  }: {
-    /** The order status to resolve the returned promise. */
-    pollUntil: AcmeOrderStatus;
-    /** The time to wait before the next fetch happens. */
-    interval?: number;
-    /** A callback that fires before *every* fetch attempt. */
-    onBeforeAttempt?: () => void;
-    /** A callback that fires after *every* fetch attempt that does not produce {@link pollUntil}. */
-    onAfterFailAttempt?: (order: AcmeOrderObjectSnapshot) => void;
-  }): Promise<AcmeOrderObjectSnapshot> {
-    while (true) {
+    timeout = 30_000,
+  }: AcmeOrderPollStatusConfig): Promise<AcmeOrderObjectSnapshot> {
+    const timeoutTime = Date.now() + timeout;
+    let latestOrderResponse: AcmeOrderObjectSnapshot | undefined;
+    while (Date.now() <= timeoutTime) {
       onBeforeAttempt?.();
-      const orderResponse = await this.fetch();
-      if (orderResponse.status === pollUntil) {
-        return orderResponse;
+      latestOrderResponse = await this.fetch();
+      if (latestOrderResponse.status === pollUntil) {
+        return latestOrderResponse;
       }
-      onAfterFailAttempt?.(orderResponse);
+      onAfterFailAttempt?.(latestOrderResponse);
       await new Promise((resolve) => setTimeout(resolve, interval));
     }
+
+    throw new Error(`Timeout: giving up on polling dns txt record
+Latest order:
+${JSON.stringify(latestOrderResponse, null, 2)}
+
+Expected order status: ${pollUntil}`);
   }
 
   /**
@@ -221,14 +243,14 @@ export class AcmeOrder {
    * @returns A `Promise` that resolves to the newly generated `CryptoKeyPair`.
    */
   async finalize(): Promise<CryptoKeyPair> {
-    const [csrKeyPair, orderResponse] = await Promise.all([
+    const [certKeyPair, orderResponse] = await Promise.all([
       generateKeyPair(),
       this.fetch(),
     ]);
     const csr = encodeBase64Url(
       await generateCSR({
         domains: this.domains,
-        keyPair: csrKeyPair,
+        keyPair: certKeyPair,
       }),
     );
 
@@ -243,7 +265,7 @@ export class AcmeOrder {
 
     await response.body?.cancel();
 
-    return csrKeyPair;
+    return certKeyPair;
   }
 
   /**
