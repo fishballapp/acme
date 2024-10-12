@@ -241,6 +241,8 @@ export class AcmeOrder {
       throw new Error("Error when submitting csr.");
     }
 
+    await response.body?.cancel();
+
     return csrKeyPair;
   }
 

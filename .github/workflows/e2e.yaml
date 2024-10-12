@@ -1,4 +1,4 @@
-name: CI
+name: E2E
 
 on: push
 
@@ -10,7 +10,8 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x # Run with latest stable Deno.
-      - run: deno fmt --check
-      - run: deno lint
-      - run: deno check --doc src examples/deno
-      - run: deno task test:unit
+      - run: deno task test:e2e
+        env:
+          CLOUDFLARE_API_KEY: ${{secrets.CLOUDFLARE_API_KEY}}
+          CLOUDFLARE_FISHBALL_XYZ_ZONE_ID: ${{secrets.CLOUDFLARE_FISHBALL_XYZ_ZONE_ID}}
+

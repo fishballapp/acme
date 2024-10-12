@@ -7,7 +7,9 @@
     "./generateCSR": "./src/utils/generateCSR.ts"
   },
   "tasks": {
-    "build:npm": "deno -A scripts/build-npm.ts"
+    "test:e2e": "deno test -A e2e",
+    "test:unit": "deno test -A src",
+    "build:npm": "deno run -A scripts/build-npm.ts"
   },
   "compilerOptions": {
     "strict": true,
