@@ -32,8 +32,12 @@ describe("requestCertificates", () => {
     } = await AcmeWorkflows.requestCertificate({
       acmeAccount,
       domains: DOMAINS,
-      setDnsRecords: async (dnsRecord) => {
-        await cloudflareZone.createDnsRecord(dnsRecord);
+      updateDnsRecords: async (dnsRecords) => {
+        await Promise.all(
+          dnsRecords.map((dnsRecord) =>
+            cloudflareZone.createDnsRecord(dnsRecord)
+          ),
+        );
       },
     });
 

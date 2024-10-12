@@ -14,7 +14,7 @@ import {
 export type RequestCertificatesConfig = {
   acmeAccount: AcmeAccount;
   domains: string[];
-  setDnsRecords: (dnsRecord: DnsTxtRecord) => Promise<void>;
+  updateDnsRecords: (dnsRecord: DnsTxtRecord[]) => Promise<void>;
   /**
    * The number of milliseconds to wait after the DnsRecords
    * are confirmed by the client and before submitting the challenge.
@@ -46,7 +46,7 @@ export type RequestCertificatesConfig = {
 export const requestCertificate = async ({
   acmeAccount,
   domains,
-  setDnsRecords,
+  updateDnsRecords,
   delayAfterDnsRecordsConfirmed = 5000,
   resolveDns,
 }: RequestCertificatesConfig): Promise<
@@ -76,9 +76,7 @@ export const requestCertificate = async ({
     ),
   );
 
-  await Promise.all(
-    expectedRecords.map(async (record) => await setDnsRecords(record)),
-  );
+  await updateDnsRecords(expectedRecords);
 
   await Promise.all(expectedRecords.map(async (expectedRecord) => {
     await Dns01ChallengeUtils.pollDnsTxtRecord({

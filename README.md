@@ -97,14 +97,15 @@ This package is for you if you are:
 ## Roadmap
 
 - [ ] Account
-  - [x] Creation
+  - [x] Creation (`AcmeClient#createAccount`)
+  - [x] Retrieval (`AcmeClient#login`)
   - [ ] Update
   - [ ] Key Rollover
   - [ ] Recovery
 - [ ] Challenges
   - [x] DNS-01
-  - ~~[ ] HTTP-01~~
-  - ~~[ ] TLS-ALPN-01~~
+  - [ ] ~~HTTP-01~~
+  - [ ] ~~TLS-ALPN-01~~
 - [ ] Certificate Management
   - [x] CSR Generation
   - [x] Certificate Issuance
@@ -114,7 +115,7 @@ This package is for you if you are:
   - [ ] Revocation
 - [ ] Key and Algorithm Support
   - [x] ECDSA P-256
-  - ~~[ ] RSA~~
+  - [ ] ~~RSA~~
 - [ ] ACME Server Interaction
   - [x] ACME Directory Support (staging, production)
   - [ ] Error Handling and Retries
@@ -123,7 +124,7 @@ This package is for you if you are:
   - [ ] REST API? (REST ENCRYPT? 😂)
   - [ ] Plugin?
 
-## Brief introduction to ACME process and our APIs
+## Brief introduction to ACME process and the APIs
 
 We have built a [simple CLI tool](./examples/acme-cli.ts) that would allow you
 to obtain a certificate by following the steps of ACME.
@@ -265,7 +266,56 @@ const certificatePemContent = await order.getCertificate();
 After finalizing the order, poll for order status `valid`. Once it's valid, the
 certificate is ready to be fetched! Simply call `await order.getCertificate()`
 
-## Secret Pride 🤫
+## Workflows
+
+Workflows are some predefined common patterns to interact with the ACME client.
+
+### `requestCertificate`
+
+This workflow will perform these steps:
+
+1. Create a new order
+2. Set the dns records required for the challenges
+3. Poll the dns until the records are verified
+4. Submit the challenge
+5. Poll until the order is `ready`
+6. Finalize the order by submitting a Certificate Signing Request (CSR)
+7. Poll until the order is `valid`
+8. Retrieve the certificate
+
+This workflow essentially bundles step `0x02` all the way to `0x06` in 1
+function call.
+
+```ts
+import {
+  ACME_DIRECTORY_URLS,
+  AcmeClient,
+  AcmeOrder,
+  AcmeWorkflows,
+} from "@fishballpkg/acme";
+
+const client = await AcmeClient.init(
+  ACME_DIRECTORY_URLS.LETS_ENCRYPT_STAGING,
+);
+
+const acmeAccount = await client.createAccount({ email: EMAIL });
+
+const {
+  certificate,
+  certKeyPair,
+  acmeOrder,
+} = await AcmeWorkflows.requestCertificate({
+  acmeAccount,
+  domains: DOMAINS,
+  updateDnsRecords: async (dnsRecords) => {
+    // ... update dns records
+  },
+});
+
+console.log(certificate); // Logs the certificate in PEM format
+```
+
+## 🤫
 
 I have to admit — though I suppose it's no longer a secret — I'm particularly
 proud of the CSR generation. It's something I never imagined myself
