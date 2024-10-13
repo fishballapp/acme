@@ -1,5 +1,5 @@
 // deno-lint-ignore no-unused-vars -- imported for jsdoc
-import type { Dns01ChallengeUtils } from "./mod.ts";
+import type { DnsUtils } from "./mod.ts";
 
 import type { AcmeAccount } from "./AcmeAccount.ts";
 import type { AcmeAuthorization } from "./AcmeAuthorization.ts";
@@ -132,7 +132,7 @@ export class AcmeChallenge {
    *
    * You should only call this once you have verified the challenge has been fulfilled.
    *
-   * {@link Dns01ChallengeUtils.pollDnsTxtRecord} can be used to verify if a `dns-01` challenge has been fulfilled.
+   * {@link DnsUtils.pollDnsTxtRecord} can be used to verify if a `dns-01` challenge has been fulfilled.
    */
   async submit(): Promise<unknown> {
     const response = await this.#account.jwsFetch(this.url, {

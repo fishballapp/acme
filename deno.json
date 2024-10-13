@@ -3,7 +3,7 @@
   "version": "0.6.1",
   "exports": {
     ".": "./src/mod.ts",
-    "./Dns01ChallengeUtils": "./src/Dns01ChallengeUtils.ts",
+    "./DnsUtils": "./src/DnsUtils/mod.ts",
     "./generateCSR": "./src/utils/generateCSR.ts",
     "./workflows": "./src/AcmeWorkflows.ts"
   },

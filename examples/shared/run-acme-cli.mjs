@@ -4,7 +4,7 @@ export const runAcmeCli = async (
     DOMAIN,
     AcmeClient,
     ACME_DIRECTORY_URLS,
-    Dns01ChallengeUtils,
+    DnsUtils,
     resolveDns,
     alert,
   },
@@ -48,7 +48,7 @@ export const runAcmeCli = async (
   await alert("After updating the DNS records, press enter to continue...");
 
   console.log("Polling DNS to verify txt is updated...");
-  await Dns01ChallengeUtils.pollDnsTxtRecord({
+  await DnsUtils.pollDnsTxtRecord({
     domain: expectedRecord.domain,
     pollUntil: expectedRecord.content,
     onBeforeAttempt: () => {
