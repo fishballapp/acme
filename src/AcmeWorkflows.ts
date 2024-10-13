@@ -6,10 +6,7 @@
 import type { AcmeAccount } from "./AcmeAccount.ts";
 import type { DnsTxtRecord } from "./AcmeChallenge.ts";
 import type { AcmeOrder } from "./AcmeOrder.ts";
-import {
-  Dns01ChallengeUtils,
-  type ResolveDnsFunction,
-} from "./Dns01ChallengeUtils.ts";
+import * as Dns01ChallengeUtils from "./Dns01ChallengeUtils.ts";
 
 export type RequestCertificatesConfig = {
   acmeAccount: AcmeAccount;
@@ -22,14 +19,14 @@ export type RequestCertificatesConfig = {
    * The longer the wait the higher the chance of success as it
    * will allow the DNS records to propogate properly.
    *
-   * Default: 5000
+   * Default: `5000`
    */
   delayAfterDnsRecordsConfirmed?: number;
-  resolveDns?: ResolveDnsFunction;
+  resolveDns?: Dns01ChallengeUtils.ResolveDnsFunction;
   /**
    * The number of milliseconds to poll resources before giving up and throw an error.
    *
-   * Default: 30000
+   * Default: `30000`
    */
   timeout?: number;
 };
@@ -46,23 +43,25 @@ export type RequestCertificatesConfig = {
  * 6. Finalize the order by submitting a Certificate Signing Request (CSR)
  * 7. Poll until the order is `valid`
  * 8. Retrieve the certificate
- *
- * @param requestCertificatesConfig
  */
-export const requestCertificate = async ({
-  acmeAccount,
-  domains,
-  updateDnsRecords,
-  delayAfterDnsRecordsConfirmed = 5000,
-  resolveDns,
-  timeout,
-}: RequestCertificatesConfig): Promise<
+export const requestCertificate = async (
+  config: RequestCertificatesConfig,
+): Promise<
   {
     certificate: string;
     certKeyPair: CryptoKeyPair;
     acmeOrder: AcmeOrder;
   }
 > => {
+  const {
+    acmeAccount,
+    domains,
+    updateDnsRecords,
+    delayAfterDnsRecordsConfirmed = 5000,
+    resolveDns,
+    timeout,
+  } = config;
+
   const acmeOrder = await acmeAccount.createOrder({ domains });
 
   const dns01Challenges = acmeOrder.authorizations.map((authorization) => {
@@ -108,11 +107,4 @@ export const requestCertificate = async ({
 
   const certificate = await acmeOrder.getCertificate();
   return { certificate, certKeyPair, acmeOrder };
-};
-
-/**
- * A collection of predefined common patterns to interact with the ACME client.
- */
-export const AcmeWorkflows = {
-  requestCertificate,
 };

@@ -1,4 +1,6 @@
 import type { AcmeAccount } from "./AcmeAccount.ts";
+// deno-lint-ignore no-unused-vars -- for jsdoc reference
+import type { AcmeAuthorizationObjectSnapshot } from "./AcmeAuthorization.ts";
 import { AcmeAuthorization } from "./AcmeAuthorization.ts";
 import { generateKeyPair } from "./utils/crypto.ts";
 import { encodeBase64Url } from "./utils/encoding.ts";
@@ -7,15 +9,13 @@ import { generateCSR } from "./utils/generateCSR.ts";
 /**
  * A snapshot of the order object retrieved from a Certificate Authority (CA).
  *
- * This can be retrieved by {@link AcmeOrder.fetch}
+ * This can be retrieved by {@link AcmeOrder.prototype.fetch}
  *
  * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.1.3
  */
 export type AcmeOrderObjectSnapshot = {
   /**
    * The status of the order.
-   *
-   * @see {@link AcmeOrderStatus}
    */
   status: AcmeOrderStatus;
   /**
@@ -151,12 +151,17 @@ export class AcmeOrder {
   }
 
   /**
-   * An internal function used to initialize the {@link AcmeOrder}.
+   * An internal constructor method.
    *
-   * This function fetches the authorization urls to create the {@link AcmeAuthorization}
-   * objects which are then assigned to {@link AcmeOrder.authorizations}
+   * If the {@link domains} or {@link authorizationUrls} are not defined,
+   * it fetches the order url to find out those values.
    *
-   * @internal If you are trying to create an order, use {@link AcmeAccount.createOrder}.
+   * The authorization urls are fetched to initialize the
+   * {@link AcmeOrder.prototype.authorizations}.
+   *
+   * To create an order, use {@link AcmeAccount.prototype.createOrder}.
+   *
+   * @internal
    */
   static async init(
     {
@@ -203,16 +208,18 @@ export class AcmeOrder {
 
   /**
    * Fetches the order every {@link interval} until its status is {@link pollUntil}.
-   *
-   * @param pollStatusConfig A configuration object.
    */
-  async pollStatus({
-    pollUntil,
-    interval = 5_000,
-    onBeforeAttempt,
-    onAfterFailAttempt,
-    timeout = 30_000,
-  }: AcmeOrderPollStatusConfig): Promise<AcmeOrderObjectSnapshot> {
+  async pollStatus(
+    config: AcmeOrderPollStatusConfig,
+  ): Promise<AcmeOrderObjectSnapshot> {
+    const {
+      pollUntil,
+      interval = 5_000,
+      onBeforeAttempt,
+      onAfterFailAttempt,
+      timeout = 30_000,
+    } = config;
+
     const timeoutTime = Date.now() + timeout;
     let latestOrderResponse: AcmeOrderObjectSnapshot | undefined;
     while (Date.now() <= timeoutTime) {
@@ -237,10 +244,10 @@ Expected order status: ${pollUntil}`);
    *
    * This should be called once the challenge is submitted and the order status becomes `ready`.
    *
-   * Under the hood, a new `CryptoKeyPair` that is different to {@link AcmeAccount.keyPair} is generated.
-   * A Certificate Signing Request (CSR) will be generated using the new `CryptoKeyPair` and be submitted to the Certificate Authority (CA).
-   *
-   * @returns A `Promise` that resolves to the newly generated `CryptoKeyPair`.
+   * Under the hood, a new `CryptoKeyPair` that is different to
+   * {@link AcmeAccount.prototype.keyPair} is generated. A Certificate Signing
+   * Request (CSR) will be generated using the new `CryptoKeyPair` and be submitted
+   * to the Certificate Authority (CA).
    */
   async finalize(): Promise<CryptoKeyPair> {
     const [certKeyPair, orderResponse] = await Promise.all([
@@ -273,7 +280,7 @@ Expected order status: ${pollUntil}`);
    *
    * You should only call this once the order is finalized and its status becomes `valid`.
    *
-   * Tip: use {@link AcmeOrder.finalize} and {@link AcmeOrder.pollStatus}
+   * Tip: use {@link AcmeOrder.prototype.finalize} and {@link AcmeOrder.prototype.pollStatus}
    */
   async getCertificate(): Promise<string> {
     const orderResponse = await this.fetch();

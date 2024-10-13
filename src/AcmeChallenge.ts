@@ -30,7 +30,7 @@ export type AcmeChallengeStatus =
 /**
  * A snapshot of the challenge object retrieved from a Certificate Authority (CA).
  *
- * This can be retrieved by {@link AcmeChallenge.fetch}.
+ * This can be retrieved by {@link AcmeChallenge.prototype.fetch}.
  *
  * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.1.4
  */
@@ -55,7 +55,9 @@ export class AcmeChallenge {
   readonly authorization: AcmeAuthorization;
   /**
    * A random value that uniquely identifies the challenge.
-   * This is used to produce the key authorization value in {@link AcmeChallenge.digestToken}.
+   * This is used to produce the key authorization value in
+   * {@link AcmeChallenge.prototype.digestToken} and
+   * {@link Dns01Challenge.prototype.getDnsRecordAnswer}.
    *
    * This is *NOT* the value you put in your DNS record.
    */
@@ -68,7 +70,13 @@ export class AcmeChallenge {
    */
   readonly url: string;
 
-  /** @internal {@link AcmeChallenge} is created when the {@link AcmeAuthorization} is initialized */
+  /**
+   * Internal constructor.
+   *
+   * {@link AcmeChallenge} is created when the {@link AcmeAuthorization} is initialized
+   *
+   * @internal
+   */
   constructor({
     authorization,
     token,
@@ -124,7 +132,7 @@ export class AcmeChallenge {
    *
    * You should only call this once you have verified the challenge has been fulfilled.
    *
-   * Consider using {@link Dns01ChallengeUtils.pollDnsTxtRecord} to verify DNS-01 challenge.
+   * {@link Dns01ChallengeUtils.pollDnsTxtRecord} can be used to verify if a `dns-01` challenge has been fulfilled.
    */
   async submit(): Promise<unknown> {
     const response = await this.#account.jwsFetch(this.url, {
@@ -167,7 +175,7 @@ async function getJWKThumbprint(jwk: JsonWebKey): Promise<string> {
 /**
  * Represents a `dns-01` challenge and provides additional methods specifically for it.
  *
- * You can retrieve this by calling {@link AcmeAuthorization.findDns01Challenge}.
+ * You can retrieve this by calling {@link AcmeAuthorization.prototype.findDns01Challenge}.
  */
 export class Dns01Challenge extends AcmeChallenge {
   private constructor(init: {
@@ -180,7 +188,9 @@ export class Dns01Challenge extends AcmeChallenge {
   }
 
   /**
-   * @internal create a {@link Dns01Challenge} from an {@link AcmeChallenge}
+   * Constructor method to create an {@link Dns01Challenge} from a given {@link AcmeChallenge}.
+   *
+   * In most cases, you would use {@link AcmeAuthorization.prototype.findDns01Challenge} to retrieve this instead.
    */
   static from(challenge: AcmeChallenge): Dns01Challenge {
     if (challenge.type !== "dns-01") {

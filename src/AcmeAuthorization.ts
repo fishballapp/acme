@@ -30,7 +30,7 @@ export type AcmeAuthorizationStatus =
 /**
  * A snapshot of the authorization object retrieved from a Certificate Authority (CA).
  *
- * This can be retrieved by {@link AcmeAuthorization.fetch}
+ * This can be retrieved by {@link AcmeAuthorization.prototype.fetch}
  *
  * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.1.4
  */
@@ -84,7 +84,7 @@ export type AcmeAuthorizationObjectSnapshot = {
 /**
  * Represents the Certificate Authority's (CA) authorization for an account to represent an domain.
  *
- * Tip: Think of it as a containment of some {@link AcmeChallenge}.
+ * Tip: Think of it as a containment of some {@link AcmeChallenge}s.
  */
 export class AcmeAuthorization {
   /** The {@link AcmeOrder} this authorization belongs to. */
@@ -121,8 +121,12 @@ export class AcmeAuthorization {
     return this.#challenges;
   }
 
-  /** @internal {@link AcmeAuthorization} is created when the {@link AcmeOrder} is initialized */
-  private constructor(
+  /**
+   * Internal constructor.
+   *
+   * @internal
+   */
+  protected constructor(
     {
       order,
       url,
@@ -136,7 +140,12 @@ export class AcmeAuthorization {
   }
 
   /**
-   * Initialize the AcmeAuthorization object by fetching from the given authorization url and instantiate a list of {@link AcmeChallenge} accessible from {@link AcmeAuthorization.challenges}.
+   * Internal constructor method.
+   *
+   * Initialize the AcmeAuthorization object by fetching from the given
+   * authorization url and instantiate a list of {@link AcmeChallenge}
+   * accessible from {@link AcmeAuthorization.prototype.challenges}.
+   *
    * @internal
    */
   static async init({ order, url }: {
@@ -186,7 +195,9 @@ export class AcmeAuthorization {
   /**
    * Find the {@link AcmeChallenge} as specified in `type`.
    *
-   * To get the list of challenges, use {@link AcmeAuthorization.challenges}
+   * {@link AcmeAuthorization.prototype.findDns01Challenge} is probably more useful in most cases.
+   *
+   * To get the list of challenges, use {@link AcmeAuthorization.prototype.challenges}
    */
   findChallenge(
     type: AcmeChallengeType,

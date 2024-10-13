@@ -226,10 +226,3 @@ ${JSON.stringify(latestRecordss, null, 2)}
 
 Expected record: ${pollUntil}`);
 };
-
-/**
- * A collection of utility functions to help you with `dns-01` challenge
- */
-export const Dns01ChallengeUtils = {
-  pollDnsTxtRecord,
-};

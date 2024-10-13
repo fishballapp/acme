@@ -34,7 +34,13 @@ export class AcmeClient {
     })();
   }
 
-  /** @internal Use {@link AcmeClient.init} instead */
+  /**
+   * Internal constructor.
+   *
+   * Use {@link AcmeClient.init} instead.
+   *
+   * @internal
+   */
   private constructor({ directory }: { directory: AcmeDirectory }) {
     this.directory = directory;
   }
@@ -42,10 +48,10 @@ export class AcmeClient {
   /**
    * Initiate the AcmeClient.
    *
-   * This function fetches the given `directoryUrl` and use the result to
-   * create a AcmeClient.
+   * This function fetches the given {@link directoryUrl} to
+   * initialize the {@link AcmeClient}.
    *
-   * You can find some commone CA directories in {@link ACME_DIRECTORY_URLS}
+   * You can find some common ACME directories in {@link ACME_DIRECTORY_URLS}.
    *
    * @example Creating AcmeClient with Let's Encrypt's directory
    * ```ts

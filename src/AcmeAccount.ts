@@ -2,7 +2,8 @@ import type { AcmeClient } from "./AcmeClient.ts";
 import { AcmeOrder, type AcmeOrderObjectSnapshot } from "./AcmeOrder.ts";
 
 /**
- * {@link AcmeAccount} represents an account you have created with {@link AcmeClient.createAccount}.
+ * {@link AcmeAccount} represents an account you have created with
+ * {@link AcmeClient.prototype.login} or {@link AcmeClient.prototype.createAccount}.
  */
 export class AcmeAccount {
   readonly client: AcmeClient;
@@ -10,16 +11,21 @@ export class AcmeAccount {
   readonly url: string;
 
   /**
-   * @internal AcmeAccount should be constructed with {@link AcmeClient.createAccount}
+   * Internal constructor.
+   *
+   * You can use {@link AcmeClient.prototype.login} or
+   * {@link AcmeClient.prototype.createAccount} instead.
+   *
+   * @internal
    */
-  constructor({ client, keyPair, url }: {
+  constructor(init: {
     client: AcmeClient;
     keyPair: CryptoKeyPair;
     url: string;
   }) {
-    this.client = client;
-    this.keyPair = keyPair;
-    this.url = url;
+    this.client = init.client;
+    this.keyPair = init.keyPair;
+    this.url = init.url;
   }
 
   /**

@@ -15,5 +15,5 @@ export * from "./AcmeOrder.ts";
 
 export * from "./ACME_DIRECTORY_URLS.ts";
 
-export { Dns01ChallengeUtils } from "./Dns01ChallengeUtils.ts";
-export { AcmeWorkflows } from "./AcmeWorkflows.ts";
+export * as AcmeWorkflows from "./AcmeWorkflows.ts";
+export * as Dns01ChallengeUtils from "./Dns01ChallengeUtils.ts";
