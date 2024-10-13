@@ -42,7 +42,7 @@ await build({
       url: `${GITHUB_REPO}/issues`,
     },
     keywords: ["acme"],
-    homepage: "https://jsr.io/@fishball/acme/doc",
+    homepage: "https://jsr.io/@fishballpkg/acme/doc",
   },
   postBuild() {
     // steps to run after building and before running the tests
