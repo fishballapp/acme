@@ -1,4 +1,3 @@
-// deno-lint-ignore-file
 import {
   ACME_DIRECTORY_URLS,
   AcmeClient,

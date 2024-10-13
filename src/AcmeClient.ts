@@ -5,6 +5,8 @@ import { generateKeyPair } from "./utils/crypto.ts";
 import { jwsFetch } from "./utils/jws.ts";
 
 const REPLAY_NONCE_HEADER_KEY = "Replay-Nonce";
+const BAD_NONCE_ERROR_TYPE = "urn:ietf:params:acme:error:badNonce";
+const MAX_RETRY_COUNT_ON_BAD_NONCE_ERROR = 5;
 
 /**
  * The directory object.
@@ -75,10 +77,12 @@ export class AcmeClient {
       privateKey,
       protected: protectedHeaders,
       payload,
+      retryAttemptCount = 0,
     }: {
       privateKey: CryptoKey;
       protected: Record<PropertyKey, unknown>;
       payload?: Record<PropertyKey, unknown>;
+      retryAttemptCount?: number; // number of times this request has been retried
     },
   ): Promise<Response> {
     const nonce = this.#nonceQueue.shift() ?? await this.#fetchNonce();
@@ -97,6 +101,29 @@ export class AcmeClient {
       response.headers.get(REPLAY_NONCE_HEADER_KEY) ??
         await this.#fetchNonce(),
     );
+
+    if (!response.ok) {
+      const error = await response.clone().json();
+
+      if (error.type !== BAD_NONCE_ERROR_TYPE) {
+        return response;
+      }
+
+      if (retryAttemptCount >= MAX_RETRY_COUNT_ON_BAD_NONCE_ERROR) {
+        throw new Error(
+          `Failed fetching ${url} after ${retryAttemptCount} attempts...\n${
+            JSON.stringify(error, null, 2)
+          }`,
+        );
+      }
+
+      return await this.jwsFetch(url, {
+        privateKey,
+        protected: protectedHeaders,
+        payload,
+        retryAttemptCount: retryAttemptCount + 1,
+      });
+    }
 
     return response;
   }
@@ -139,6 +166,8 @@ export class AcmeClient {
       );
     }
 
+    await response.body?.cancel();
+
     return new AcmeAccount({
       client: this,
       url: accountUrl,
@@ -157,10 +186,15 @@ export class AcmeClient {
       protected: {
         jwk: await crypto.subtle.exportKey("jwk", keyPair.publicKey),
       },
+      payload: {
+        onlyReturnExisting: true,
+      },
     });
 
     if (!response.ok) {
-      throw await response.json();
+      throw new Error(
+        `Failed to login:\n${JSON.stringify(await response.json(), null, 2)}`,
+      );
     }
 
     const accountUrl = response.headers.get("Location");
@@ -170,6 +204,8 @@ export class AcmeClient {
         "Cannot find account url which should have been in the 'Location' response header.",
       );
     }
+
+    await response.body?.cancel();
 
     return new AcmeAccount({
       client: this,
