@@ -8,8 +8,8 @@
     "./workflows": "./src/AcmeWorkflows.ts"
   },
   "tasks": {
-    "test:e2e": "deno test -A e2e --parallel",
-    "test:unit": "deno test -A src --parallel",
+    "test:e2e": "deno test -A e2e",
+    "test:unit": "deno test -A src",
     "build:npm": "deno run -A scripts/build-npm.ts"
   },
   "compilerOptions": {

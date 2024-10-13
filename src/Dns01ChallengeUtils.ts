@@ -46,10 +46,12 @@ export type PollDnsTxtRecordConfig = {
    *
    * ### For Other Platforms
    *
-   * `pollDnsTxtRecord` performs lookup on 3 record types:
+   * `pollDnsTxtRecord` performs lookup on 4 record types:
    * - `NS`: Used to find out the authoritative name servers of your domain.
    *   - Expected return type `Promise<string[]>`
-   * - `A`: Used to find out the IP addresses of your authoritative name servers.
+   * - `A`: Used to find out the IPv4 addresses of your authoritative name servers.
+   *   - Expected return type `Promise<string[]>`
+   * - `AAAA`: Used to find out the IPv6 addresses of your authoritative name servers.
    *   - Expected return type `Promise<string[]>`
    * - `TXT`: Used to find out the TXT record of your domain.
    *   - Expected return type `Promise<string[][]>`, where each record is in chunks of strings.
@@ -61,34 +63,16 @@ export type PollDnsTxtRecordConfig = {
    *
    * #### Node.js
    *
-   * In Node.js, you can use the [`node:dns`](https://nodejs.org/api/dns.html#dnspromisesresolvetxthostname) module to implement the `resolveDns` option.
+   * In Node.js, you can use the [`node:dns`](https://nodejs.org/api/dns.html#dnspromisesresolvetxthostname) to implement the `resolveDns` option.
    *
    * @example
    * ```ts ignore
    * const resolveDns = (domain, recordType, options) => {
    *     const resolver = new require('node:dns').promises.Resolver();
-   *     if (options?.nameServer?.ipAddr) {
-   *         resolver.setServers([options?.nameServer?.ipAddr]);
+   *     if (options?.nameServer?.ipAddr !== undefined) {
+   *       resolver.setServers([options.nameServer.ipAddr]);
    *     }
-   *     switch (recordType) {
-   *         case 'A':
-   *             return resolver.resolve(domain);
-   *         case 'TXT':
-   *             return resolver.resolveTxt(domain);
-   *         case 'NS':
-   *             return resolver.resolveNs(domain);
-   *     }
-   * };
-   * ```
-   *
-   * @example
-   * ```ts ignore
-   * // Simpler implementation, but do not try to use authoritative name servers
-   * const resolveDns = (domain, recordType) => {
-   *     if (recordType !== 'TXT') {
-   *         throw new Error('any error would mean not found, message is ignored');
-   *     }
-   *     return new require('node:dns').promises.resolveTxt(domain);
+   *     return resolver.resolve(domain, recordType);
    * };
    * ```
    */
@@ -159,13 +143,24 @@ export const pollDnsTxtRecord = async ({
         continue;
       }
 
-      const ips = (await Promise.all(nameServers.map(async (ns) => {
-        try {
-          return await resolveDns(ns, "A");
-        } catch {
-          return [];
-        }
-      }))).flat();
+      const ips = (await Promise.all(
+        [
+          ...nameServers.map(async (ns) => {
+            try {
+              return await resolveDns(ns, "A");
+            } catch {
+              return [];
+            }
+          }),
+          ...nameServers.map(async (ns) => {
+            try {
+              return await resolveDns(ns, "AAAA");
+            } catch {
+              return [];
+            }
+          }),
+        ],
+      )).flat();
 
       return [...new Set(ips)];
     }

@@ -46,11 +46,11 @@ it("can talk to ACME server and successfully create an account, order then all t
   const expectedRecord = await dns01Challenge.getDnsRecordAnswer();
   console.log("✅ Challenge token digested!");
 
-  await cloudflareZone.createDnsRecord({
+  await cloudflareZone.createDnsRecords([{
     type: expectedRecord.type,
     name: expectedRecord.name,
     content: expectedRecord.content,
-  });
+  }]);
   console.log("⏳ Creating DNS record for _acme-challenge...");
 
   await Dns01ChallengeUtils.pollDnsTxtRecord({

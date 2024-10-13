@@ -1,3 +1,4 @@
+// deno-lint-ignore-file
 import {
   ACME_DIRECTORY_URLS,
   AcmeClient,
@@ -33,11 +34,7 @@ describe("requestCertificates", () => {
       acmeAccount,
       domains: DOMAINS,
       updateDnsRecords: async (dnsRecords) => {
-        await Promise.all(
-          dnsRecords.map((dnsRecord) =>
-            cloudflareZone.createDnsRecord(dnsRecord)
-          ),
-        );
+        await cloudflareZone.createDnsRecords(dnsRecords);
       },
     });
 
