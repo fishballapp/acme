@@ -35,9 +35,9 @@ This is built primarily for Deno.
 
 But since this is built in 100% TypeScript with no dependencies, it should be
 compatible with all modern JavaScript platforms that support the [WebCrypto] and
-[fetch]. (One exception being `Dns01ChallengeUtils.pollDnsTxtRecord()` which
-make use of `Deno.resolveDns`, perhaps we can make this take in a `resolveDns`
-function later to make this platform agnostic.)
+[fetch]. (One exception being `DnsUtils.pollDnsTxtRecord()` which make use of
+`Deno.resolveDns`, perhaps we can make this take in a `resolveDns` function
+later to make this platform agnostic.)
 
 ## Features
 

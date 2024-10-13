@@ -64,7 +64,7 @@ it("can talk to ACME server and successfully create an account, order then all t
       );
     },
   });
-  console.log("✅ Dns01ChallengeUtils.pollDnsTxtRecord() - TXT record found!");
+  console.log("✅ DnsUtils.pollDnsTxtRecord() - TXT record found!");
 
   // extra 5s to be safe
   await new Promise((res) => setTimeout(res, 5000));

@@ -4,7 +4,7 @@ import readline from "node:readline/promises";
 import {
   ACME_DIRECTORY_URLS,
   AcmeClient,
-  Dns01ChallengeUtils,
+  DnsUtils,
 } from "../../dist-npm/esm/mod.js";
 import { runAcmeCli } from "../shared/run-acme-cli.mjs";
 
@@ -13,7 +13,7 @@ await runAcmeCli({
   DOMAIN: "fishball.xyz",
   ACME_DIRECTORY_URLS,
   AcmeClient,
-  Dns01ChallengeUtils,
+  DnsUtils,
   alert: async () => {
     const rl = readline.createInterface({
       input: process.stdin,
