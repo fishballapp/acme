@@ -66,7 +66,7 @@ it("can talk to ACME server and successfully create an account, order then all t
       );
     },
     resolveDns: async (query, recordType, options) => {
-      if (!await isIpv6Supported() && recordType === "AAAA") {
+      if (!(await isIpv6Supported()) && recordType === "AAAA") {
         throw new Error("ipv6 not supported");
       }
       return await Deno.resolveDns(query, recordType, options);

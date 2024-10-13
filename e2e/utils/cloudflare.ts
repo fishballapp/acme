@@ -22,7 +22,9 @@ export class CloudflareZone {
 
     afterEach(async () => {
       console.log("🧹 Cleaning up test DNS records...");
-      await this.cleanup();
+      if (await this.cleanup()) {
+        console.log("✅ cleanup done!");
+      }
     });
   }
 
@@ -63,7 +65,7 @@ export class CloudflareZone {
   /**
    * Undo all DNS updates, e.g. delete all dns records created during the test
    */
-  async cleanup() {
+  async cleanup(): Promise<boolean> {
     const dnsRecordIdsToRemove = [...this.#createdDnsRecordIds];
     console.log(dnsRecordIdsToRemove.join(", "));
     this.#createdDnsRecordIds = [];
@@ -86,7 +88,10 @@ export class CloudflareZone {
           dnsRecordIdsToRemove.join(", ")
         }. Please check manually!`,
       );
+      return false;
     }
+
+    return true;
   }
 
   /**
