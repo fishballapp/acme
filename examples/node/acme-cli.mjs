@@ -29,13 +29,6 @@ await runAcmeCli({
     if (options?.nameServer?.ipAddr !== undefined) {
       resolver.setServers([options.nameServer.ipAddr]);
     }
-    switch (recordType) {
-      case "A":
-        return resolver.resolve(domain);
-      case "TXT":
-        return resolver.resolveTxt(domain);
-      case "NS":
-        return resolver.resolveNs(domain);
-    }
+    return resolver.resolve(domain, recordType);
   },
 });

@@ -5,12 +5,11 @@ import {
   AcmeClient,
   AcmeOrder,
   Dns01Challenge,
-  Dns01ChallengeUtils,
+  DnsUtils,
 } from "@fishballpkg/acme";
 import { expect, it } from "../test_deps.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
 import { expectToBeDefined } from "./utils/expectToBeDefined.ts";
-import { isIpv6Supported } from "./utils/isIpv6Supported.ts";
 import { randomFishballTestingSubdomain } from "./utils/randomFishballTestingSubdomain.ts";
 
 const EMAIL = "e2e@test.acme.pkg.fishball.xyz";
@@ -54,8 +53,7 @@ it("can talk to ACME server and successfully create an account, order then all t
   }]);
   console.log("⏳ Creating DNS record for _acme-challenge...");
 
-  await Dns01ChallengeUtils.pollDnsTxtRecord({
-    domain: expectedRecord.name,
+  await DnsUtils.pollDnsTxtRecord(expectedRecord.name, {
     pollUntil: expectedRecord.content,
     onBeforeAttempt: () =>
       console.log(`⏳ Polling dns record for ${expectedRecord.name}...`),
@@ -64,12 +62,6 @@ it("can talk to ACME server and successfully create an account, order then all t
         `⏳ Received DNS recordss: `,
         [...new Set(recordss.flat())].join(", "),
       );
-    },
-    resolveDns: async (query, recordType, options) => {
-      if (!(await isIpv6Supported()) && recordType === "AAAA") {
-        throw new Error("ipv6 not supported");
-      }
-      return await Deno.resolveDns(query, recordType, options);
     },
   });
   console.log("✅ Dns01ChallengeUtils.pollDnsTxtRecord() - TXT record found!");

@@ -4,7 +4,7 @@ const readline = require("node:readline").promises;
 const {
   ACME_DIRECTORY_URLS,
   AcmeClient,
-  Dns01ChallengeUtils,
+  DnsUtils,
 } = require("../../dist-npm/script/mod.js");
 const { runAcmeCli } = require("../shared/run-acme-cli.cjs");
 
@@ -14,7 +14,7 @@ const { runAcmeCli } = require("../shared/run-acme-cli.cjs");
     DOMAIN: "fishball.xyz",
     ACME_DIRECTORY_URLS,
     AcmeClient,
-    Dns01ChallengeUtils,
+    DnsUtils,
     alert: async () => {
       const rl = readline.createInterface({
         input: process.stdin,
@@ -30,14 +30,7 @@ const { runAcmeCli } = require("../shared/run-acme-cli.cjs");
       if (options?.nameServer?.ipAddr !== undefined) {
         resolver.setServers([options.nameServer.ipAddr]);
       }
-      switch (recordType) {
-        case "A":
-          return resolver.resolve(domain);
-        case "TXT":
-          return resolver.resolveTxt(domain);
-        case "NS":
-          return resolver.resolveNs(domain);
-      }
+      return resolver.resolve(domain, recordType);
     },
   });
 })().catch((e) => {

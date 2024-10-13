@@ -1,8 +1,4 @@
-import {
-  ACME_DIRECTORY_URLS,
-  AcmeClient,
-  Dns01ChallengeUtils,
-} from "@fishballpkg/acme";
+import { ACME_DIRECTORY_URLS, AcmeClient, DnsUtils } from "@fishballpkg/acme";
 import { runAcmeCli } from "../shared/run-acme-cli.mjs";
 
 await runAcmeCli({
@@ -10,14 +6,14 @@ await runAcmeCli({
   DOMAIN: "fishball.xyz",
   ACME_DIRECTORY_URLS,
   AcmeClient,
-  Dns01ChallengeUtils,
+  DnsUtils,
   /**
    * use Deno's alert
    * @see https://docs.deno.com/api/web/~/alert
    */
   alert: alert,
   /**
-   * No need to specify resolveDns, you can omit this prop when calling {@link Dns01ChallengeUtils.pollDnsTxtRecord}
+   * No need to specify resolveDns, you can omit this prop when calling {@link DnsUtils.pollDnsTxtRecord}
    */
   resolveDns: undefined,
 });

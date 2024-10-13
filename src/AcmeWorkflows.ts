@@ -6,7 +6,7 @@
 import type { AcmeAccount } from "./AcmeAccount.ts";
 import type { DnsTxtRecord } from "./AcmeChallenge.ts";
 import type { AcmeOrder } from "./AcmeOrder.ts";
-import * as Dns01ChallengeUtils from "./Dns01ChallengeUtils.ts";
+import * as DnsUtils from "./DnsUtils/mod.ts";
 
 export type RequestCertificatesConfig = {
   acmeAccount: AcmeAccount;
@@ -22,7 +22,7 @@ export type RequestCertificatesConfig = {
    * Default: `5000`
    */
   delayAfterDnsRecordsConfirmed?: number;
-  resolveDns?: Dns01ChallengeUtils.ResolveDnsFunction;
+  resolveDns?: DnsUtils.ResolveDnsFunction;
   /**
    * The number of milliseconds to poll resources before giving up and throw an error.
    *
@@ -85,11 +85,14 @@ export const requestCertificate = async (
   await updateDnsRecords(expectedRecords);
 
   await Promise.all(expectedRecords.map(async (expectedRecord) => {
-    await Dns01ChallengeUtils.pollDnsTxtRecord({
-      timeout,
-      domain: expectedRecord.name,
+    await DnsUtils.pollDnsTxtRecord(expectedRecord.name, {
       pollUntil: expectedRecord.content,
       resolveDns,
+      nameServerIps: await DnsUtils.findAuthoritativeNameServerIps(
+        expectedRecord.name,
+        { resolveDns },
+      ),
+      timeout,
     });
   }));
 
