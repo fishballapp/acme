@@ -1,6 +1,6 @@
 {
   "name": "@fishballpkg/acme",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "exports": {
     ".": "./src/mod.ts",
     "./DnsUtils": "./src/DnsUtils/mod.ts",
