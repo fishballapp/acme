@@ -1,9 +1,12 @@
+import type { DnsTxtRecord } from "../../src/AcmeChallenge.ts";
 import { afterEach, dotenv, path } from "../../test_deps.ts";
 
-type CreateDnsRecordResponse = {
+type CreateDnsRecordResponse = { id: string };
+
+type BatchResponse = {
   success: true;
   result: {
-    id: string;
+    posts: CreateDnsRecordResponse[];
   };
 };
 
@@ -62,24 +65,28 @@ export class CloudflareZone {
    */
   async cleanup() {
     const dnsRecordIdsToRemove = [...this.#createdDnsRecordIds];
+    console.log(dnsRecordIdsToRemove.join(", "));
     this.#createdDnsRecordIds = [];
-    await Promise.all(
-      dnsRecordIdsToRemove.map(async (dnsRecordId) => {
-        const response = await this.#fetch(
-          `${CLOUDFLARE_ENDPOINT}/zones/${this.#zoneId}/dns_records/${dnsRecordId}`,
-          { method: "DELETE" },
-        );
-
-        const responseBody = await response.json();
-
-        if (!response.ok) {
-          console.error(responseBody);
-          console.error(
-            `Failed to remove ${dnsRecordId}. Please check manually!`,
-          );
-        }
-      }),
+    const response = await this.#fetch(
+      `${CLOUDFLARE_ENDPOINT}/zones/${this.#zoneId}/dns_records/batch`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          deletes: dnsRecordIdsToRemove.map((id) => ({ id })),
+        }),
+      },
     );
+
+    const responseBody = await response.json();
+
+    if (!response.ok) {
+      console.error(responseBody);
+      console.error(
+        `Failed to remove ${
+          dnsRecordIdsToRemove.join(", ")
+        }. Please check manually!`,
+      );
+    }
   }
 
   /**
@@ -87,30 +94,29 @@ export class CloudflareZone {
    *
    * @see https://developers.cloudflare.com/api/operations/dns-records-for-a-zone-create-dns-record
    */
-  async createDnsRecord({
-    name,
-    type,
-    content,
-  }: {
-    name: string;
-    type: "TXT";
-    content: string;
-  }): Promise<CreateDnsRecordResponse["result"]> {
-    console.log(`⏳ Creating ${type} Record for ${name} - ${content}...`);
+  async createDnsRecords(
+    records: DnsTxtRecord[],
+  ): Promise<void> {
+    for (const { type, name, content } of records) {
+      console.log(`⏳ Creating ${type} Record for ${name} - ${content}...`);
+    }
+
     const response = await this.#fetch(
-      `${CLOUDFLARE_ENDPOINT}/zones/${this.#zoneId}/dns_records`,
+      `${CLOUDFLARE_ENDPOINT}/zones/${this.#zoneId}/dns_records/batch`,
       {
         method: "POST",
         body: JSON.stringify(
           {
-            proxied: false,
-            name,
-            type,
-            content,
-            ttl: 60,
-            comment: `GENERATED ${
-              new Date().toISOString()
-            } BY @fishballpkg/acme E2E`,
+            posts: records.map(({ name, type, content }) => ({
+              proxied: false,
+              name,
+              type,
+              content,
+              ttl: 60,
+              comment: `GENERATED ${
+                new Date().toISOString()
+              } BY @fishballpkg/acme E2E`,
+            })),
           },
         ),
       },
@@ -121,9 +127,12 @@ export class CloudflareZone {
       throw new Error("fail to createDnsRecord");
     }
 
-    const { result }: CreateDnsRecordResponse = await response.json();
-    console.log(`✅ DNS record created`, result);
-    this.#createdDnsRecordIds.push(result.id);
-    return result;
+    const { result }: BatchResponse = await response.json();
+    const dnsRecordIds = result.posts.map(({ id }) => id);
+
+    console.log("✅ DNS records created");
+    console.log(dnsRecordIds.join(", "));
+
+    this.#createdDnsRecordIds.push(...dnsRecordIds);
   }
 }

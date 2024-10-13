@@ -26,8 +26,8 @@ await runAcmeCli({
   },
   resolveDns: (domain, recordType, options) => {
     const resolver = new Resolver();
-    if (options?.nameServer?.ipAddr) {
-      resolver.setServers([options?.nameServer?.ipAddr]);
+    if (options?.nameServer?.ipAddr !== undefined) {
+      resolver.setServers([options.nameServer.ipAddr]);
     }
     switch (recordType) {
       case "A":
