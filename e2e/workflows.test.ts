@@ -43,7 +43,6 @@ describe("requestCertificates", () => {
         }
         return await Deno.resolveDns(query, recordType, options);
       },
-      timeout: 60000, // allow more time for 3 dns records
     });
 
     expect(certKeyPair.privateKey).toBeInstanceOf(CryptoKey);
