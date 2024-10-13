@@ -7,6 +7,7 @@ import {
 } from "@fishballpkg/acme";
 import { describe, expect, it } from "../test_deps.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
+import { isIpv6Supported } from "./utils/isIpv6Supported.ts";
 import { randomFishballTestingSubdomain } from "./utils/randomFishballTestingSubdomain.ts";
 
 const EMAIL = "e2e@test.acme.pkg.fishball.xyz";
@@ -36,6 +37,13 @@ describe("requestCertificates", () => {
       updateDnsRecords: async (dnsRecords) => {
         await cloudflareZone.createDnsRecords(dnsRecords);
       },
+      resolveDns: async (query, recordType, options) => {
+        if (!await isIpv6Supported() && recordType === "AAAA") {
+          throw new Error("ipv6 not supported");
+        }
+        return await Deno.resolveDns(query, recordType, options);
+      },
+      timeout: 60000, // allow more time for 3 dns records
     });
 
     expect(certKeyPair.privateKey).toBeInstanceOf(CryptoKey);

@@ -26,6 +26,12 @@ export type RequestCertificatesConfig = {
    */
   delayAfterDnsRecordsConfirmed?: number;
   resolveDns?: ResolveDnsFunction;
+  /**
+   * The number of milliseconds to poll resources before giving up and throw an error.
+   *
+   * Default: 30000
+   */
+  timeout?: number;
 };
 
 /**
@@ -49,6 +55,7 @@ export const requestCertificate = async ({
   updateDnsRecords,
   delayAfterDnsRecordsConfirmed = 5000,
   resolveDns,
+  timeout,
 }: RequestCertificatesConfig): Promise<
   {
     certificate: string;
@@ -80,6 +87,7 @@ export const requestCertificate = async ({
 
   await Promise.all(expectedRecords.map(async (expectedRecord) => {
     await Dns01ChallengeUtils.pollDnsTxtRecord({
+      timeout,
       domain: expectedRecord.name,
       pollUntil: expectedRecord.content,
       resolveDns,
@@ -92,11 +100,11 @@ export const requestCertificate = async ({
     dns01Challenges.map(async (challenge) => await challenge.submit()),
   );
 
-  await acmeOrder.pollStatus({ pollUntil: "ready" });
+  await acmeOrder.pollStatus({ pollUntil: "ready", timeout });
 
   const certKeyPair = await acmeOrder.finalize();
 
-  await acmeOrder.pollStatus({ pollUntil: "valid" });
+  await acmeOrder.pollStatus({ pollUntil: "valid", timeout });
 
   const certificate = await acmeOrder.getCertificate();
   return { certificate, certKeyPair, acmeOrder };

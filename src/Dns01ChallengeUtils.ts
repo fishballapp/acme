@@ -7,11 +7,15 @@
 /**
  * Basically the type of `Deno.resolveDns`. But redefined in case the environment is not in Deno.
  */
-export type ResolveDnsFunction = (query: string, recordType: string, options?: {
-  nameServer?: {
-    ipAddr: string;
-  };
-}) => Promise<string[] | string[][]>;
+export type ResolveDnsFunction = (
+  query: string,
+  recordType: "A" | "AAAA" | "CNAME" | "NS",
+  options?: {
+    nameServer?: {
+      ipAddr: string;
+    };
+  },
+) => Promise<string[] | string[][]>;
 
 /**
  * Config object for {@link pollDnsTxtRecord}
