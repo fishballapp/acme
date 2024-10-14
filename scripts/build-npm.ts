@@ -26,8 +26,11 @@ await build({
   })),
   outDir: OUT_DIR,
   test: false,
-  typeCheck: false,
   shims: {},
+  compilerOptions: {
+    lib: ["ES2023", "DOM"],
+    target: "ES2022",
+  },
   package: {
     name: DENO_JSON.name,
     version: DENO_JSON.version,
@@ -43,6 +46,13 @@ await build({
     },
     keywords: ["acme"],
     homepage: "https://jsr.io/@fishballpkg/acme/doc",
+    devDependencies: {
+      "@types/node": "latest",
+    },
+  },
+  mappings: {
+    [`${PROJECT_ROOT}/src/DnsUtils/resolveDns.deno.ts`]:
+      `${PROJECT_ROOT}/src/DnsUtils/resolveDns.node.ts`,
   },
   postBuild() {
     // steps to run after building and before running the tests

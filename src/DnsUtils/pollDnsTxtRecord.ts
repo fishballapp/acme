@@ -1,6 +1,6 @@
 import { getIpVersion, getSupportedIpVersions } from "./_helpers.ts";
 import { findAuthoritativeNameServerIps } from "./findAuthoritativeNameServerIps.ts";
-import type { ResolveDnsFunction } from "./ResolveDnsFunction.ts";
+import { defaultResolveDns, type ResolveDnsFunction } from "./resolveDns.ts";
 
 /**
  * Config object for {@link pollDnsTxtRecord}
@@ -24,36 +24,13 @@ export type PollDnsTxtRecordOptions = {
   onAfterFailAttempt?: (recordss: string[][]) => void;
   /**
    * A function to resolve DNS record.
-   *
-   * ### For Deno
-   *
-   * `Deno.resolveDns` will be used by default and you may omit `resolveDns`.
-   *
-   * ### For Other Platforms
-   *
-   * You should provide an implementation that resolves *at least* the `TXT` records.
-   *
-   * `pollDnsTxtRecord` performs lookup on the `TXT` record and it should return `Promise<string[][]>`,
-   * where each record is in chunks of strings.
-   *
-   * #### Node.js
-   *
-   * In Node.js, you can use the [`node:dns`](https://nodejs.org/api/dns.html#dnspromisesresolvetxthostname) to implement the `resolveDns` option.
-   *
-   * @example
-   * ```ts ignore
-   * const resolveDns = (domain, recordType, options) => {
-   *     const resolver = new require('node:dns').promises.Resolver();
-   *     if (options?.nameServer?.ipAddr !== undefined) {
-   *       resolver.setServers([options.nameServer.ipAddr]);
-   *     }
-   *     return resolver.resolve(domain, recordType);
-   * };
-   * ```
    */
   resolveDns?: ResolveDnsFunction;
   /**
-   * A list of IPv4 or IPv6 addresses that will be used for DNS lookups.
+   * A list of IPv4 or IPv6 addresses that will be used for TXT lookups.
+   *
+   * If defined, {@link pollDnsTxtRecord} will not try to find the authoritative name server ips,
+   * but instead use the given list of ips for the lookups.
    *
    * If not defined, {@link pollDnsTxtRecord} will try to use the IP addresses of the
    * authoritative name servers of the given domain using {@link findAuthoritativeNameServerIps}
@@ -120,15 +97,13 @@ export const pollDnsTxtRecord = async (
   options: PollDnsTxtRecordOptions,
 ): Promise<void> => {
   const {
+    resolveDns = defaultResolveDns,
     pollUntil,
     interval = 5000,
     onAfterFailAttempt,
     onBeforeAttempt,
     timeout = 30_000,
   } = options;
-
-  const resolveDns =
-    (options.resolveDns ?? Deno.resolveDns) as typeof Deno.resolveDns;
 
   const [
     nameServerIps,
@@ -138,7 +113,7 @@ export const pollDnsTxtRecord = async (
       findAuthoritativeNameServerIps(domain, {
         resolveDns,
       }),
-    getSupportedIpVersions(),
+    getSupportedIpVersions({ resolveDns }),
   ]);
 
   const supportedNameServerIps = nameServerIps.filter((ip) =>

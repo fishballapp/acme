@@ -1,3 +1,5 @@
+import { defaultResolveDns, type ResolveDnsFunction } from "./resolveDns.ts";
+
 type IpVersion = "ipv4" | "ipv6";
 
 const QUAD9_DNS_IPS: Record<IpVersion, string> = {
@@ -12,10 +14,15 @@ const cache: Record<IpVersion, Promise<boolean> | undefined> = {
 
 const isIpVersionSupported = async (
   version: IpVersion,
+  {
+    resolveDns = defaultResolveDns,
+  }: {
+    resolveDns?: ResolveDnsFunction;
+  } = {},
 ): Promise<boolean> => {
   cache[version] ??= (async () => {
     try {
-      await Deno.resolveDns("example.com", "NS", {
+      await resolveDns("example.com", "NS", {
         nameServer: {
           ipAddr: QUAD9_DNS_IPS[version],
         },
@@ -29,12 +36,14 @@ const isIpVersionSupported = async (
   return await cache[version];
 };
 
-export const getSupportedIpVersions = async (): Promise<
+export const getSupportedIpVersions = async (
+  opts: { resolveDns?: ResolveDnsFunction } = {},
+): Promise<
   readonly IpVersion[]
 > => {
   const [ipv4Supported, ipv6Supported] = await Promise.all([
-    isIpVersionSupported("ipv4"),
-    isIpVersionSupported("ipv6"),
+    isIpVersionSupported("ipv4", opts),
+    isIpVersionSupported("ipv6", opts),
   ]);
 
   if (ipv4Supported && ipv6Supported) {

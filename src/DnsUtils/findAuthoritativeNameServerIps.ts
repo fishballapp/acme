@@ -1,4 +1,4 @@
-import type { ResolveDnsFunction } from "./ResolveDnsFunction.ts";
+import { defaultResolveDns, type ResolveDnsFunction } from "./resolveDns.ts";
 export type FindAuthoritativeNameServerIpsConfig = {
   /**
    * A function to resolve DNS record.
@@ -24,9 +24,7 @@ export const findAuthoritativeNameServerIps = async (
   domain: string,
   config: FindAuthoritativeNameServerIpsConfig = {},
 ): Promise<string[]> => {
-  const resolveDns =
-    (config.resolveDns ?? Deno.resolveDns) as typeof Deno.resolveDns;
-
+  const { resolveDns = defaultResolveDns } = config;
   while (domain.includes(".")) { // continue the loop if we haven't reached TLD
     const nameServers = await (async () => {
       try {
