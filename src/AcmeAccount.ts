@@ -2,6 +2,48 @@ import type { AcmeClient } from "./AcmeClient.ts";
 import { AcmeOrder, type AcmeOrderObjectSnapshot } from "./AcmeOrder.ts";
 
 /**
+ * Represents the possible status values for an ACME account.
+ * - "valid": The account is active and in good standing.
+ * - "deactivated": The account has been deactivated by the user or CA.
+ * - "revoked": The account has been revoked by the CA.
+ */
+export type AcmeAccountStatus = "valid" | "deactivated" | "revoked";
+
+/**
+ * Represents the ACME account object returned by the server.
+ */
+export type AcmeAccountObjectSnapshot = {
+  /**
+   * The status of the ACME account.
+   */
+  status: AcmeAccountStatus;
+
+  /**
+   * An array of contact URIs (e.g., `mailto:user@example.com`) associated with the account.
+   * This field is optional.
+   */
+  contact?: string[];
+
+  /**
+   * Indicates whether the user has agreed to the terms of service.
+   * This field is optional.
+   */
+  termsOfServiceAgreed?: boolean;
+
+  /**
+   * A URL from which a list of orders associated with this account can be retrieved.
+   * This field is optional.
+   */
+  orders?: string;
+
+  /**
+   * External account binding information for the account.
+   * This field is optional and can contain any external binding details.
+   */
+  externalAccountBinding?: unknown;
+};
+
+/**
  * {@link AcmeAccount} represents an account you have created with
  * {@link AcmeClient.prototype.login} or {@link AcmeClient.prototype.createAccount}.
  */
@@ -49,6 +91,14 @@ export class AcmeAccount {
       },
       payload,
     });
+  }
+
+  /**
+   * Fetches a snapshot of the account object from the Certificate Authority (CA).
+   */
+  async fetch(): Promise<AcmeAccountObjectSnapshot> {
+    const response = await this.jwsFetch(this.url);
+    return await response.json();
   }
 
   /**

@@ -1,0 +1,37 @@
+name: Integration
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x # Run with latest stable Deno.
+
+      - name: Start Pebble
+        run: deno task pebble:start -- --rm --name pebble --detach
+
+      - name: Wait for Pebble to be ready
+        run: |
+          echo "⏳ Waiting for Pebble... 🪨"
+
+          # Loop until the port 14000 is open
+          until nc -zv localhost 14000 2>/dev/null; do
+            sleep 1
+          done
+
+          echo "✅ Pebble is running!"
+
+      - run: deno task test:integration
+
+      - name: Stop Pebble
+        run: docker stop pebble
