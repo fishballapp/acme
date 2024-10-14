@@ -4,6 +4,7 @@
 [![NPM](https://img.shields.io/npm/v/@fishballpkg/acme.svg)](https://www.npmjs.com/package/@fishballpkg/acme)
 
 [![CI](https://github.com/fishballapp/acme/actions/workflows/ci.yaml/badge.svg)](https://github.com/fishballapp/acme/actions/workflows/ci.yaml)
+[![Integration](https://github.com/fishballapp/acme/actions/workflows/integration.yaml/badge.svg)](https://github.com/fishballapp/acme/actions/workflows/integration.yaml)
 [![E2E](https://github.com/fishballapp/acme/actions/workflows/e2e.yaml/badge.svg)](https://github.com/fishballapp/acme/actions/workflows/e2e.yaml)
 [![Publish](https://github.com/fishballapp/acme/actions/workflows/publish.yaml/badge.svg)](https://github.com/fishballapp/acme/actions/workflows/publish.yaml)
 
