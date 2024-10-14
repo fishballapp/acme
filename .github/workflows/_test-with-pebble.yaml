@@ -1,13 +1,16 @@
-name: "Node: Build + Integration"
+name: Test With Pebble
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  workflow_call:
+    inputs:
+      test_command:
+        type: string
+        description: "The test command to run"
+        required: true
+        default: "deno task test:integration"
 
 jobs:
-  test:
+  test-with-pebble:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -23,24 +26,21 @@ jobs:
       - name: Wait for Pebble to be ready
         run: |
           echo "⏳ Waiting for Pebble... 🪨"
-
-          # Loop until the port 14000 is open
           until nc -zv localhost 14000 2>/dev/null; do
             sleep 1
           done
-
           echo "✅ Pebble is running!"
+
       - name: Wait for pebble-challtestsrv to be ready
         run: |
           echo "⏳ Waiting for pebble-challtestsrv... 🪨"
-
           until nc -zv localhost 8055 2>/dev/null; do
             sleep 1
           done
-
           echo "✅ pebble-challtestsrv is running!"
 
-      - run: deno task build:npm:integration
+      # Run the test command passed from the calling workflow
+      - run: ${{ inputs.test_command }}
 
       - name: Stop Pebble
         run: deno task pebble:stop
