@@ -19,16 +19,20 @@ await emptyDir(OUT_DIR);
 const GITHUB_REPO = "https://github.com/fishballapp/acme";
 
 await build({
+  testPattern: "integration/**/*.test.ts",
   entryPoints: Object.entries(DENO_JSON.exports).map(([name, path]) => ({
     kind: "export",
     name,
     path: join(PROJECT_ROOT, path),
   })),
   outDir: OUT_DIR,
-  test: false,
-  shims: {},
+  test: true,
+  shims: {
+    deno: "dev",
+    undici: "dev",
+  },
   compilerOptions: {
-    lib: ["ES2023", "DOM"],
+    lib: ["ESNext", "DOM"],
     target: "ES2022",
   },
   package: {

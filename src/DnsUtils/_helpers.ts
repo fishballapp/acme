@@ -28,7 +28,8 @@ const isIpVersionSupported = async (
         },
       });
       return true;
-    } catch {
+    } catch (e) {
+      console.error(e);
       return false;
     }
   })();

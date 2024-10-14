@@ -7,6 +7,7 @@ export type ResolveDnsFunction = <R extends "A" | "AAAA" | "NS" | "TXT">(
   options?: {
     nameServer?: {
       ipAddr: string;
+      port?: number;
     };
   },
 ) => Promise<"TXT" extends R ? string[][] : string[]>;

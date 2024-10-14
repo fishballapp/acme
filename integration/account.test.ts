@@ -1,6 +1,9 @@
-import { AcmeClient } from "@fishballpkg/acme";
+import { AcmeClient } from "../src/mod.ts";
 import { expect, it } from "../test_deps.ts";
 import { EMAIL, PEBBLE_DIRECTORY_URL } from "./CONSTANTS.ts";
+import { setupNode } from "./utils/setupNode.ts";
+
+setupNode();
 
 it("should create the account successfully and the key pair should allow login", async () => {
   const client = await AcmeClient.init(PEBBLE_DIRECTORY_URL);

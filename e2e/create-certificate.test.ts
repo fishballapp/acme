@@ -6,7 +6,7 @@ import {
   AcmeOrder,
   Dns01Challenge,
   DnsUtils,
-} from "@fishballpkg/acme";
+} from "../src/mod.ts";
 import { expect, it } from "../test_deps.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
 import { expectToBeDefined } from "./utils/expectToBeDefined.ts";

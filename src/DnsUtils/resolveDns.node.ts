@@ -5,6 +5,7 @@
  */
 
 import { Resolver } from "node:dns/promises";
+import { isIPv4, isIPv6 } from "node:net";
 import type { ResolveDnsFunction } from "./resolveDns.ts";
 
 export const resolveDns: ResolveDnsFunction = async (
@@ -14,9 +15,17 @@ export const resolveDns: ResolveDnsFunction = async (
 ) => {
   const resolver = new Resolver();
   if (options?.nameServer?.ipAddr !== undefined) {
-    resolver.setServers([options.nameServer.ipAddr]);
+    resolver.setServers([
+      ipPort(options.nameServer.ipAddr, options.nameServer.port ?? 53),
+    ]);
   }
 
   // deno-lint-ignore no-explicit-any -- typescript is hard
   return (await resolver.resolve(domain, recordType)) as any;
 };
+
+function ipPort(ip: string, port: number): string {
+  if (isIPv4(ip)) return `${ip}:${port}`;
+  if (isIPv6(ip)) return `[${ip}]:${port}`;
+  throw new Error("Invalid IP address");
+}
