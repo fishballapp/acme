@@ -1,7 +1,10 @@
-import { AcmeClient } from "@fishballpkg/acme";
+import { AcmeClient } from "../src/mod.ts";
 import { expect, it } from "../test_deps.ts";
 import { EMAIL, PEBBLE_DIRECTORY_URL } from "./CONSTANTS.ts";
 import { generateRandomDomain } from "./utils/generateRandomDomain.ts";
+import { setupNode } from "./utils/setupNode.ts";
+
+setupNode();
 
 it("should place an order correctly and get the corresponding authorizations", async () => {
   const client = await AcmeClient.init(PEBBLE_DIRECTORY_URL);

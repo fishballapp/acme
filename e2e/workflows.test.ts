@@ -3,7 +3,7 @@ import {
   AcmeClient,
   AcmeOrder,
   AcmeWorkflows,
-} from "@fishballpkg/acme";
+} from "../src/mod.ts";
 import { describe, expect, it } from "../test_deps.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
 import { randomFishballTestingSubdomain } from "./utils/randomFishballTestingSubdomain.ts";

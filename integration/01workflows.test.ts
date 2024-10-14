@@ -1,8 +1,13 @@
-import { AcmeClient, AcmeOrder, AcmeWorkflows } from "@fishballpkg/acme";
+// 01 prefix to this file because of https://github.com/denoland/dnt/issues/432
+import { AcmeClient, AcmeOrder, AcmeWorkflows } from "../src/mod.ts";
 import { describe, expect, it } from "../test_deps.ts";
 import { EMAIL, PEBBLE_DIRECTORY_URL } from "./CONSTANTS.ts";
 import { generateRandomDomain } from "./utils/generateRandomDomain.ts";
 import { PebbleChallTestSrv } from "./utils/PebbleChallTestSrv.ts";
+import { resolveDns } from "./utils/resolveDns.ts";
+import { setupNode } from "./utils/setupNode.ts";
+
+setupNode();
 
 const DOMAINS = [
   generateRandomDomain(),
@@ -27,14 +32,7 @@ describe("requestCertificates", () => {
       updateDnsRecords: async (dnsRecords) => {
         await pebbleChallTestSrv.createDnsRecords(dnsRecords);
       },
-      resolveDns: async (query, recordType) => {
-        return await Deno.resolveDns(query, recordType, {
-          nameServer: {
-            ipAddr: "127.0.0.1",
-            port: 8053,
-          },
-        });
-      },
+      resolveDns,
     });
 
     expect(certKeyPair.privateKey).toBeInstanceOf(CryptoKey);

@@ -13,7 +13,8 @@
     "test:integration": "deno test --unsafely-ignore-certificate-errors=localhost -A integration",
     "pebble:start": "docker compose -f integration/docker-compose.yaml up",
     "pebble:stop": "docker compose -f integration/docker-compose.yaml down",
-    "build:npm": "deno run -A scripts/build-npm.ts"
+    "build:npm": "deno run -A scripts/build-npm.ts",
+    "build:npm:integration": "deno run -A scripts/build-npm-integration.ts"
   },
   "compilerOptions": {
     "strict": true,

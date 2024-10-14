@@ -1,4 +1,4 @@
-import { build, emptyDir } from "jsr:@deno/dnt";
+import { build, type BuildOptions, emptyDir } from "jsr:@deno/dnt";
 import { join } from "jsr:@std/path";
 import DENO_JSON from "../deno.json" with { type: "json" };
 
@@ -14,11 +14,9 @@ const OUT_DIR = join(
   "./dist-npm",
 );
 
-await emptyDir(OUT_DIR);
-
 const GITHUB_REPO = "https://github.com/fishballapp/acme";
 
-await build({
+export const dntConfig: BuildOptions = {
   entryPoints: Object.entries(DENO_JSON.exports).map(([name, path]) => ({
     kind: "export",
     name,
@@ -26,8 +24,14 @@ await build({
   })),
   outDir: OUT_DIR,
   test: false,
-  typeCheck: false,
-  shims: {},
+  shims: {
+    deno: "dev",
+    undici: "dev",
+  },
+  compilerOptions: {
+    lib: ["ESNext", "DOM"],
+    target: "ES2022",
+  },
   package: {
     name: DENO_JSON.name,
     version: DENO_JSON.version,
@@ -43,6 +47,13 @@ await build({
     },
     keywords: ["acme"],
     homepage: "https://jsr.io/@fishballpkg/acme/doc",
+    devDependencies: {
+      "@types/node": "latest",
+    },
+  },
+  mappings: {
+    [`${PROJECT_ROOT}/src/DnsUtils/resolveDns.deno.ts`]:
+      `${PROJECT_ROOT}/src/DnsUtils/resolveDns.node.ts`,
   },
   postBuild() {
     // steps to run after building and before running the tests
@@ -53,4 +64,9 @@ await build({
       );
     }
   },
-});
+};
+
+if (import.meta.main) {
+  await emptyDir(OUT_DIR);
+  await build(dntConfig);
+}

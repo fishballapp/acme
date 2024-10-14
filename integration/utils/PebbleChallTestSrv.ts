@@ -1,4 +1,4 @@
-import type { DnsTxtRecord } from "@fishballpkg/acme";
+import type { DnsTxtRecord } from "../../src/mod.ts";
 import { afterEach } from "../../test_deps.ts";
 
 const PEBBLE_CHALLTESTSRV_URL = "http://localhost:8055";
