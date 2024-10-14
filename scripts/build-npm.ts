@@ -1,4 +1,4 @@
-import { build, emptyDir } from "jsr:@deno/dnt";
+import { build, type BuildOptions, emptyDir } from "jsr:@deno/dnt";
 import { join } from "jsr:@std/path";
 import DENO_JSON from "../deno.json" with { type: "json" };
 
@@ -14,19 +14,16 @@ const OUT_DIR = join(
   "./dist-npm",
 );
 
-await emptyDir(OUT_DIR);
-
 const GITHUB_REPO = "https://github.com/fishballapp/acme";
 
-await build({
-  testPattern: "integration/**/*.test.ts",
+export const dntConfig: BuildOptions = {
   entryPoints: Object.entries(DENO_JSON.exports).map(([name, path]) => ({
     kind: "export",
     name,
     path: join(PROJECT_ROOT, path),
   })),
   outDir: OUT_DIR,
-  test: true,
+  test: false,
   shims: {
     deno: "dev",
     undici: "dev",
@@ -67,4 +64,9 @@ await build({
       );
     }
   },
-});
+};
+
+if (import.meta.main) {
+  await emptyDir(OUT_DIR);
+  await build(dntConfig);
+}
