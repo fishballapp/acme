@@ -207,6 +207,9 @@ export class AcmeAuthorization {
     });
   }
 
+  /**
+   * Find the first {@link Dns01Challenge}.
+   */
   findDns01Challenge(): Dns01Challenge | undefined {
     const challenge = this.findChallenge("dns-01");
     if (challenge === undefined) {

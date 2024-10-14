@@ -1,12 +1,9 @@
 import { AcmeClient } from "@fishballpkg/acme";
 import { expect, it } from "../test_deps.ts";
-
-const EMAIL = "test@acme.pkg.fishball.xyz";
-
-const pebbleDirectoryUrl = "https://localhost:14000/dir";
+import { EMAIL, PEBBLE_DIRECTORY_URL } from "./CONSTANTS.ts";
 
 it("should create the account successfully and the key pair should allow login", async () => {
-  const client = await AcmeClient.init(pebbleDirectoryUrl);
+  const client = await AcmeClient.init(PEBBLE_DIRECTORY_URL);
 
   const acmeAccount = await client.createAccount({
     email: EMAIL,
@@ -21,7 +18,7 @@ it("should create the account successfully and the key pair should allow login",
 });
 
 it("fetch should return an account object", async () => {
-  const client = await AcmeClient.init(pebbleDirectoryUrl);
+  const client = await AcmeClient.init(PEBBLE_DIRECTORY_URL);
 
   const acmeAccount = await client.createAccount({
     email: EMAIL,

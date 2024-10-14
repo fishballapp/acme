@@ -206,7 +206,7 @@ export class Dns01Challenge extends AcmeChallenge {
    */
   async getDnsRecordAnswer(): Promise<DnsTxtRecord> {
     return {
-      name: `_acme-challenge.${this.authorization.domain}`,
+      name: `_acme-challenge.${this.authorization.domain}.`,
       type: "TXT",
       content: await this.digestToken(),
     };
