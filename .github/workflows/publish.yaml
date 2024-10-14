@@ -1,14 +1,11 @@
 name: Publish
 on:
-  workflow_run:
-    workflows: ["CI", "E2E", "Integration", "Node: Build + Integration"]
-    branches: [main]
-    types:
-      - completed
+  push:
+    branches:
+      - main
 
 jobs:
   publish-jsr:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     permissions:
@@ -22,7 +19,6 @@ jobs:
         run: npx jsr publish
 
   publish-npm:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     permissions:
