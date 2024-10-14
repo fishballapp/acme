@@ -187,12 +187,29 @@ export class AcmeOrder {
       authorizationUrls = orderObject.authorizations;
     }
 
-    order.#domains = domains;
-    order.#authorizations = await Promise.all(
-      authorizationUrls.map(async (url) =>
-        await AcmeAuthorization.init({ order, url })
-      ),
-    );
+    order.#domains = [...domains];
+    order.#authorizations = await (async () => {
+      const authorizations = await Promise.all(
+        authorizationUrls.map(async (url) =>
+          await AcmeAuthorization.init({ order, url })
+        ),
+      );
+
+      const domainToAuthorizationMap = new Map(
+        authorizations.map((authorization) => [
+          authorization.domain,
+          authorization,
+        ]),
+      );
+
+      return domains.map((domain) =>
+        domainToAuthorizationMap.get(domain) ?? (() => {
+          throw new Error(
+            `cannot find authorization for ${domain}, likely the acme server didn't return correct authorization.`,
+          );
+        })()
+      );
+    })();
 
     return order;
   }
@@ -208,6 +225,8 @@ export class AcmeOrder {
 
   /**
    * Fetches the order every {@link interval} until its status is {@link pollUntil}.
+   *
+   * Unless `pollUntil` is `invalid`, this function throws an error immediately if `invalid` status is encountered.
    */
   async pollStatus(
     config: AcmeOrderPollStatusConfig,
@@ -228,11 +247,18 @@ export class AcmeOrder {
       if (latestOrderResponse.status === pollUntil) {
         return latestOrderResponse;
       }
+      if (latestOrderResponse.status === "invalid") {
+        throw new Error(
+          `Order status is "invalid"\n${
+            JSON.stringify(latestOrderResponse, null, 2)
+          }`,
+        );
+      }
       onAfterFailAttempt?.(latestOrderResponse);
       await new Promise((resolve) => setTimeout(resolve, interval));
     }
 
-    throw new Error(`Timeout: giving up on polling dns txt record
+    throw new Error(`Timeout: giving up on polling order status
 Latest order:
 ${JSON.stringify(latestOrderResponse, null, 2)}
 

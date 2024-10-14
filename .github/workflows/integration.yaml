@@ -17,8 +17,8 @@ jobs:
         with:
           deno-version: v2.x # Run with latest stable Deno.
 
-      - name: Start Pebble
-        run: deno task pebble:start -- --rm --name pebble --detach
+      - name: Start Pebble and pebble-challtestsrv
+        run: deno task pebble:start --detach
 
       - name: Wait for Pebble to be ready
         run: |
@@ -30,8 +30,17 @@ jobs:
           done
 
           echo "✅ Pebble is running!"
+      - name: Wait for pebble-challtestsrv to be ready
+        run: |
+          echo "⏳ Waiting for pebble-challtestsrv... 🪨"
+
+          until nc -zv localhost 8055 2>/dev/null; do
+            sleep 1
+          done
+
+          echo "✅ pebble-challtestsrv is running!"
 
       - run: deno task test:integration
 
       - name: Stop Pebble
-        run: docker stop pebble
+        run: deno task pebble:stop

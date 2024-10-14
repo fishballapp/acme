@@ -11,7 +11,8 @@
     "test:e2e": "deno test -A e2e",
     "test:unit": "deno test -A src",
     "test:integration": "deno test --unsafely-ignore-certificate-errors=localhost -A integration",
-    "pebble:start": "echo ghcr.io/letsencrypt/pebble:latest | xargs env PEBBLE_VA_NOSLEEP=1 docker run -p 14000:14000 -p 15000:15000 --rm",
+    "pebble:start": "docker compose -f integration/docker-compose.yaml up",
+    "pebble:stop": "docker compose -f integration/docker-compose.yaml down",
     "build:npm": "deno run -A scripts/build-npm.ts"
   },
   "compilerOptions": {
