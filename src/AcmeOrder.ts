@@ -2,6 +2,7 @@ import type { AcmeAccount } from "./AcmeAccount.ts";
 // deno-lint-ignore no-unused-vars -- for jsdoc reference
 import type { AcmeAuthorizationObjectSnapshot } from "./AcmeAuthorization.ts";
 import { AcmeAuthorization } from "./AcmeAuthorization.ts";
+import { TimeoutError } from "./errors.ts";
 import { generateKeyPair } from "./utils/crypto.ts";
 import { encodeBase64Url } from "./utils/encoding.ts";
 import { generateCSR } from "./utils/generateCSR.ts";
@@ -258,7 +259,7 @@ export class AcmeOrder {
       await new Promise((resolve) => setTimeout(resolve, interval));
     }
 
-    throw new Error(`Timeout: giving up on polling order status
+    throw new TimeoutError(`Giving up on polling order status
 Latest order:
 ${JSON.stringify(latestOrderResponse, null, 2)}
 

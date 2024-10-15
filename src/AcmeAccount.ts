@@ -1,5 +1,6 @@
 import type { AcmeClient } from "./AcmeClient.ts";
 import { AcmeOrder, type AcmeOrderObjectSnapshot } from "./AcmeOrder.ts";
+import { emailsToAccountContacts } from "./utils/emailsToAccountContacts.ts";
 
 /**
  * Represents the possible status values for an ACME account.
@@ -98,6 +99,21 @@ export class AcmeAccount {
    */
   async fetch(): Promise<AcmeAccountObjectSnapshot> {
     const response = await this.jwsFetch(this.url);
+    return await response.json();
+  }
+
+  /**
+   * Update the contact email of your account
+   */
+  async update(
+    { emails }: { emails: string[] },
+  ): Promise<AcmeAccountObjectSnapshot> {
+    const response = await this.jwsFetch(this.url, {
+      payload: {
+        contacts: emailsToAccountContacts(emails),
+      },
+    });
+
     return await response.json();
   }
 

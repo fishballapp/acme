@@ -8,74 +8,72 @@
 [![E2E](https://github.com/fishballapp/acme/actions/workflows/e2e.yaml/badge.svg)](https://github.com/fishballapp/acme/actions/workflows/e2e.yaml)
 [![Publish](https://github.com/fishballapp/acme/actions/workflows/publish.yaml/badge.svg)](https://github.com/fishballapp/acme/actions/workflows/publish.yaml)
 
-> This package is still under active development. Feel free to experiment with
-> it and I would love to hear your feedback.
-
 `@fishballpkg/acme` is a zero-dependency, minimalistic, opiniated Automatic
 Certificate Management Environment (ACME) client written in TypeScript from
-scratch. We aim to simplify certificate generation by removing the need to deal
-with cryptographic options, external tools like OpenSSL, or other low-level
-details.
+scratch.
 
-This client makes obtaining a certificate for your domain easy. The steps can be
-broken down to:
+> Disclaimer: By using this client, you agree to the terms of service of the
+> organisation associated with your selected ACME directory, including any
+> additional or future terms of service.
 
-1. Create an account with the Certificate Authority (CA)
-2. Place an order to the CA
-3. Complete the DNS-01 challenge
-4. Get your certificate
+## Example
 
-This client is intentially INFLEXIBLE. No freedom of choice over encryption
-algorithms, key sizes, certificates attributes, key formats. We have made most
-of the choices for you. So that you can focus on what actually matters, your
-application.
+Run this [example CLI tool] to generate a certificate for your domain with Let's
+Encrypt (Staging):
 
-## Supported Platforms
+```
+deno run --allow-net https://raw.githubusercontent.com/fishballapp/acme/refs/heads/main/examples/acme-cli.ts
+```
 
-This is built primarily for Deno.
+We highly recommend you to try this example out. It will help you familiarize
+with the basic steps of retrieving a certificate from the ACME server. (And
+because I spent a lot of time crafting that CLI example...)
 
-But since this is built in 100% TypeScript with no dependencies, it is
-compatible with all modern JavaScript platforms that support the [WebCrypto] and
-[fetch].
+## What is ACME?
+
+In simple words, ACME is the IETF standard
+([RFC 8555](https://datatracker.ietf.org/doc/html/rfc8555)) for automating the
+generation of SSL/TLS certificates for your HTTPS network.
 
 ## Features
 
-- Zero Dependencies: Built from the ground up in TypeScript, with no external
-  dependencies AT ALL.
-- Minimalistic Design: Focuses on a small, essential feature set to keep things
-  lightweight and manageable.
-- Unapologetically OPINIONATED, so you don’t have to be.
-  - Keys are created with [ECDSA P-256], a modern standard in creating
-    encryption keys.
-  - The only challenge we support is [DNS-01 Challenge], the most versatile
-    challenge type in our opinion. This challenge type works for any service,
-    supports wildcard certificates, and avoids complex server configurations by
-    operating at the DNS level.
+While there are plenty of capable ACME clients available, most suffer from a few
+common drawbacks: they’re often tightly bound to system dependencies,
+complicated to set up, and limited support for programmatic control. This makes
+it difficult for developers to integrate them into modern, automated workflows
+or to use them in lightweight, flexible environments like serverless platforms
+or containers.
+
+This package solves these issues by offering an ACME client with the following
+key features:
+
+- **Zero Dependencies**: This client runs in any modern JavaScript environment
+  without requiring external tools or libraries—just install and use.
+- **Opinionated by Design**: The package is designed to work out of the box,
+  with no complex setup required.
+  - Modern cryptography: Encryption keys are generated using [ECDSA P-256], a
+    secure, widely supported industry standard.
+  - [DNS-01 Challenge] only: We focus on the DNS-01 challenge type, which we
+    believe is the most versatile. It works for all services, supports wildcard
+    certificates, and eliminates complex server configurations by operating at
+    the DNS level.
+- **Programmatic API**: Seamless integration with your codebase, offering
+  flexible, easy-to-use programmatic controls.
 
 [ECDSA P-256]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
 [DNS-01 Challenge]: https://datatracker.ietf.org/doc/html/rfc8555#section-8.4
 
-## Why?
+This package simplifies this process by removing the need to deal with
+cryptographic options, external tools like OpenSSL, or other low-level details.
 
-While building a multi-tenant SaaS with Deno, I noticed that many services
-offering multi-tenancy impose restrictive certificate generation quotas for
-custom domains. I was hesitant to pay for what should essentially be a free
-service, so I decided to create my own solution.
+## Supported Platforms
 
-Though many third-party tools and libraries handle this, I wanted something that
-stayed entirely within the Deno environment without needing to call into the
-shell.
+`@fishballpkg/acme` is built primarily in Deno. But it works out-of-the-box for
+both Deno and Node.js.
 
-Existing JavaScript ACME clients felt outdated and unnecessarily complex, with
-some relying on custom encryption implementations that seemed both inefficient
-and insecure.
-
-So, I built my own ACME client in TypeScript, leveraging modern JavaScript
-features like [WebCrypto] and [fetch] to keep things clean, simple, and
-efficient.
-
-[fetch]: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API
-[WebCrypto]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API
+Since `fishballpkg/acme` is built in 100% TypeScript with no external
+dependencies whatsoever, it is compatible with all modern JavaScript platforms
+that support the [WebCrypto] and [fetch].
 
 ## Who is this for?
 
@@ -93,40 +91,10 @@ This package is for you if you are:
 - A **multi-tenant SaaS creator** looking for a simple, customizable way to
   handle certificate generation without hitting quota limits.
 
-## Roadmap
-
-- [ ] Account
-  - [x] Creation (`AcmeClient#createAccount`)
-  - [x] Retrieval (`AcmeClient#login`)
-  - [ ] Update
-  - [ ] Key Rollover
-  - [ ] Recovery
-- [ ] Challenges
-  - [x] DNS-01
-  - [ ] ~~HTTP-01~~
-  - [ ] ~~TLS-ALPN-01~~
-- [ ] Certificate Management
-  - [x] CSR Generation
-  - [x] Certificate Issuance
-  - [x] Multi-Domain Certificates via SAN
-  - [ ] Wildcard Certificates
-  - [ ] Renewal
-  - [ ] Revocation
-- [ ] Key and Algorithm Support
-  - [x] ECDSA P-256
-  - [ ] ~~RSA~~
-- [ ] ACME Server Interaction
-  - [x] ACME Directory Support (staging, production)
-  - [ ] Error Handling and Retries
-- [ ] Client Usability
-  - [ ] CLI
-  - [ ] REST API? (REST ENCRYPT? 😂)
-  - [ ] Plugin?
-
 ## Brief introduction to ACME process and the APIs
 
-We have built a [simple CLI tool](./examples/acme-cli.ts) that would allow you
-to obtain a certificate by following the steps of ACME.
+The [example CLI tool] and the [integration tests](./integration/) should give
+you a good overview of the APIs.
 
 Here is a summary of the steps and API involved:
 
@@ -162,7 +130,7 @@ in the [`ACME_DIRECTORY_URLS` object](./src/ACME_DIRECTORY_URLS.ts).
 ```ts
 // ...
 
-const account = await acmeClient.createAccount({ email: "yo@fishball.app" });
+const account = await acmeClient.createAccount({ emails: ["yo@fishball.app"] });
 ```
 
 To create an account with the CA, you must provide an email address. Although
@@ -310,6 +278,37 @@ const {
 console.log(certificate); // Logs the certificate in PEM format
 ```
 
+## Roadmap
+
+- [ ] Account
+  - [x] Creation (`AcmeClient#createAccount`)
+    - [ ] External Account Binding (Maybe? Submit an issue if you'd like this?)
+  - [x] Retrieval (`AcmeClient#login`)
+  - [ ] Update
+  - [ ] Key Rollover
+  - [ ] Recovery
+- [ ] Challenges
+  - [x] DNS-01
+  - [ ] ~~HTTP-01~~
+  - [ ] ~~TLS-ALPN-01~~
+- [ ] Certificate Management
+  - [x] CSR Generation
+  - [x] Certificate Issuance
+  - [x] Multi-Domain Certificates via SAN
+  - [ ] Wildcard Certificates
+  - [ ] Renewal
+  - [ ] Revocation
+- [ ] Key and Algorithm Support
+  - [x] ECDSA P-256
+  - [ ] ~~RSA~~
+- [ ] ACME Server Interaction
+  - [x] ACME Directory Support (staging, production)
+  - [ ] Error Handling and Retries
+- [ ] Client Usability
+  - [ ] CLI
+  - [ ] REST API? (REST ENCRYPT? 😂)
+  - [ ] Plugin?
+
 ## 🤫
 
 I have to admit — though I suppose it's no longer a secret — I'm particularly
@@ -329,3 +328,7 @@ YCM Jason
 ## License
 
 MIT
+
+[example CLI tool]: https://github.com/fishballapp/acme/blob/main/examples/acme-cli.ts
+[fetch]: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API
+[WebCrypto]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API
