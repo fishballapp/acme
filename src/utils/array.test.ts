@@ -13,10 +13,10 @@ describe("splitAtIndex", () => {
 
   it("should retain the array type", () => {
     expect(
-      splitAtIndex(Uint8Array.from([1, 2, 3]), 1),
+      splitAtIndex(Uint8Array.of(1, 2, 3), 1),
     ).toEqual([
-      Uint8Array.from([1]),
-      Uint8Array.from([2, 3]),
+      Uint8Array.of(1),
+      Uint8Array.of(2, 3),
     ]);
   });
 });

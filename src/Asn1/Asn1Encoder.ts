@@ -42,7 +42,7 @@ export const Asn1Encoder = {
   bitString: (bitString: Uint8Array) => {
     // assume bitString is always aligned octets, so we need 0 unused bits
     const unusedBits = 0;
-    const data = Uint8Array.from([unusedBits, ...bitString]);
+    const data = concatUint8Arrays(Uint8Array.of(unusedBits), bitString);
     return Asn1Encoder.custom(ASN1_TAGS.BITSTRING, data);
   },
 
@@ -78,7 +78,7 @@ export const Asn1Encoder = {
 
   length: (length: number): Uint8Array => {
     if (length < 128) {
-      return Uint8Array.from([length]);
+      return Uint8Array.of(length);
     }
 
     const lengthBytes = unsignedIntegerToUint8Array(length);
