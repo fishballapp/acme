@@ -1,0 +1,32 @@
+name: Run Pebble
+
+runs:
+  using: "composite"
+  steps:
+    - name: Start Pebble and pebble-challtestsrv
+      shell: bash
+      run: deno task pebble:start --detach
+
+    - name: Wait for Pebble to be ready
+      shell: bash
+      run: |
+        echo "⏳ Waiting for Pebble... 🪨"
+        until nc -zv localhost 14000 2>/dev/null; do
+          sleep 1
+        done
+        echo "✅ Pebble is running!"
+
+    - name: Wait for pebble-challtestsrv to be ready
+      shell: bash
+      run: |
+        echo "⏳ Waiting for pebble-challtestsrv... 🪨"
+        until nc -zv localhost 8055 2>/dev/null; do
+          sleep 1
+        done
+        echo "✅ pebble-challtestsrv is running!"
+
+    - name: Run this action
+      uses: gacts/run-and-post-run@v1
+      with:
+        post: |
+          deno task pebble:stop
