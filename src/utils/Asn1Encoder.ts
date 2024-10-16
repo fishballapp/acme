@@ -38,12 +38,16 @@ const TAGS = {
   SET: 0x31,
 } as const;
 
-export const ASN1 = {
-  encode: (tag: number, value: Uint8Array) => {
-    return concatUint8Arrays([tag], ASN1.encodeLength(value.byteLength), value);
+export const Asn1Encoder = {
+  custom: (tag: number, value: Uint8Array) => {
+    return concatUint8Arrays(
+      [tag],
+      Asn1Encoder.length(value.byteLength),
+      value,
+    );
   },
 
-  encodeOID: (oid: string): Uint8Array => {
+  oid: (oid: string): Uint8Array => {
     const [oidPart1, oidPart2, ...rest] = oid.split(".").map(Number);
     if (oidPart1 === undefined || oidPart2 === undefined) {
       throw new Error("oid does not contain part 1 or 2");
@@ -63,20 +67,20 @@ export const ASN1 = {
       }
       restBytes.push(...tmp);
     }
-    return ASN1.encode(
+    return Asn1Encoder.custom(
       TAGS.OID,
       concatUint8Arrays([firstByte], restBytes),
     );
   },
 
-  encodeBitString: (bitString: Uint8Array) => {
+  bitString: (bitString: Uint8Array) => {
     // assume bitString is always aligned octets, so we need 0 unused bits
     const unusedBits = 0;
     const data = Uint8Array.from([unusedBits, ...bitString]);
-    return ASN1.encode(TAGS.BITSTRING, data);
+    return Asn1Encoder.custom(TAGS.BITSTRING, data);
   },
 
-  encodeUintBytes: (bytes: Uint8Array): Uint8Array => {
+  uintBytes: (bytes: Uint8Array): Uint8Array => {
     if (bytes[0] === undefined) {
       throw new Error("Try to encode integer but no value in Uint8Array");
     }
@@ -85,10 +89,10 @@ export const ASN1 = {
     if (bytes[0] & 0b1000_0000) {
       bytes = concatUint8Arrays([0x00], bytes);
     }
-    return ASN1.encode(TAGS.INTEGER, bytes);
+    return Asn1Encoder.custom(TAGS.INTEGER, bytes);
   },
 
-  encodeUint: (n: number) => {
+  uint: (n: number) => {
     if (n < 0) {
       throw new Error("expecting positive number");
     }
@@ -97,16 +101,16 @@ export const ASN1 = {
       throw new Error("Input value is not an integer.");
     }
 
-    return ASN1.encodeUintBytes(uintToBinary(n));
+    return Asn1Encoder.uintBytes(uintToBinary(n));
   },
 
-  encodeSequence: (...values: Uint8Array[]): Uint8Array =>
-    ASN1.encode(TAGS.SEQUENCE, concatUint8Arrays(...values)),
+  sequence: (...values: Uint8Array[]): Uint8Array =>
+    Asn1Encoder.custom(TAGS.SEQUENCE, concatUint8Arrays(...values)),
 
-  encodeUTF8String: (str: string): Uint8Array =>
-    ASN1.encode(TAGS.UTF8, new TextEncoder().encode(str)),
+  utf8String: (str: string): Uint8Array =>
+    Asn1Encoder.custom(TAGS.UTF8, new TextEncoder().encode(str)),
 
-  encodeLength: (length: number): Uint8Array => {
+  length: (length: number): Uint8Array => {
     if (length < 128) {
       return Uint8Array.from([length]);
     }
@@ -126,8 +130,8 @@ export const ASN1 = {
     );
   },
 
-  encodeOctetString: (value: Uint8Array): Uint8Array =>
-    ASN1.encode(TAGS.OCTET_STRING, value),
+  octetString: (value: Uint8Array): Uint8Array =>
+    Asn1Encoder.custom(TAGS.OCTET_STRING, value),
 
-  encodeSet: (value: Uint8Array): Uint8Array => ASN1.encode(TAGS.SET, value),
+  set: (value: Uint8Array): Uint8Array => Asn1Encoder.custom(TAGS.SET, value),
 };
