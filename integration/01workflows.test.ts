@@ -1,8 +1,11 @@
 // 01 prefix to this file because of https://github.com/denoland/dnt/issues/432
 import { AcmeClient, AcmeOrder, AcmeWorkflows } from "../src/mod.ts";
 import { describe, expect, it } from "../test_deps.ts";
-import { EMAIL, PEBBLE_DIRECTORY_URL } from "./CONSTANTS.ts";
-import { generateRandomDomain } from "./utils/generateRandomDomain.ts";
+import { PEBBLE_DIRECTORY_URL } from "./CONSTANTS.ts";
+import {
+  generateRandomDomain,
+  generateRandomEmail,
+} from "./utils/generateRandomThings.ts";
 import { PebbleChallTestSrv } from "./utils/PebbleChallTestSrv.ts";
 import { resolveDns } from "./utils/resolveDns.ts";
 import { setupNode } from "./utils/setupNode.ts";
@@ -20,7 +23,9 @@ describe("requestCertificates", () => {
   it("should successfully get the certs for the given domains", async () => {
     const client = await AcmeClient.init(PEBBLE_DIRECTORY_URL);
 
-    const acmeAccount = await client.createAccount({ email: EMAIL });
+    const acmeAccount = await client.createAccount({
+      emails: [generateRandomEmail()],
+    });
 
     const {
       certificate,

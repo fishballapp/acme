@@ -1,3 +1,4 @@
+import { TimeoutError } from "../errors.ts";
 import { getIpVersion, getSupportedIpVersions } from "./_helpers.ts";
 import { findAuthoritativeNameServerIps } from "./findAuthoritativeNameServerIps.ts";
 import { defaultResolveDns, type ResolveDnsFunction } from "./resolveDns.ts";
@@ -173,7 +174,7 @@ export const pollDnsTxtRecord = async (
     await new Promise((res) => setTimeout(res, interval));
   }
 
-  throw new Error(`Timeout: giving up on polling dns txt record
+  throw new TimeoutError(`Giving up on polling dns txt record
 Latest records:
 ${JSON.stringify(latestRecordss, null, 2)}
 

@@ -24,7 +24,7 @@ it("can talk to ACME server and successfully create an account, order then all t
   expect(acmeClient instanceof AcmeClient).toBe(true);
   console.log("✅ AcmeClient.init()");
 
-  const acmeAccount = await acmeClient.createAccount({ email: EMAIL });
+  const acmeAccount = await acmeClient.createAccount({ emails: [EMAIL] });
   expect(acmeAccount instanceof AcmeAccount).toBe(true);
   console.log("✅ Account Creation");
 

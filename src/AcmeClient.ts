@@ -1,11 +1,12 @@
 // deno-lint-ignore no-unused-vars -- imported for jsdoc
 import type { ACME_DIRECTORY_URLS } from "./ACME_DIRECTORY_URLS.ts";
+import { ACME_ERROR_TYPES } from "./ACME_ERROR_TYPES.ts";
 import { AcmeAccount } from "./AcmeAccount.ts";
 import { generateKeyPair } from "./utils/crypto.ts";
+import { emailsToAccountContacts } from "./utils/emailsToAccountContacts.ts";
 import { jwsFetch } from "./utils/jws.ts";
 
 const REPLAY_NONCE_HEADER_KEY = "Replay-Nonce";
-const BAD_NONCE_ERROR_TYPE = "urn:ietf:params:acme:error:badNonce";
 const MAX_RETRY_COUNT_ON_BAD_NONCE_ERROR = 5;
 
 /**
@@ -105,7 +106,7 @@ export class AcmeClient {
     if (!response.ok) {
       const error = await response.clone().json();
 
-      if (error.type !== BAD_NONCE_ERROR_TYPE) {
+      if (error.type !== ACME_ERROR_TYPES.BAD_NONCE) {
         return response;
       }
 
@@ -137,7 +138,9 @@ export class AcmeClient {
    *
    * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.3
    */
-  async createAccount({ email }: { email: string }): Promise<AcmeAccount> {
+  async createAccount(
+    { emails }: { emails: readonly string[] },
+  ): Promise<AcmeAccount> {
     const keyPair = await generateKeyPair();
 
     const response = await this.jwsFetch(
@@ -149,7 +152,7 @@ export class AcmeClient {
         },
         payload: {
           termsOfServiceAgreed: true,
-          contact: [`mailto:${email}`],
+          contact: emailsToAccountContacts(emails),
         },
       },
     );

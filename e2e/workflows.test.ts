@@ -23,7 +23,7 @@ describe("requestCertificates", () => {
       ACME_DIRECTORY_URLS.LETS_ENCRYPT_STAGING,
     );
 
-    const acmeAccount = await client.createAccount({ email: EMAIL });
+    const acmeAccount = await client.createAccount({ emails: [EMAIL] });
 
     const {
       certificate,
