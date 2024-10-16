@@ -31,7 +31,7 @@ const getLeafCertificateBase64 = (pem: string): Uint8Array => {
  * } = CertUtils.decodeValidity(certInPemFormat);
  * ```
  *
- * @param certPem The certificate you retrieve from the ACME server. This should be in PEM format, the format you get from {@link AcmeOrder.prototype.finalize}.
+ * @param certPem The certificate you retrieve from the ACME server. This should be in PEM format, the format you get from {@link AcmeOrder.prototype.getCertificate}.
  */
 export const decodeValidity = (certPem: string): {
   notBefore: Date;
