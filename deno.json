@@ -1,9 +1,10 @@
 {
   "name": "@fishballpkg/acme",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "exports": {
     ".": "./src/mod.ts",
     "./DnsUtils": "./src/DnsUtils/mod.ts",
+    "./CertUtils": "./src/CertUtils/mod.ts",
     "./generateCSR": "./src/utils/generateCSR.ts",
     "./workflows": "./src/AcmeWorkflows.ts"
   },

@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.10.0
+
+- Added `CertUtils` module with `decodeValidity` function for finding out the
+  starting and ending dates of the certificate
+
 ## 0.9.0
 
 - BREAKING: create account now accepts `emails: string[]` instead of
