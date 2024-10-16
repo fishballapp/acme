@@ -1,3 +1,5 @@
+// deno-lint-ignore no-unused-vars -- jsdoc
+import type { AcmeOrder } from "../AcmeOrder.ts";
 import { decodeSequence, decodeTime } from "../Asn1/Asn1DecodeHelpers.ts";
 
 const getLeafCertificateBase64 = (pem: string): Uint8Array => {
@@ -12,6 +14,25 @@ const getLeafCertificateBase64 = (pem: string): Uint8Array => {
   );
 };
 
+/**
+ * A function to retrieve your certificate's validity time.
+ *
+ * This function is useful if you'd like to keep track of when the certificate starts to become valid / expires.
+ *
+ * @example
+ * ```ts
+ * import { CertUtils } from "@fishballpkg/acme";
+ *
+ * const certInPemFormat = new TextDecoder().decode(await Deno.readFile("my-certificate.crt"));
+ *
+ * const {
+ *   notBefore, // You cannot use your cert before this dates.
+ *   notAfter, // You cannot use your cert after this date.
+ * } = CertUtils.decodeValidity(certInPemFormat);
+ * ```
+ *
+ * @param certPem The certificate you retrieve from the ACME server. This should be in PEM format, the format you get from {@link AcmeOrder.prototype.finalize}.
+ */
 export const decodeValidity = (certPem: string): {
   notBefore: Date;
   notAfter: Date;

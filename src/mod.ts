@@ -16,6 +16,7 @@ export * from "./AcmeOrder.ts";
 export * from "./ACME_DIRECTORY_URLS.ts";
 
 export * as AcmeWorkflows from "./AcmeWorkflows.ts";
+export * as CertUtils from "./CertUtils/mod.ts";
 export * as DnsUtils from "./DnsUtils/mod.ts";
 
 export * from "./errors.ts";
