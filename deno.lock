@@ -9,6 +9,7 @@
     "jsr:@std/assert@0.226": "0.226.0",
     "jsr:@std/assert@^1.0.6": "1.0.6",
     "jsr:@std/bytes@0.223": "0.223.0",
+    "jsr:@std/collections@*": "1.0.8",
     "jsr:@std/dotenv@*": "0.225.2",
     "jsr:@std/encoding@*": "1.0.5",
     "jsr:@std/expect@*": "1.0.4",
@@ -72,6 +73,9 @@
     },
     "@std/bytes@0.223.0": {
       "integrity": "84b75052cd8680942c397c2631318772b295019098f40aac5c36cead4cba51a8"
+    },
+    "@std/collections@1.0.8": {
+      "integrity": "de76692f9121838711b1d2fb5042619c074db26905a87b58cff56cfe1bd6d6d0"
     },
     "@std/dotenv@0.225.2": {
       "integrity": "e2025dce4de6c7bca21dece8baddd4262b09d5187217e231b033e088e0c4dd23"

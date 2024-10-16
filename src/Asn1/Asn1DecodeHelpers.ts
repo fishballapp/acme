@@ -26,12 +26,6 @@ export const decodeTagLengthValue = (
   // reset the msb to 0
   const lengthByteCount = lengthOrLengthByteCount & 0b0111_1111;
 
-  if (lengthByteCount > 4) {
-    throw new Error(
-      `Too loooooooooooooooong ${lengthByteCount} (basically, the ASN.1 has length that's too long for js to store it in a number... we have not implemented BigInt yet)`,
-    );
-  }
-
   const lengthParts = restDer.slice(0, lengthByteCount);
   const length = uint8ArrayToNumber(lengthParts);
 

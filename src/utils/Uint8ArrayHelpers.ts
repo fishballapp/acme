@@ -4,6 +4,12 @@ export const uint8ArrayToNumber = (bytes: Uint8Array): number => {
   for (const byte of bytes) {
     x <<= 8;
     x |= byte;
+
+    if (x < 0) {
+      throw new Error(
+        "Number overflow during decoding. It appears the Uint8Array is too long",
+      );
+    }
   }
 
   return x;
