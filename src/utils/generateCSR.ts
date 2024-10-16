@@ -5,7 +5,7 @@
  */
 
 import { splitAtIndex } from "./array.ts";
-import { ASN1 } from "./ASN1.ts";
+import { Asn1Encoder } from "./Asn1Encoder.ts";
 import { sign } from "./crypto.ts";
 
 const OIDS = {
@@ -42,12 +42,12 @@ export async function generateCSR(
    *
    * @see https://datatracker.ietf.org/doc/html/rfc2986#page-7
    */
-  return ASN1.encodeSequence(
+  return Asn1Encoder.sequence(
     // certificationRequestInfo
     certificationRequestInfoSequence,
     // signatureAlgorithm
-    ASN1.encodeSequence(
-      ASN1.encodeOID(OIDS.ECDSA_WITH_SHA256),
+    Asn1Encoder.sequence(
+      Asn1Encoder.oid(OIDS.ECDSA_WITH_SHA256),
     ),
     // signature
     encodeSignatureBitString(
@@ -76,33 +76,33 @@ function encodeCertificationRequestInfo(
    * }
    * @see https://datatracker.ietf.org/doc/html/rfc2986#section-4
    */
-  return ASN1.encodeSequence(
+  return Asn1Encoder.sequence(
     // version
-    ASN1.encodeUint(0),
+    Asn1Encoder.uint(0),
     // subject
-    ASN1.encodeSequence(
-      ASN1.encodeSet(
-        ASN1.encodeSequence(
-          ASN1.encodeOID(OIDS.COMMON_NAME),
-          ASN1.encodeUTF8String(mainDomain),
+    Asn1Encoder.sequence(
+      Asn1Encoder.set(
+        Asn1Encoder.sequence(
+          Asn1Encoder.oid(OIDS.COMMON_NAME),
+          Asn1Encoder.utf8String(mainDomain),
         ),
       ),
     ),
     // subjectPKInfo
-    ASN1.encodeSequence(
-      ASN1.encodeSequence(
-        ASN1.encodeOID(OIDS.ID_EC_PUBLIC_KEY),
-        ASN1.encodeOID(OIDS.PRIME256V1),
+    Asn1Encoder.sequence(
+      Asn1Encoder.sequence(
+        Asn1Encoder.oid(OIDS.ID_EC_PUBLIC_KEY),
+        Asn1Encoder.oid(OIDS.PRIME256V1),
       ),
-      ASN1.encodeBitString(publicKeyDer),
+      Asn1Encoder.bitString(publicKeyDer),
     ),
     // attributes
-    ASN1.encode(
+    Asn1Encoder.custom(
       0xA0, // Tag: [0].
-      ASN1.encodeSequence(
-        ASN1.encodeOID(OIDS.EXTENSION_REQUET),
-        ASN1.encodeSet(
-          ASN1.encodeSequence(
+      Asn1Encoder.sequence(
+        Asn1Encoder.oid(OIDS.EXTENSION_REQUET),
+        Asn1Encoder.set(
+          Asn1Encoder.sequence(
             encodeSubjectAlternativeName(domains),
           ),
         ),
@@ -124,12 +124,12 @@ const encodeSubjectAlternativeName = (() => {
   return (
     domains: readonly string[],
   ): Uint8Array => {
-    return ASN1.encodeSequence(
-      ASN1.encodeOID(OIDS.SUBJECT_ALT_NAME),
-      ASN1.encodeOctetString(
-        ASN1.encodeSequence(
+    return Asn1Encoder.sequence(
+      Asn1Encoder.oid(OIDS.SUBJECT_ALT_NAME),
+      Asn1Encoder.octetString(
+        Asn1Encoder.sequence(
           ...domains.map((domain) =>
-            ASN1.encode(
+            Asn1Encoder.custom(
               GENERAL_NAME_TAGS.DNS_NAME, // i think that's the tag to use for "DNS:"
               new TextEncoder().encode(domain),
             )
@@ -143,8 +143,8 @@ const encodeSubjectAlternativeName = (() => {
 const encodeSignatureBitString = (signature: Uint8Array): Uint8Array => {
   const [r, s] = splitAtIndex(signature, signature.byteLength / 2);
 
-  return ASN1.encodeBitString(ASN1.encodeSequence(
-    ASN1.encodeUintBytes(r),
-    ASN1.encodeUintBytes(s),
+  return Asn1Encoder.bitString(Asn1Encoder.sequence(
+    Asn1Encoder.uintBytes(r),
+    Asn1Encoder.uintBytes(s),
   ));
 };
