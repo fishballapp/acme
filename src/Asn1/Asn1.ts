@@ -1,0 +1,13 @@
+export const ASN1_TAGS = {
+  NONE: 0x00,
+  BOOLEAN: 0x01,
+  INTEGER: 0x02,
+  BITSTRING: 0x03,
+  OCTET_STRING: 0x04,
+  OID: 0x06,
+  UTF8_STRING: 0x0C,
+  SEQUENCE: 0x30,
+  SET: 0x31,
+  UTC_TIME: 0x17,
+  GENERALIZED_TIME: 0x18,
+} as const;

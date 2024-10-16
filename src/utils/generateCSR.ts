@@ -4,8 +4,8 @@
  * Utility function to generate a Certificate Signing Request (CSR) in DER format
  */
 
+import { Asn1Encoder } from "../Asn1/Asn1Encoder.ts";
 import { splitAtIndex } from "./array.ts";
-import { Asn1Encoder } from "./Asn1Encoder.ts";
 import { sign } from "./crypto.ts";
 
 const OIDS = {

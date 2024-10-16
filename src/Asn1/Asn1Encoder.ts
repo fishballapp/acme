@@ -1,42 +1,8 @@
-const uintToBinary = (n: number) => {
-  if (n < 0 || !Number.isInteger(n)) {
-    throw new Error("expect unsigned integer!");
-  }
-
-  const bytes: number[] = [];
-  let temp = n;
-  do {
-    bytes.unshift(temp & 0b1111_1111); // Extract the least significant octet
-    temp >>= 8; // Remove the least significant byte
-  } while (temp > 0);
-
-  return Uint8Array.from(bytes);
-};
-
-const concatUint8Arrays = (
-  ...xss: readonly ArrayLike<number>[]
-): Uint8Array => {
-  const totalLength = xss.reduce((acc, { length }) => acc + length, 0);
-  const result = new Uint8Array(totalLength);
-  let offset = 0;
-  for (const arr of xss) {
-    result.set(arr, offset);
-    offset += arr.length;
-  }
-  return result;
-};
-
-const TAGS = {
-  NONE: 0x00,
-  BOOLEAN: 0x01,
-  INTEGER: 0x02,
-  BITSTRING: 0x03,
-  OCTET_STRING: 0x04,
-  OID: 0x06,
-  UTF8: 0x0C,
-  SEQUENCE: 0x30,
-  SET: 0x31,
-} as const;
+import {
+  concatUint8Arrays,
+  unsignedIntegerToUint8Array,
+} from "../utils/Uint8ArrayHelpers.ts";
+import { ASN1_TAGS } from "./Asn1.ts";
 
 export const Asn1Encoder = {
   custom: (tag: number, value: Uint8Array) => {
@@ -68,7 +34,7 @@ export const Asn1Encoder = {
       restBytes.push(...tmp);
     }
     return Asn1Encoder.custom(
-      TAGS.OID,
+      ASN1_TAGS.OID,
       concatUint8Arrays([firstByte], restBytes),
     );
   },
@@ -77,7 +43,7 @@ export const Asn1Encoder = {
     // assume bitString is always aligned octets, so we need 0 unused bits
     const unusedBits = 0;
     const data = Uint8Array.from([unusedBits, ...bitString]);
-    return Asn1Encoder.custom(TAGS.BITSTRING, data);
+    return Asn1Encoder.custom(ASN1_TAGS.BITSTRING, data);
   },
 
   uintBytes: (bytes: Uint8Array): Uint8Array => {
@@ -89,7 +55,7 @@ export const Asn1Encoder = {
     if (bytes[0] & 0b1000_0000) {
       bytes = concatUint8Arrays([0x00], bytes);
     }
-    return Asn1Encoder.custom(TAGS.INTEGER, bytes);
+    return Asn1Encoder.custom(ASN1_TAGS.INTEGER, bytes);
   },
 
   uint: (n: number) => {
@@ -101,21 +67,21 @@ export const Asn1Encoder = {
       throw new Error("Input value is not an integer.");
     }
 
-    return Asn1Encoder.uintBytes(uintToBinary(n));
+    return Asn1Encoder.uintBytes(unsignedIntegerToUint8Array(n));
   },
 
   sequence: (...values: Uint8Array[]): Uint8Array =>
-    Asn1Encoder.custom(TAGS.SEQUENCE, concatUint8Arrays(...values)),
+    Asn1Encoder.custom(ASN1_TAGS.SEQUENCE, concatUint8Arrays(...values)),
 
   utf8String: (str: string): Uint8Array =>
-    Asn1Encoder.custom(TAGS.UTF8, new TextEncoder().encode(str)),
+    Asn1Encoder.custom(ASN1_TAGS.UTF8_STRING, new TextEncoder().encode(str)),
 
   length: (length: number): Uint8Array => {
     if (length < 128) {
       return Uint8Array.from([length]);
     }
 
-    const lengthBytes = uintToBinary(length);
+    const lengthBytes = unsignedIntegerToUint8Array(length);
 
     if (lengthBytes.length > 127) {
       throw new Error(
@@ -131,7 +97,8 @@ export const Asn1Encoder = {
   },
 
   octetString: (value: Uint8Array): Uint8Array =>
-    Asn1Encoder.custom(TAGS.OCTET_STRING, value),
+    Asn1Encoder.custom(ASN1_TAGS.OCTET_STRING, value),
 
-  set: (value: Uint8Array): Uint8Array => Asn1Encoder.custom(TAGS.SET, value),
+  set: (value: Uint8Array): Uint8Array =>
+    Asn1Encoder.custom(ASN1_TAGS.SET, value),
 };

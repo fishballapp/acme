@@ -8,8 +8,13 @@ export const encodeBase64Url = (
     );
   })();
 
-  return btoa(bytes)
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+  return convertBase64ToBase64url(btoa(bytes));
 };
+
+function convertBase64ToBase64url(b64: string) {
+  return b64.endsWith("=")
+    ? b64.endsWith("==")
+      ? b64.replace(/\+/g, "-").replace(/\//g, "_").slice(0, -2)
+      : b64.replace(/\+/g, "-").replace(/\//g, "_").slice(0, -1)
+    : b64.replace(/\+/g, "-").replace(/\//g, "_");
+}
