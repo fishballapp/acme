@@ -9,11 +9,33 @@ on:
 jobs:
   deno:
     name: Deno
-    uses: ./.github/workflows/_test-with-pebble.yaml
-    with:
-      test_command: deno task test:integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x # Run with latest stable Deno.
+
+      - name: Run Pebble
+        uses: ./.github/actions/run-pebble
+
+      - run: deno task test:integration
   node:
     name: Node
-    uses: ./.github/workflows/_test-with-pebble.yaml
-    with:
-      test_command: deno task build:npm:integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x # Run with latest stable Deno.
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ">=20"
+
+      - name: Run Pebble
+        uses: ./.github/actions/run-pebble
+
+      - run: deno task build:npm:integration

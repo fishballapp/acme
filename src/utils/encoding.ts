@@ -9,7 +9,8 @@ export const encodeBase64Url = (
   })();
 
   return btoa(bytes)
+    // https://github.com/denoland/std/pull/3682#issuecomment-2417603682
+    .replace(/=?=$/, "")
     .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+    .replace(/\//g, "_");
 };

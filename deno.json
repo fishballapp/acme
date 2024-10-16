@@ -8,13 +8,13 @@
     "./workflows": "./src/AcmeWorkflows.ts"
   },
   "tasks": {
-    "test:e2e": "deno test -A e2e",
-    "test:unit": "deno test -A src",
-    "test:integration": "deno test --unsafely-ignore-certificate-errors=localhost -A integration",
+    "test:e2e": "deno test --lock -A e2e",
+    "test:unit": "deno test --lock -A src",
+    "test:integration": "deno test --lock --unsafely-ignore-certificate-errors=localhost -A integration",
     "pebble:start": "docker compose -f integration/docker-compose.yaml up",
     "pebble:stop": "docker compose -f integration/docker-compose.yaml down",
-    "build:npm": "deno run -A scripts/build-npm.ts",
-    "build:npm:integration": "deno run -A scripts/build-npm-integration.ts"
+    "build:npm": "deno run --lock -A scripts/build-npm.ts",
+    "build:npm:integration": "deno run --lock -A scripts/build-npm-integration.ts"
   },
   "compilerOptions": {
     "strict": true,

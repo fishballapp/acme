@@ -224,6 +224,11 @@ available at `certKeyPair.privateKey`.
 await order.pollStatus({ pollUntil: "valid" });
 
 const certificatePemContent = await order.getCertificate();
+
+const {
+  notBefore, // You cannot use your cert before this dates.
+  notAfter, // You cannot use your cert after this date.
+} = CertUtils.decodeValidity(certificatePemContent);
 ```
 
 After finalizing the order, poll for order status `valid`. Once it's valid, the
