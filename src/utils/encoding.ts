@@ -8,13 +8,9 @@ export const encodeBase64Url = (
     );
   })();
 
-  return convertBase64ToBase64url(btoa(bytes));
+  return btoa(bytes)
+    // https://github.com/denoland/std/pull/3682#issuecomment-2417603682
+    .replace(/=?=$/, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
 };
-
-function convertBase64ToBase64url(b64: string) {
-  return b64.endsWith("=")
-    ? b64.endsWith("==")
-      ? b64.replace(/\+/g, "-").replace(/\//g, "_").slice(0, -2)
-      : b64.replace(/\+/g, "-").replace(/\//g, "_").slice(0, -1)
-    : b64.replace(/\+/g, "-").replace(/\//g, "_");
-}
