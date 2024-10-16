@@ -17,9 +17,9 @@ const DOMAINS = [
   generateRandomDomain(),
 ];
 
-const pebbleChallTestSrv = new PebbleChallTestSrv();
-
 describe("requestCertificates", () => {
+  const pebbleChallTestSrv = new PebbleChallTestSrv();
+
   it("should successfully get the certs for the given domains", async () => {
     const client = await AcmeClient.init(PEBBLE_DIRECTORY_URL);
 
