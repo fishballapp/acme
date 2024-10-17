@@ -1,10 +1,8 @@
-import { defaultResolveDns, type ResolveDnsFunction } from "./resolveDns.ts";
-
 type IpVersion = "ipv4" | "ipv6";
 
 const QUAD9_DNS_IPS: Record<IpVersion, string> = {
   ipv4: "9.9.9.9",
-  ipv6: "2620:fe::fe",
+  ipv6: "[2620:fe::fe]",
 };
 
 const cache: Record<IpVersion, Promise<boolean> | undefined> = {
@@ -14,19 +12,12 @@ const cache: Record<IpVersion, Promise<boolean> | undefined> = {
 
 const isIpVersionSupported = async (
   version: IpVersion,
-  {
-    resolveDns = defaultResolveDns,
-  }: {
-    resolveDns?: ResolveDnsFunction;
-  } = {},
 ): Promise<boolean> => {
   cache[version] ??= (async () => {
     try {
-      await resolveDns("example.com", "NS", {
-        nameServer: {
-          ipAddr: QUAD9_DNS_IPS[version],
-        },
-      });
+      // not the best solution tbh, but I haven't found a better way to check if the network supports ipv4/6
+      const response = await fetch(`https://${QUAD9_DNS_IPS[version]}`);
+      await response.body?.cancel();
       return true;
     } catch (e) {
       console.error(e);
@@ -37,14 +28,12 @@ const isIpVersionSupported = async (
   return await cache[version];
 };
 
-export const getSupportedIpVersions = async (
-  opts: { resolveDns?: ResolveDnsFunction } = {},
-): Promise<
+export const getSupportedIpVersions = async (): Promise<
   readonly IpVersion[]
 > => {
   const [ipv4Supported, ipv6Supported] = await Promise.all([
-    isIpVersionSupported("ipv4", opts),
-    isIpVersionSupported("ipv6", opts),
+    isIpVersionSupported("ipv4"),
+    isIpVersionSupported("ipv6"),
   ]);
 
   if (ipv4Supported && ipv6Supported) {

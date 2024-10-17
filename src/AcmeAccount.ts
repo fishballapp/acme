@@ -1,6 +1,8 @@
 import type { AcmeClient } from "./AcmeClient.ts";
 import { AcmeOrder, type AcmeOrderObjectSnapshot } from "./AcmeOrder.ts";
+import { generateKeyPair } from "./utils/crypto.ts";
 import { emailsToAccountContacts } from "./utils/emailsToAccountContacts.ts";
+import { jws } from "./utils/jws.ts";
 
 /**
  * Represents the possible status values for an ACME account.
@@ -115,6 +117,54 @@ export class AcmeAccount {
     });
 
     return await response.json();
+  }
+
+  /**
+   * Rollover the key pair for this account.
+   *
+   * You may wish to change the account public key in order to recover
+   * from a key compromise or proactively mitigate the impact of an
+   * unnoticed key compromise.
+   *
+   * After rollover, you will receive a new {@link AcmeAccount} object.
+   * You may access to the new key pair via `{@link AcmeAccount.prototype.keyPair}.
+   */
+  async keyRollover(): Promise<AcmeAccount> {
+    const [newKeyPair, oldPublicKeyJwk] = await Promise.all([
+      generateKeyPair(),
+      crypto.subtle.exportKey(
+        "jwk",
+        this.keyPair.publicKey,
+      ),
+    ]);
+
+    const response = await this.jwsFetch(
+      this.client.directory.keyChange,
+      {
+        payload: await jws(newKeyPair.privateKey, {
+          protected: {
+            jwk: await crypto.subtle.exportKey("jwk", newKeyPair.publicKey),
+            url: this.client.directory.keyChange,
+          },
+          payload: {
+            account: this.url,
+            oldKey: oldPublicKeyJwk,
+          },
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      throw await response.json();
+    }
+
+    await response.body?.cancel();
+
+    return new AcmeAccount({
+      client: this.client,
+      url: this.url,
+      keyPair: newKeyPair,
+    });
   }
 
   /**
