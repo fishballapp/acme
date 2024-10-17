@@ -110,7 +110,7 @@ export class AcmeAccount {
   ): Promise<AcmeAccountObjectSnapshot> {
     const response = await this.jwsFetch(this.url, {
       payload: {
-        contacts: emailsToAccountContacts(emails),
+        contact: emailsToAccountContacts(emails),
       },
     });
 

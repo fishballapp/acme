@@ -40,3 +40,27 @@ it("fetch should return an account object", async () => {
     contact: emails.map((email) => `mailto:${email}`),
   });
 });
+
+it("should update account contacts correctly", async () => {
+  const client = await AcmeClient.init(PEBBLE_DIRECTORY_URL);
+
+  const emails = [generateRandomEmail(), generateRandomEmail()];
+
+  const acmeAccount = await client.createAccount({
+    emails,
+  });
+
+  expect(await acmeAccount.fetch()).toMatchObject({
+    status: "valid",
+    contact: emails.map((email) => `mailto:${email}`),
+  });
+
+  const newEmails = [
+    generateRandomEmail(),
+  ];
+  const updatedAccountObject = await acmeAccount.update({ emails: newEmails });
+
+  expect(updatedAccountObject.contact).toEqual(
+    newEmails.map((email) => `mailto:${email}`),
+  );
+});
