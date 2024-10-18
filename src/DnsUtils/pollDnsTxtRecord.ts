@@ -114,7 +114,7 @@ export const pollDnsTxtRecord = async (
       findAuthoritativeNameServerIps(domain, {
         resolveDns,
       }),
-    getSupportedIpVersions({ resolveDns }),
+    getSupportedIpVersions(),
   ]);
 
   const supportedNameServerIps = nameServerIps.filter((ip) =>

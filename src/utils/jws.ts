@@ -11,8 +11,8 @@ export const jwsFetch = async (url: string, {
   privateKey: CryptoKey;
   protected: Record<PropertyKey, unknown>;
   payload?: Record<PropertyKey, unknown>;
-}) =>
-  await fetch(url, {
+}) => {
+  return await fetch(url, {
     method,
     headers: {
       "Content-Type": "application/jose+json",
@@ -27,8 +27,9 @@ export const jwsFetch = async (url: string, {
       }),
     ),
   });
+};
 
-const jws = async (
+export const jws = async (
   privateKey: CryptoKey,
   data: {
     protected: Record<PropertyKey, unknown>;
@@ -41,6 +42,7 @@ const jws = async (
 }> => {
   const jwsWithoutSignature = {
     protected: encodeBase64Url(JSON.stringify({
+      alg: "ES256",
       ...data.protected,
     })),
     payload: data.payload === undefined

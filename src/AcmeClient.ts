@@ -1,7 +1,12 @@
 // deno-lint-ignore no-unused-vars -- imported for jsdoc
 import type { ACME_DIRECTORY_URLS } from "./ACME_DIRECTORY_URLS.ts";
-import { ACME_ERROR_TYPES } from "./ACME_ERROR_TYPES.ts";
 import { AcmeAccount } from "./AcmeAccount.ts";
+import {
+  AccountDoesNotExistError,
+  ACME_ERROR_TYPES,
+  AcmeError,
+  BadNonceError,
+} from "./errors.ts";
 import { generateKeyPair } from "./utils/crypto.ts";
 import { emailsToAccountContacts } from "./utils/emailsToAccountContacts.ts";
 import { jwsFetch } from "./utils/jws.ts";
@@ -91,7 +96,6 @@ export class AcmeClient {
     const response = await jwsFetch(url, {
       privateKey,
       protected: {
-        alg: "ES256",
         nonce,
         ...protectedHeaders,
       },
@@ -106,24 +110,21 @@ export class AcmeClient {
     if (!response.ok) {
       const error = await response.clone().json();
 
-      if (error.type !== ACME_ERROR_TYPES.BAD_NONCE) {
-        return response;
+      if (error.type === ACME_ERROR_TYPES.BAD_NONCE) {
+        if (retryAttemptCount >= MAX_RETRY_COUNT_ON_BAD_NONCE_ERROR) {
+          throw new BadNonceError(error);
+        }
+
+        return await this.jwsFetch(url, {
+          privateKey,
+          protected: protectedHeaders,
+          payload,
+          retryAttemptCount: retryAttemptCount + 1,
+        });
       }
 
-      if (retryAttemptCount >= MAX_RETRY_COUNT_ON_BAD_NONCE_ERROR) {
-        throw new Error(
-          `Failed fetching ${url} after ${retryAttemptCount} attempts...\n${
-            JSON.stringify(error, null, 2)
-          }`,
-        );
-      }
-
-      return await this.jwsFetch(url, {
-        privateKey,
-        protected: protectedHeaders,
-        payload,
-        retryAttemptCount: retryAttemptCount + 1,
-      });
+      // we intentionally return the non-ok response so caller can handle this themselves.
+      return response;
     }
 
     return response;
@@ -158,7 +159,7 @@ export class AcmeClient {
     );
 
     if (!response.ok) {
-      throw await response.json();
+      throw new AcmeError(await response.json());
     }
 
     const accountUrl = response.headers.get("Location");
@@ -195,6 +196,12 @@ export class AcmeClient {
     });
 
     if (!response.ok) {
+      const error = await response.json();
+      if (
+        error.type === ACME_ERROR_TYPES.ACCOUNT_DOES_NOT_EXIST
+      ) {
+        throw new AccountDoesNotExistError(error);
+      }
       throw new Error(
         `Failed to login:\n${JSON.stringify(await response.json(), null, 2)}`,
       );

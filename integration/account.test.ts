@@ -1,4 +1,5 @@
-import { AcmeClient } from "../src/mod.ts";
+import { AccountDoesNotExistError, AcmeClient } from "../src/mod.ts";
+
 import { expect, it } from "../test_deps.ts";
 import { PEBBLE_DIRECTORY_URL } from "./CONSTANTS.ts";
 import { generateRandomEmail } from "./utils/generateRandomThings.ts";
@@ -62,5 +63,25 @@ it("should update account contacts correctly", async () => {
 
   expect(updatedAccountObject.contact).toEqual(
     newEmails.map((email) => `mailto:${email}`),
+  );
+});
+
+it("should rollover key for account", async () => {
+  const client = await AcmeClient.init(PEBBLE_DIRECTORY_URL);
+
+  const acmeAccount = await client.createAccount({
+    emails: [generateRandomEmail()],
+  });
+
+  const newAcmeAccount = await acmeAccount.keyRollover();
+
+  expect(acmeAccount.keyPair).not.toBe(newAcmeAccount.keyPair);
+
+  await expect(client.login({ keyPair: acmeAccount.keyPair }))
+    .rejects
+    .toBeInstanceOf(AccountDoesNotExistError);
+
+  expect((await client.login({ keyPair: newAcmeAccount.keyPair })).url).toBe(
+    acmeAccount.url,
   );
 });
