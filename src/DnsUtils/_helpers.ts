@@ -21,7 +21,7 @@ const isIpVersionSupported = async (
         redirect: "manual",
       });
       return true;
-    } catch (e) {
+    } catch {
       return false;
     }
   })();
