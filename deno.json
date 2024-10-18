@@ -1,6 +1,6 @@
 {
   "name": "@fishballpkg/acme",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "exports": {
     ".": "./src/mod.ts",
     "./DnsUtils": "./src/DnsUtils/mod.ts",
@@ -11,7 +11,7 @@
   "tasks": {
     "test:e2e": "deno test --lock -A e2e",
     "test:unit": "deno test --lock --allow-run=openssl src",
-    "test:integration": "deno test --lock --unsafely-ignore-certificate-errors=localhost --allow-net=\"localhost,127.0.0.1,9.9.9.9,[2620:fe::fe]\" integration",
+    "test:integration": "deno test --lock --unsafely-ignore-certificate-errors=localhost --allow-net=\"localhost,127.0.0.1,8.8.8.8,[2001:4860:4860::8888]\" integration",
     "pebble:start": "docker compose -f integration/docker-compose.yaml up",
     "pebble:stop": "docker compose -f integration/docker-compose.yaml down",
     "build:npm": "deno run --lock -A scripts/build-npm.ts",

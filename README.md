@@ -285,14 +285,13 @@ console.log(certificate); // Logs the certificate in PEM format
 
 ## Roadmap
 
-- [ ] Account
+- [x] Account
   - [x] Creation (`AcmeClient#createAccount`)
     - [ ] External Account Binding (Maybe? Submit an issue if you'd like this?)
   - [x] Retrieval (`AcmeClient#login`)
-  - [ ] Update
-  - [ ] Key Rollover
-  - [ ] Recovery
-- [ ] Challenges
+  - [x] Update contacts
+  - [x] Key Rollover
+- [x] Challenges
   - [x] DNS-01
   - [ ] ~~HTTP-01~~
   - [ ] ~~TLS-ALPN-01~~
@@ -301,15 +300,15 @@ console.log(certificate); // Logs the certificate in PEM format
   - [x] Certificate Issuance
   - [x] Multi-Domain Certificates via SAN
   - [ ] Wildcard Certificates
-  - [ ] Renewal
   - [ ] Revocation
-- [ ] Key and Algorithm Support
+- [x] Key and Algorithm Support
   - [x] ECDSA P-256
   - [ ] ~~RSA~~
-- [ ] ACME Server Interaction
+- [x] ACME Server Interaction
   - [x] ACME Directory Support (staging, production)
-  - [ ] Error Handling and Retries
+  - [x] Bad Nonce Retries
 - [ ] Client Usability
+  - [x] Programmatic API
   - [ ] CLI
   - [ ] REST API? (REST ENCRYPT? 😂)
   - [ ] Plugin?

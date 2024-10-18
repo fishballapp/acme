@@ -1,8 +1,8 @@
 type IpVersion = "ipv4" | "ipv6";
 
-const QUAD9_DNS_IPS: Record<IpVersion, string> = {
-  ipv4: "9.9.9.9",
-  ipv6: "[2620:fe::fe]",
+const GOOGLE_DNS_IPS: Record<IpVersion, string> = {
+  ipv4: "8.8.8.8",
+  ipv6: "[2001:4860:4860::8888]",
 };
 
 const cache: Record<IpVersion, Promise<boolean> | undefined> = {
@@ -16,11 +16,12 @@ const isIpVersionSupported = async (
   cache[version] ??= (async () => {
     try {
       // not the best solution tbh, but I haven't found a better way to check if the network supports ipv4/6
-      const response = await fetch(`https://${QUAD9_DNS_IPS[version]}`);
-      await response.body?.cancel();
+      await fetch(`https://${GOOGLE_DNS_IPS[version]}`, {
+        method: "head",
+        redirect: "manual",
+      });
       return true;
     } catch (e) {
-      console.error(e);
       return false;
     }
   })();

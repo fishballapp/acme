@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.11.0
+
+- Implemented `AcmeAccount.prototype.keyRollover`
+
 ## 0.10.0
 
 - Added `CertUtils` module with `decodeValidity` function for finding out the
