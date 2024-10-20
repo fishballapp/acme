@@ -7,7 +7,8 @@ on:
   pull_request:
 
 jobs:
-  fmt-lint-check-test:
+  fmt-lint-check:
+    name: "Format & Lint & Type Check"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -17,5 +18,24 @@ jobs:
       - run: deno fmt --check
       - run: deno lint
       - run: deno check --doc .
+  deno-unit:
+    name: "Unit Test (Deno)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x # Run with latest stable Deno.
       - run: deno task test:unit
+  node-unit:
+    name: "Unit Test (Node.js)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x # Run with latest stable Deno.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ">=20"
       - run: deno task build:npm:unit
