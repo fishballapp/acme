@@ -1,18 +1,7 @@
 // deno-lint-ignore no-unused-vars -- jsdoc
 import type { AcmeOrder } from "../AcmeOrder.ts";
 import { decodeSequence, decodeTime } from "../Asn1/Asn1DecodeHelpers.ts";
-
-const getLeafCertificateBase64 = (pem: string): Uint8Array => {
-  return Uint8Array.from(
-    [
-      ...atob(
-        pem.replace("-----BEGIN CERTIFICATE-----", "")
-          .replace(/-----END CERTIFICATE-----.*/s, "")
-          .replaceAll(/\s/g, ""),
-      ),
-    ].map((c) => c.charCodeAt(0)),
-  );
-};
+import { extractFirstPemObject } from "../utils/pem.ts";
 
 /**
  * A function to retrieve your certificate's validity time.
@@ -37,7 +26,7 @@ export const decodeValidity = (certPem: string): {
   notBefore: Date;
   notAfter: Date;
 } => {
-  const leaf = getLeafCertificateBase64(certPem);
+  const leaf = extractFirstPemObject(certPem);
 
   /**
    * Leaf ASN.1
