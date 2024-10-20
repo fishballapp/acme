@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.12.0
+
+- Implemented `CryptoKeyUtils` with utility functions to help with exporting and
+  importing of keys easily.
+
 ## 0.11.0
 
 - Implemented `AcmeAccount.prototype.keyRollover`
