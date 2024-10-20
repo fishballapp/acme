@@ -6,7 +6,7 @@ import * as CryptoKeyUtils from "./mod.ts";
 describe("CryptoKeyUtils", () => {
   it("should export and import to the same key pair", async () => {
     const keyPair = await generateKeyPair();
-    const pemKeyPair = await CryptoKeyUtils.exportKeyPairToPEM(keyPair);
+    const pemKeyPair = await CryptoKeyUtils.exportKeyPairToPem(keyPair);
     expect(pemKeyPair.privateKey).toMatch(
       /^-----BEGIN PRIVATE KEY-----\n.+?\n-----END PRIVATE KEY-----$/s,
     );
@@ -57,7 +57,7 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMp7rnAfFJngRhXaE26+wQo9YM6hZ
       pemKeyPair.privateKey,
     );
 
-    expect(await CryptoKeyUtils.exportKeyPairToPEM(keyPair)).toEqual(
+    expect(await CryptoKeyUtils.exportKeyPairToPem(keyPair)).toEqual(
       pemKeyPair,
     );
   });

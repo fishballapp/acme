@@ -11,7 +11,7 @@ const formatPEM = (base64: string, type: string) => {
 /**
  * Export a CryptoKeyPair to PEM strings including the PEM header and footer.
  */
-export async function exportKeyPairToPEM(
+export async function exportKeyPairToPem(
   keyPair: CryptoKeyPair,
 ): Promise<PemCryptoKeyPair> {
   const [spki, pkcs8] = await Promise.all([
