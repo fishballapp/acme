@@ -22,3 +22,22 @@ export const encodeBase64 = (
     alphabet: "base64",
   });
 };
+
+export const decodeBase64 = (input: string): Uint8Array<ArrayBuffer> => {
+  const binaryString = atob(input);
+
+  const bytes = Uint8Array.from(
+    { length: binaryString.length },
+    (_, i) => binaryString.charCodeAt(i),
+  );
+
+  return bytes;
+};
+
+export const decodeBase64Url = (input: string): Uint8Array<ArrayBuffer> =>
+  decodeBase64(
+    input
+      .replace(/-/g, "+")
+      .replace(/_/g, "/")
+      .padEnd(input.length + (4 - (input.length % 4)) % 4, "="),
+  );

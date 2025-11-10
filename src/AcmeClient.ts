@@ -7,9 +7,9 @@ import {
   AcmeError,
   BadNonceError,
 } from "./errors.ts";
-import { generateKeyPair } from "./utils/crypto.ts";
+import { generateKeyPair, importHmacKey } from "./utils/crypto.ts";
 import { emailsToAccountContacts } from "./utils/emailsToAccountContacts.ts";
-import { jwsFetch } from "./utils/jws.ts";
+import { jws, jwsFetch } from "./utils/jws.ts";
 
 const REPLAY_NONCE_HEADER_KEY = "Replay-Nonce";
 const MAX_RETRY_COUNT_ON_BAD_NONCE_ERROR = 5;
@@ -25,6 +25,11 @@ export type AcmeDirectory = {
   newOrder: string;
   renewalInfo: string;
   revokeCert: string;
+};
+
+type ExternalAccountBinding = {
+  kid: string;
+  hmacKey: string;
 };
 
 /**
@@ -140,21 +145,44 @@ export class AcmeClient {
    * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.3
    */
   async createAccount(
-    { emails }: { emails: readonly string[] },
+    {
+      emails,
+      externalAccountBinding
+    }: {
+      emails: readonly string[];
+      externalAccountBinding?: ExternalAccountBinding;
+    },
   ): Promise<AcmeAccount> {
     const keyPair = await generateKeyPair();
+
+    const jwk = await crypto.subtle.exportKey("jwk", keyPair.publicKey);
+
+    const payload: Record<PropertyKey, unknown> = {
+      termsOfServiceAgreed: true,
+      contact: emailsToAccountContacts(emails),
+    };
+
+    if (externalAccountBinding) {
+      const externalAccountPayload = {
+        protected: {
+          alg: "HS256",
+          kid: externalAccountBinding.kid,
+          url: this.directory.newAccount,
+        },
+        payload: jwk as Record<PropertyKey, unknown>,
+      };
+      const hmacKey = await importHmacKey(externalAccountBinding.hmacKey);
+      payload.externalAccountBinding = await jws(hmacKey, externalAccountPayload);
+    }
 
     const response = await this.jwsFetch(
       this.directory.newAccount,
       {
         privateKey: keyPair.privateKey,
         protected: {
-          jwk: await crypto.subtle.exportKey("jwk", keyPair.publicKey),
+          jwk,
         },
-        payload: {
-          termsOfServiceAgreed: true,
-          contact: emailsToAccountContacts(emails),
-        },
+        payload,
       },
     );
 
