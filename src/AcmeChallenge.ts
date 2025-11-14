@@ -56,10 +56,12 @@ export class AcmeChallenge {
   /**
    * A random value that uniquely identifies the challenge.
    * This is used to produce the key authorization value in
-   * {@link AcmeChallenge.prototype.digestToken} and
-   * {@link Dns01Challenge.prototype.getDnsRecordAnswer}.
+   * {@link AcmeChallenge.prototype.keyAuthorization},
+   * {@link AcmeChallenge.prototype.digestToken},
+   * {@link Dns01Challenge.prototype.getDnsRecordAnswer} and
+   * {@link Http01Challenge.prototype.getHttpResource}.
    *
-   * This is *NOT* the value you put in your DNS record.
+   * This is *NOT* the value you put in your DNS record or HTTP resourcd.
    */
   readonly token: string;
   /** The challenge type. E.g. `dns-01`. */
@@ -107,21 +109,28 @@ export class AcmeChallenge {
   }
 
   /**
-   * Produces the key authorization for this challenge by digesting the challenge token.
+   * Produces the key authorization value for this challenge
    */
-  async digestToken(): Promise<string> {
+  async keyAuthorization(): Promise<string> {
     const publicKeyJwk = await crypto.subtle.exportKey(
       "jwk",
       this.#account.keyPair.publicKey,
     );
 
+    return `${this.token}.${await getJWKThumbprint(
+      publicKeyJwk,
+    )}`;
+  }
+
+  /**
+   * Produces the key authorization digest for this challenge by digesting the challenge token.
+   */
+  async digestToken(): Promise<string> {
     return encodeBase64Url(
       await crypto.subtle.digest(
         "SHA-256",
         new TextEncoder().encode(
-          `${this.token}.${await getJWKThumbprint(
-            publicKeyJwk,
-          )}`,
+          await this.keyAuthorization(),
         ),
       ),
     );
@@ -227,5 +236,55 @@ export class Dns01Challenge extends AcmeChallenge {
 export interface DnsTxtRecord {
   name: string;
   type: "TXT";
+  content: string;
+}
+
+/**
+ * Represents a `http-01` challenge and provides additional methods specifically for it.
+ *
+ * You can retrieve this by calling {@link AcmeAuthorization.prototype.findHttp01Challenge}.
+ */
+export class Http01Challenge extends AcmeChallenge {
+  private constructor(init: {
+    authorization: AcmeAuthorization;
+    token: string;
+    type: AcmeChallengeType;
+    url: string;
+  }) {
+    super(init);
+  }
+
+  /**
+   * Constructor method to create an {@link Http01Challenge} from a given {@link AcmeChallenge}.
+   *
+   * In most cases, you would use {@link AcmeAuthorization.prototype.findHttp01Challenge} to retrieve this instead.
+   */
+  static from(challenge: AcmeChallenge): Http01Challenge {
+    if (challenge.type !== "http-01") {
+      throw new Error("Not a http-01 challenge!");
+    }
+
+    return new Http01Challenge(challenge);
+  }
+
+  /**
+   * Digest the challenge token and return a `Promise` that resolves to the
+   * {@link HttpResource} needed to be present to fulfill the challenge.
+   */
+  async getHttpResource(): Promise<HttpResource> {
+    return {
+      url: `http://${this.authorization.domain}/.well-known/acme-challenge/${this.token}`,
+      name: this.token,
+      content: await this.keyAuthorization(),
+    };
+  }
+}
+
+/**
+ * Represents the HTTP challenge file
+ */
+export interface HttpResource {
+  url: string;
+  name: string;
   content: string;
 }
