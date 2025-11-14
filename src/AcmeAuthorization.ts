@@ -4,6 +4,7 @@ import {
   type AcmeChallengeObjectSnapshot,
   type AcmeChallengeType,
   Dns01Challenge,
+  Http01Challenge,
 } from "./AcmeChallenge.ts";
 import type { AcmeOrder } from "./AcmeOrder.ts";
 
@@ -202,7 +203,9 @@ export class AcmeAuthorization {
   /**
    * Find the {@link AcmeChallenge} as specified in `type`.
    *
-   * {@link AcmeAuthorization.prototype.findDns01Challenge} is probably more useful in most cases.
+   * {@link AcmeAuthorization.prototype.findDns01Challenge} or
+   * {@link AcmeAuthorization.prototype.findDns01Challenge} is
+   * probably more useful in most cases.
    *
    * To get the list of challenges, use {@link AcmeAuthorization.prototype.challenges}
    */
@@ -224,5 +227,17 @@ export class AcmeAuthorization {
     }
 
     return Dns01Challenge.from(challenge);
+  }
+
+  /**
+   * Find the first {@link Http01Challenge}.
+   */
+  findHttp01Challenge(): Http01Challenge | undefined {
+    const challenge = this.findChallenge("http-01");
+    if (challenge === undefined) {
+      return undefined;
+    }
+
+    return Http01Challenge.from(challenge);
   }
 }
