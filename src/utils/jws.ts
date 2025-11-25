@@ -42,7 +42,7 @@ export const jws = async (
 }> => {
   const jwsWithoutSignature = {
     protected: encodeBase64Url(JSON.stringify({
-      alg: "ES256",
+      alg: privateKey.algorithm.name.startsWith("RSA") ? "RS256" : "ES256",
       ...data.protected,
     })),
     payload: data.payload === undefined

@@ -278,13 +278,14 @@ Expected order status: ${pollUntil}`);
    */
   async finalize(): Promise<CryptoKeyPair> {
     const [certKeyPair, orderResponse] = await Promise.all([
-      generateKeyPair(),
+      generateKeyPair(this.account.keyPairAlgorithm),
       this.fetch(),
     ]);
     const csr = encodeBase64Url(
       await generateCSR({
         domains: this.domains,
         keyPair: certKeyPair,
+        keyPairAlgorithm: this.account.keyPairAlgorithm,
       }),
     );
 

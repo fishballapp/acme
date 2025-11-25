@@ -1,6 +1,6 @@
 import type { AcmeClient } from "./AcmeClient.ts";
 import { AcmeOrder, type AcmeOrderObjectSnapshot } from "./AcmeOrder.ts";
-import { generateKeyPair } from "./utils/crypto.ts";
+import { generateKeyPair, type KeyPairAlgorithm } from "./utils/crypto.ts";
 import { emailsToAccountContacts } from "./utils/emailsToAccountContacts.ts";
 import { jws } from "./utils/jws.ts";
 import { AcmeError } from "./errors.ts";
@@ -54,6 +54,7 @@ export type AcmeAccountObjectSnapshot = {
 export class AcmeAccount {
   readonly client: AcmeClient;
   readonly keyPair: CryptoKeyPair;
+  readonly keyPairAlgorithm?: KeyPairAlgorithm;
   readonly url: string;
 
   /**
@@ -67,10 +68,12 @@ export class AcmeAccount {
   constructor(init: {
     client: AcmeClient;
     keyPair: CryptoKeyPair;
+    keyPairAlgorithm?: KeyPairAlgorithm;
     url: string;
   }) {
     this.client = init.client;
     this.keyPair = init.keyPair;
+    this.keyPairAlgorithm = init.keyPairAlgorithm;
     this.url = init.url;
   }
 
@@ -132,7 +135,7 @@ export class AcmeAccount {
    */
   async keyRollover(): Promise<AcmeAccount> {
     const [newKeyPair, oldPublicKeyJwk] = await Promise.all([
-      generateKeyPair(),
+      generateKeyPair(this.keyPairAlgorithm),
       crypto.subtle.exportKey(
         "jwk",
         this.keyPair.publicKey,

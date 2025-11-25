@@ -1,6 +1,10 @@
+import { getAlgorithmProperties, type KeyPairAlgorithm } from "../utils/crypto.ts";
 import { extractFirstPemObject } from "../utils/pem.ts";
 
-async function derivePublicKey(privateKey: CryptoKey): Promise<CryptoKey> {
+async function derivePublicKey(
+  privateKey: CryptoKey,
+  keyPairAlgorithm: KeyPairAlgorithm = "ec",
+): Promise<CryptoKey> {
   // d contains the private info of the key
   const { d: _discardedPrivateInfo, ...jwkPublic } = {
     ...await crypto.subtle.exportKey("jwk", privateKey),
@@ -11,10 +15,7 @@ async function derivePublicKey(privateKey: CryptoKey): Promise<CryptoKey> {
   return crypto.subtle.importKey(
     "jwk",
     jwkPublic,
-    {
-      name: "ECDSA",
-      namedCurve: "P-256",
-    },
+    getAlgorithmProperties(keyPairAlgorithm),
     true,
     ["verify"],
   );
@@ -25,20 +26,18 @@ async function derivePublicKey(privateKey: CryptoKey): Promise<CryptoKey> {
  */
 export async function importKeyPairFromPemPrivateKey(
   pemPrivateKey: string,
+  keyPairAlgorithm: KeyPairAlgorithm = "ec",
 ): Promise<CryptoKeyPair> {
   const privateKey = await crypto.subtle.importKey(
     "pkcs8",
     extractFirstPemObject(pemPrivateKey),
-    {
-      name: "ECDSA",
-      namedCurve: "P-256",
-    },
+    getAlgorithmProperties(keyPairAlgorithm),
     true,
     ["sign"],
   );
 
   return {
     privateKey,
-    publicKey: await derivePublicKey(privateKey),
+    publicKey: await derivePublicKey(privateKey, keyPairAlgorithm),
   };
 }

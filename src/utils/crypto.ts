@@ -1,8 +1,34 @@
 import { decodeBase64Url } from "./base64.ts";
 
-export async function generateKeyPair(): Promise<CryptoKeyPair> {
+export type KeyPairAlgorithm = "ec" | "rsa" | "rsa-4096";
+
+export function getAlgorithmProperties(keyPairAlgorithm: KeyPairAlgorithm) {
+  switch (keyPairAlgorithm){
+    case "ec":
+      return {
+        name: "ECDSA",
+        namedCurve: "P-256",
+      };
+    case "rsa":
+      return {
+        name: "RSASSA-PKCS1-v1_5",
+        modulusLength: 2048,
+        publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+        hash: { name: "SHA-256" },
+      };
+    case "rsa-4096":
+      return {
+        name: "RSASSA-PKCS1-v1_5",
+        modulusLength: 4096,
+        publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+        hash: { name: "SHA-256" },
+      };
+  }
+}
+
+export async function generateKeyPair(keyPairAlgorithm: KeyPairAlgorithm = "ec"): Promise<CryptoKeyPair> {
   return await crypto.subtle.generateKey(
-    { name: "ECDSA", namedCurve: "P-256" },
+    getAlgorithmProperties(keyPairAlgorithm),
     true,
     ["sign", "verify"],
   );

@@ -6,15 +6,14 @@
 
 import { Asn1Encoder } from "../Asn1/Asn1Encoder.ts";
 import { splitAtIndex } from "./array.ts";
-import { sign } from "./crypto.ts";
+import { type KeyPairAlgorithm, sign } from "./crypto.ts";
 
 const OIDS = {
   COMMON_NAME: "2.5.4.3",
   SUBJECT_ALT_NAME: "2.5.29.17",
-  ID_EC_PUBLIC_KEY: "1.2.840.10045.2.1",
-  PRIME256V1: "1.2.840.10045.3.1.7",
   ECDSA_WITH_SHA256: "1.2.840.10045.4.3.2",
-  EXTENSION_REQUET: "1.2.840.113549.1.9.14",
+  RSA_WITH_SHA256: "1.2.840.113549.1.1.11",
+  EXTENSION_REQUEST: "1.2.840.113549.1.9.14",
 } as const;
 
 /**
@@ -23,13 +22,21 @@ const OIDS = {
  * @see https://datatracker.ietf.org/doc/html/rfc2986
  */
 export async function generateCSR(
-  { domains, keyPair }: { domains: readonly string[]; keyPair: CryptoKeyPair },
+  {
+    domains,
+    keyPair,
+    keyPairAlgorithm,
+  }: {
+    domains: readonly string[];
+    keyPair: CryptoKeyPair;
+    keyPairAlgorithm?: KeyPairAlgorithm;
+  },
 ): Promise<Uint8Array<ArrayBuffer>> {
   const certificationRequestInfoSequence = encodeCertificationRequestInfo(
     {
       domains,
-      publicKeyDer: new Uint8Array<ArrayBuffer>(
-        await crypto.subtle.exportKey("raw", keyPair.publicKey),
+      subjectPKInfo: new Uint8Array<ArrayBuffer>(
+        await crypto.subtle.exportKey("spki", keyPair.publicKey),
       ),
     },
   );
@@ -47,19 +54,20 @@ export async function generateCSR(
     certificationRequestInfoSequence,
     // signatureAlgorithm
     Asn1Encoder.sequence(
-      Asn1Encoder.oid(OIDS.ECDSA_WITH_SHA256),
+      Asn1Encoder.oid(keyPairAlgorithm === "ec" ? OIDS.ECDSA_WITH_SHA256 : OIDS.RSA_WITH_SHA256),
     ),
     // signature
     encodeSignatureBitString(
       await sign(keyPair.privateKey, certificationRequestInfoSequence),
+      keyPairAlgorithm,
     ),
   );
 }
 
 function encodeCertificationRequestInfo(
-  { domains, publicKeyDer }: {
+  { domains, subjectPKInfo }: {
     domains: readonly string[];
-    publicKeyDer: Uint8Array<ArrayBuffer>;
+    subjectPKInfo: Uint8Array<ArrayBuffer>;
   },
 ): Uint8Array<ArrayBuffer> {
   const [mainDomain] = domains;
@@ -89,18 +97,12 @@ function encodeCertificationRequestInfo(
       ),
     ),
     // subjectPKInfo
-    Asn1Encoder.sequence(
-      Asn1Encoder.sequence(
-        Asn1Encoder.oid(OIDS.ID_EC_PUBLIC_KEY),
-        Asn1Encoder.oid(OIDS.PRIME256V1),
-      ),
-      Asn1Encoder.bitString(publicKeyDer),
-    ),
+    subjectPKInfo,
     // attributes
     Asn1Encoder.custom(
       0xA0, // Tag: [0].
       Asn1Encoder.sequence(
-        Asn1Encoder.oid(OIDS.EXTENSION_REQUET),
+        Asn1Encoder.oid(OIDS.EXTENSION_REQUEST),
         Asn1Encoder.set(
           Asn1Encoder.sequence(
             encodeSubjectAlternativeName(domains),
@@ -142,11 +144,15 @@ const encodeSubjectAlternativeName = (() => {
 
 const encodeSignatureBitString = (
   signature: Uint8Array<ArrayBuffer>,
+  keyPairAlgorithm?: KeyPairAlgorithm,
 ): Uint8Array<ArrayBuffer> => {
-  const [r, s] = splitAtIndex(signature, signature.byteLength / 2);
+  if (keyPairAlgorithm === "ec") {
+    const [r, s] = splitAtIndex(signature, signature.byteLength / 2);
 
-  return Asn1Encoder.bitString(Asn1Encoder.sequence(
-    Asn1Encoder.uintBytes(r),
-    Asn1Encoder.uintBytes(s),
-  ));
+    return Asn1Encoder.bitString(Asn1Encoder.sequence(
+      Asn1Encoder.uintBytes(r),
+      Asn1Encoder.uintBytes(s),
+    ));
+  }
+  return Asn1Encoder.bitString(signature);
 };
