@@ -39,4 +39,11 @@ it("should handle wildcard domains correctly", async () => {
   // In a real scenario we'd check for the wildcard flag in the snapshot, 
   // but it's private in the class. The fact that .domain returns the wildcard 
   // version proves our fix works because the raw identifier.value is just the base domain.
+
+  // Verify that the DNS record name does NOT contain the wildcard prefix
+  const dnsChallenge = wildcardAuth.findDns01Challenge();
+  expect(dnsChallenge).toBeDefined();
+  
+  const dnsRecord = await dnsChallenge!.getDnsRecordAnswer();
+  expect(dnsRecord.name).toBe(`_acme-challenge.${baseDomain}.`);
 });
