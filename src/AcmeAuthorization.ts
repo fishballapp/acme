@@ -175,6 +175,9 @@ export class AcmeAuthorization {
     }
 
     authorization.#domain = authorizationResponse.identifier.value;
+    if (authorizationResponse.wildcard) {
+      authorization.#domain = "*." + authorization.#domain;
+    }
 
     return authorization;
   }
