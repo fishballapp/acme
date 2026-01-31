@@ -28,7 +28,7 @@ export async function importKeyPairFromPemPrivateKey(
 ): Promise<CryptoKeyPair> {
   const privateKey = await crypto.subtle.importKey(
     "pkcs8",
-    extractFirstPemObject(pemPrivateKey),
+    extractFirstPemObject(pemPrivateKey) as unknown as BufferSource,
     {
       name: "ECDSA",
       namedCurve: "P-256",

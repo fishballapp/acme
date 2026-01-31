@@ -31,7 +31,9 @@ it("should handle wildcard domains correctly", async () => {
   expect(authDomains.length).toBe(2);
 
   // Verify the wildcard authorization specifically
-  const wildcardAuth = order.authorizations.find(a => a.domain === wildcardDomain);
+  const wildcardAuth = order.authorizations.find((a) =>
+    a.domain === wildcardDomain
+  );
   expect(wildcardAuth).toBeDefined();
   
   // In a real scenario we'd check for the wildcard flag in the snapshot, 
