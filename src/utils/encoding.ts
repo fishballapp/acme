@@ -20,20 +20,10 @@ export const encodeBase64 = (input: ArrayBuffer | string | Uint8Array) => {
 export const decodeBase64 = (input: string): Uint8Array => {
   const binaryString = atob(input);
 
-  const bytes = Uint8Array.from(
-    { length: binaryString.length },
-    (_, i) => binaryString.charCodeAt(i),
-  );
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
 
   return bytes;
 };
-
-/* unused
-export const decodeBase64Url = (input: string): Uint8Array =>
-  decodeBase64(
-    input
-      .replace(/-/g, "+")
-      .replace(/_/g, "/")
-      .padEnd(input.length + (4 - (input.length % 4)) % 4, "="),
-  );
-*/

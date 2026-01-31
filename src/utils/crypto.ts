@@ -16,7 +16,7 @@ export async function sign(
       hash: "SHA-256",
     },
     key,
-    data as BufferSource,
+    data,
   );
   return new Uint8Array(signature);
 }
