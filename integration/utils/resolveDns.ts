@@ -11,11 +11,12 @@ export const resolveDns: ResolveDnsFunction = async (query, recordType) => {
     // this would be treated as record not found
     throw new Error();
   }
-  return (await defaultResolveDns(query, recordType, {
+  const result = await defaultResolveDns(query, recordType, {
     nameServer: {
       ipAddr: "127.0.0.1",
       port: 8053,
     },
-  } // deno-lint-ignore no-explicit-any -- typescript is hard
-  )) as any;
+  });
+  // deno-lint-ignore no-explicit-any -- We know the return type matches the conditional type based on runtime check.
+  return result as any;
 };

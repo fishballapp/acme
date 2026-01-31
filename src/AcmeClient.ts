@@ -1,5 +1,4 @@
-// deno-lint-ignore no-unused-vars -- imported for jsdoc
-import type { ACME_DIRECTORY_URLS } from "./ACME_DIRECTORY_URLS.ts";
+import type { ACME_DIRECTORY_URLS as _ACME_DIRECTORY_URLS } from "./ACME_DIRECTORY_URLS.ts";
 import { AcmeAccount } from "./AcmeAccount.ts";
 import {
   AccountDoesNotExistError,

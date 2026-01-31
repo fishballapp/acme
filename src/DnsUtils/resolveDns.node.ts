@@ -20,7 +20,7 @@ export const resolveDns: ResolveDnsFunction = async (
     ]);
   }
 
-  // deno-lint-ignore no-explicit-any -- typescript is hard
+  // deno-lint-ignore no-explicit-any -- Resolver.resolve returns a wide type that we know narrows correctly based on recordType, but TS inference struggles.
   return (await resolver.resolve(domain, recordType)) as any;
 };
 

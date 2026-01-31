@@ -1,5 +1,4 @@
-// deno-lint-ignore no-unused-vars -- jsdoc
-import type { AcmeOrder } from "../AcmeOrder.ts";
+import type { AcmeOrder as _AcmeOrder } from "../AcmeOrder.ts";
 import { decodeSequence, decodeTime } from "../Asn1/Asn1DecodeHelpers.ts";
 import { extractFirstPemObject } from "../utils/pem.ts";
 

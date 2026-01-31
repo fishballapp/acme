@@ -1,5 +1,4 @@
-// deno-lint-ignore no-unused-vars -- imported for jsdoc
-import type { DnsUtils } from "./mod.ts";
+import type { DnsUtils as _DnsUtils } from "./mod.ts";
 
 import type { AcmeAccount } from "./AcmeAccount.ts";
 import type { AcmeAuthorization } from "./AcmeAuthorization.ts";
