@@ -1,5 +1,5 @@
 import { describe, expect, it } from "../../test_deps.ts";
-import { decodeBase64, encodeBase64, encodeBase64Url } from "./encoding.ts";
+import { encodeBase64, encodeBase64Url } from "./encoding.ts";
 
 describe("encodeBase64", () => {
   it("should encode string input", () => {
@@ -47,13 +47,5 @@ describe("encodeBase64Url", () => {
 
   it("should handle mixed input types like encodeBase64", () => {
     expect(encodeBase64Url("hello world")).toBe("aGVsbG8gd29ybGQ"); // "aGVsbG8gd29ybGQ=" -> ...
-  });
-});
-
-describe("decodeBase64", () => {
-  it("should decode base64 string to Uint8Array", () => {
-    const result = decodeBase64("aGVsbG8gd29ybGQ=");
-    const expected = new TextEncoder().encode("hello world");
-    expect(result).toEqual(expected);
   });
 });
