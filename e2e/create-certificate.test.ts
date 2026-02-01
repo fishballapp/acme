@@ -12,7 +12,7 @@ import { CloudflareZone } from "./utils/cloudflare.ts";
 import { expectToBeDefined } from "./utils/expectToBeDefined.ts";
 import { randomFishballTestingSubdomain } from "./utils/randomFishballTestingSubdomain.ts";
 
-const EMAIL = "e2e@test.acme.pkg.fishball.xyz";
+const EMAIL = "e2e@test.acme.pkg.fishball.dev";
 const DOMAIN = randomFishballTestingSubdomain();
 
 const cloudflareZone = await CloudflareZone.init();

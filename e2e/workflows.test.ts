@@ -8,7 +8,7 @@ import { describe, expect, it } from "../test_deps.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
 import { randomFishballTestingSubdomain } from "./utils/randomFishballTestingSubdomain.ts";
 
-const EMAIL = "e2e@test.acme.pkg.fishball.xyz";
+const EMAIL = "e2e@test.acme.pkg.fishball.dev";
 const DOMAINS = [
   randomFishballTestingSubdomain(),
   randomFishballTestingSubdomain(),

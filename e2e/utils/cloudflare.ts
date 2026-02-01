@@ -40,10 +40,10 @@ export class CloudflareZone {
           "Cannot find cloudflare API key (`CLOUDFLARE_API_KEY`)",
         );
       })(),
-      zoneId: Deno.env.get("CLOUDFLARE_FISHBALL_XYZ_ZONE_ID") ??
+      zoneId: Deno.env.get("CLOUDFLARE_ZONE_ID") ??
         (() => {
           throw new Error(
-            "Cannot find cloudflare zone id for fishball.xyz (`CLOUDFLARE_FISHBALL_XYZ_ZONE_ID`)",
+            "Cannot find cloudflare zone id for fishball.dev (`CLOUDFLARE_ZONE_ID`)",
           );
         })(),
     });
