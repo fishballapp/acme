@@ -37,5 +37,5 @@ jobs:
           deno-version: v2.x # Run with latest stable Deno.
       - uses: actions/setup-node@v4
         with:
-          node-version: ">=20"
+          node-version: ">=25"
       - run: deno task build:npm:unit

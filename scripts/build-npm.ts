@@ -30,10 +30,7 @@ export const dntConfig: dnt.BuildOptions = {
     deno: "dev",
     undici: "dev",
   },
-  compilerOptions: {
-    lib: ["ESNext", "DOM"],
-    target: "ES2022",
-  },
+  typeCheck: false,
   package: {
     name: DENO_JSON.name,
     version: DENO_JSON.version,
@@ -49,8 +46,8 @@ export const dntConfig: dnt.BuildOptions = {
     },
     keywords: ["acme"],
     homepage: "https://jsr.io/@fishballpkg/acme/doc",
-    devDependencies: {
-      "@types/node": "latest",
+    engines: {
+      node: ">=25",
     },
   },
   mappings: {
@@ -65,6 +62,8 @@ export const dntConfig: dnt.BuildOptions = {
         join(OUT_DIR, fileToCopy),
       );
     }
+
+    Deno.writeTextFileSync(join(OUT_DIR, ".npmrc"), "engine-strict=true\n");
   },
 };
 
