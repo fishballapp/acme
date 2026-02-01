@@ -203,6 +203,10 @@ export class Dns01Challenge extends AcmeChallenge {
   /**
    * Digest the challenge token and return a `Promise` that resolves to the
    * {@link DnsTxtRecord} needed to be set to fulfill the challenge.
+   *
+   * **Wildcard domains:** For wildcard authorizations (e.g., `*.example.com`),
+   * the DNS record name will use the base domain (`_acme-challenge.example.com.`)
+   * without the `*.` prefix, as per ACME protocol requirements.
    */
   async getDnsRecordAnswer(): Promise<DnsTxtRecord> {
     return {
