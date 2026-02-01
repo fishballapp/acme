@@ -1,98 +1,91 @@
-# AGENTS.md
+# AGENTS.md - fishball-acme
 
-This file provides guidance to AI Agents when working with code in this
-repository.
+This is the ACME client library for Deno/Node.js. Used by Fishball Ltd for certificate automation.
 
-## Project Overview
+## Quick Start
 
-`@fishballpkg/acme` is a zero-dependency, minimalistic, opinionated ACME client
-written in TypeScript. It is designed to be platform-agnostic, running on Deno,
-Node.js, and other modern JavaScript environments that support `WebCrypto` and
-`fetch`.
+- **Language:** TypeScript
+- **Runtime:** Deno (primary), Node.js (via DNT build)
+- **Package Manager:** Deno
+- **Build:** `deno task build` (compiles to NPM)
+- **Test:** `deno task test` (unit tests), `deno task test:e2e` (integration tests with Pebble/Cloudflare)
 
-## Development Commands
+## Key Files
 
-This project uses Deno for development.
+- `src/mod.ts` — Main export
+- `src/AcmeClient.ts` — Entry point for ACME protocol
+- `src/AcmeAccount.ts` — Account management
+- `src/AcmeOrder.ts` — Certificate orders
+- `src/AcmeAuthorization.ts` — Domain authorizations
+- `src/AcmeChallenge.ts` — Challenge solving (DNS-01)
+- `integration/` — Pebble staging tests
+- `e2e/` — Real certificate tests (Cloudflare)
 
-### Testing
+## Development Workflow
 
-There are multiple tiers of tests in this repository:
+1. **Branch naming:** `feat/feature-name` or `fix/bug-name`
+2. **Linting:** `deno lint` (auto-fixes available with `--fix`)
+3. **Type checking:** Integrated into Deno CLI
+4. **Testing:**
+   - Unit: `deno task test`
+   - Integration (Pebble): `deno task test:integration`
+   - E2E (Cloudflare): `deno task test:e2e`
+5. **Commits:** Clear, descriptive messages (e.g., `feat: add wildcard support`)
+6. **PRs:** Link to related issues with `Fixes #N`
 
-- **Unit Tests**: Run purely in-process, mocking external requests where
-  necessary.
-  - Command: `deno task test:unit`
-  - Location: `src/**/*.test.ts`
+## DNS-01 Challenge Solving
 
-- **Integration Tests**: Run against a local Pebble instance (Let's Encrypt's
-  ACME test server).
-  - **Prerequisites**: Docker must be running.
-  - **Start Pebble**: `deno task pebble:start` (starts Pebble and `challtestsrv`
-    via Docker Compose)
-  - **Run Integration Tests**: `deno task test:integration`
-  - **Stop Pebble**: `deno task pebble:stop`
-  - Location: `integration/`
+The library handles DNS validation via `Dns01Challenge.getDnsRecordAnswer()`. Key behavior:
 
-- **E2E Tests**:
-  - Command: `deno task test:e2e`
-  - Location: `e2e/`
+- For wildcard domains (e.g., `*.example.com`), the challenge token is placed at `_acme-challenge.example.com` (no wildcard prefix in the record name).
+- The `AcmeAuthorization` detects the `wildcard: true` flag in the ACME response and reconstructs the full domain with `*.` prefix.
+- `AcmeChallenge.getDnsRecordAnswer()` strips the `*.` prefix before generating the DNS record name.
 
-### Building
+## CI/CD
 
-The project is natively TypeScript/Deno but builds to NPM for Node.js
-compatibility using `dnt`.
+- **Lint & Type Check:** `ci.yaml` (on every commit)
+- **Integration Tests:** `integration.yaml` (on main + PRs)
+- **E2E Tests:** `e2e.yaml` (on main + PRs, requires Cloudflare secrets)
 
-- **Build for NPM**: `deno task build:npm`
-  - This script (`scripts/build-npm.ts`) generates the `dist-npm` directory.
+## Notable Libraries
 
-### Linting & Formatting
+- **Deno:** Standard library for crypto, DNS, file I/O
+- **DNT:** Converts Deno code to NPM packages
+- **Pebble:** ACME staging server (for testing)
+- **Cloudflare:** Real DNS provider (for E2E tests)
 
-- **Lint**: Use `deno lint` standard command.
-- **Format**: Use `deno fmt` standard command.
+## Common Tasks
 
-## High-Level Architecture
+### Running Tests Locally
 
-The codebase follows the hierarchy of the ACME standard (RFC 8555).
+```bash
+# Unit tests
+deno task test
 
-### Core Components (`src/`)
+# Integration tests (requires local Pebble instance, see integration/README.md)
+deno task test:integration
 
-- **Entry Point**: `src/mod.ts` exports the public API.
-- **AcmeClient** (`src/AcmeClient.ts`): The main entry point for users.
-  Initializes with a directory URL.
-  - **JWS Signing**: Handles JSON Web Signature (JWS) wrapping for requests
-    using `src/utils/jws.ts` and `src/utils/crypto.ts`.
-  - **Nonce Management**: detailed in `AcmeClient` private methods.
-- **AcmeAccount** (`src/AcmeAccount.ts`): Represents a registered account on the
-  ACME server.
-- **AcmeOrder** (`src/AcmeOrder.ts`): Represents a certificate order. Handles
-  polling for status steps.
-- **AcmeAuthorization** (`src/AcmeAuthorization.ts`): Represents validation for
-  a specific domain.
-- **AcmeChallenge** (`src/AcmeChallenge.ts`): Represents a specific challenge
-  method (e.g., `dns-01`).
+# E2E tests (requires CLOUDFLARE_API_KEY and CLOUDFLARE_ZONE_ID env vars)
+CLOUDFLARE_API_KEY=xxx CLOUDFLARE_ZONE_ID=yyy deno task test:e2e
+```
 
-### Utilities
+### Building for NPM
 
-- **`src/utils/`**: Internal helpers.
-  - `jws.ts`: JWS signing logic.
-  - `crypto.ts`: WebCrypto wrappers.
-  - `generateCSR.ts`: Logic to generate valid Certificate Signing Requests (CSR)
-    without external dependencies like OpenSSL.
-- **`src/ACME_DIRECTORY_URLS.ts`**: Constants for common ACME directories (Let's
-  Encrypt, etc.).
+```bash
+deno task build
+# Output: `npm/` directory with compiled package
+```
 
-### Workflows
+### Checking for Issues
 
-- **`src/AcmeWorkflows.ts`**: Contains high-level abstraction functions (e.g.,
-  `requestCertificate`) that bundle multiple steps (order creation, challenge
-  solving, polling, finalization) into single calls for convenience.
+```bash
+deno lint         # Linting
+deno check        # Type checking
+deno fmt --check  # Format check
+```
 
-## Design Principles
+## Notes
 
-1. **Zero Dependencies**: Do not introduce NPM dependencies or external CLIs
-   (like OpenSSL). Everything must be implemented using standard Web APIs
-   (`WebCrypto`, `fetch`) or built from scratch (like the CSR generator).
-2. **Platform Agnostic**: Code must write to Deno standards but be compatible
-   with Node.js via the build script. Avoid Deno-specific namespaces (`Deno.*`)
-   in the `src/` directory unless strictly necessary or valid polyfills exist.
-3. **Opinionated**: Focus on `DNS-01` challenge and `ECDSA P-256` keys. Support
-   for other methods is secondary.
+- Always `git push` after local commits to keep the remote in sync.
+- Use `deno-lint-ignore` comments sparingly; prefer fixing root causes.
+- Wildcard support is a first-class feature; test both `example.com` and `*.example.com` in new DNS tests.
