@@ -24,11 +24,11 @@ const OIDS = {
  */
 export async function generateCSR(
   { domains, keyPair }: { domains: readonly string[]; keyPair: CryptoKeyPair },
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
   const certificationRequestInfoSequence = encodeCertificationRequestInfo(
     {
       domains,
-      publicKeyDer: new Uint8Array(
+      publicKeyDer: new Uint8Array<ArrayBuffer>(
         await crypto.subtle.exportKey("raw", keyPair.publicKey),
       ),
     },
@@ -59,9 +59,9 @@ export async function generateCSR(
 function encodeCertificationRequestInfo(
   { domains, publicKeyDer }: {
     domains: readonly string[];
-    publicKeyDer: Uint8Array;
+    publicKeyDer: Uint8Array<ArrayBuffer>;
   },
-): Uint8Array {
+): Uint8Array<ArrayBuffer> {
   const [mainDomain] = domains;
   if (mainDomain === undefined) {
     throw new Error("no domain given to generate csr");
@@ -123,7 +123,7 @@ const encodeSubjectAlternativeName = (() => {
 
   return (
     domains: readonly string[],
-  ): Uint8Array => {
+  ): Uint8Array<ArrayBuffer> => {
     return Asn1Encoder.sequence(
       Asn1Encoder.oid(OIDS.SUBJECT_ALT_NAME),
       Asn1Encoder.octetString(
@@ -140,7 +140,9 @@ const encodeSubjectAlternativeName = (() => {
   };
 })();
 
-const encodeSignatureBitString = (signature: Uint8Array): Uint8Array => {
+const encodeSignatureBitString = (
+  signature: Uint8Array<ArrayBuffer>,
+): Uint8Array<ArrayBuffer> => {
   const [r, s] = splitAtIndex(signature, signature.byteLength / 2);
 
   return Asn1Encoder.bitString(Asn1Encoder.sequence(

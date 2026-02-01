@@ -11,13 +11,21 @@
   },
   "tasks": {
     "test:e2e": "deno test --lock -A e2e",
-    "test:unit": "deno test --lock --allow-run=openssl src",
-    "test:integration": "deno test --lock --unsafely-ignore-certificate-errors=localhost --allow-net=\"localhost,127.0.0.1,8.8.8.8,[2001:4860:4860::8888]\" integration",
+    "test:unit": "deno test --lock -P=unit src",
+    "test:integration": "deno test --lock --unsafely-ignore-certificate-errors=localhost -P=integration integration",
     "pebble:start": "docker compose -f integration/docker-compose.yaml up",
     "pebble:stop": "docker compose -f integration/docker-compose.yaml down",
     "build:npm": "deno run --lock -A scripts/build-npm.ts",
     "build:npm:integration": "deno run --lock -A scripts/build-npm-integration.ts",
     "build:npm:unit": "deno run --lock -A scripts/build-npm-unit.ts"
+  },
+  "permissions": {
+    "unit": {
+      "run": ["openssl"]
+    },
+    "integration": {
+      "net": ["localhost", "127.0.0.1", "8.8.8.8", "[2001:4860:4860::8888]"]
+    }
   },
   "compilerOptions": {
     "strict": true,
@@ -30,6 +38,5 @@
     "exclude": ["**/*.test.ts"]
   },
   "exclude": ["dist*"],
-  "imports": {},
   "license": "MIT"
 }

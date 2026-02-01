@@ -1,3 +1,5 @@
+// this is just an example file!
+// deno-lint-ignore-file no-import-prefix no-unversioned-import
 import {
   ACME_DIRECTORY_URLS,
   AcmeClient,

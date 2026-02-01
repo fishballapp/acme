@@ -1,6 +1,8 @@
-import { build, type BuildOptions, emptyDir } from "jsr:@deno/dnt";
-import { join } from "jsr:@std/path";
 import DENO_JSON from "../deno.json" with { type: "json" };
+import { dnt, path } from "./scripts-deps.ts";
+
+const { build, emptyDir } = dnt;
+const { join } = path;
 
 const PROJECT_ROOT = join(
   import.meta.dirname ?? (() => {
@@ -16,7 +18,7 @@ const OUT_DIR = join(
 
 const GITHUB_REPO = "https://github.com/fishballapp/acme";
 
-export const dntConfig: BuildOptions = {
+export const dntConfig: dnt.BuildOptions = {
   entryPoints: Object.entries(DENO_JSON.exports).map(([name, path]) => ({
     kind: "export",
     name,
@@ -28,10 +30,7 @@ export const dntConfig: BuildOptions = {
     deno: "dev",
     undici: "dev",
   },
-  compilerOptions: {
-    lib: ["ESNext", "DOM"],
-    target: "ES2022",
-  },
+  typeCheck: false,
   package: {
     name: DENO_JSON.name,
     version: DENO_JSON.version,
@@ -47,8 +46,8 @@ export const dntConfig: BuildOptions = {
     },
     keywords: ["acme"],
     homepage: "https://jsr.io/@fishballpkg/acme/doc",
-    devDependencies: {
-      "@types/node": "latest",
+    engines: {
+      node: ">=25",
     },
   },
   mappings: {
@@ -63,6 +62,8 @@ export const dntConfig: BuildOptions = {
         join(OUT_DIR, fileToCopy),
       );
     }
+
+    Deno.writeTextFileSync(join(OUT_DIR, ".npmrc"), "engine-strict=true\n");
   },
 };
 

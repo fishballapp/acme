@@ -5,7 +5,7 @@ import {
 import { ASN1_TAGS } from "./Asn1.ts";
 
 export const Asn1Encoder = {
-  custom: (tag: number, value: Uint8Array) => {
+  custom: (tag: number, value: Uint8Array<ArrayBuffer>) => {
     return concatUint8Arrays(
       [tag],
       Asn1Encoder.length(value.byteLength),
@@ -13,7 +13,7 @@ export const Asn1Encoder = {
     );
   },
 
-  oid: (oid: string): Uint8Array => {
+  oid: (oid: string): Uint8Array<ArrayBuffer> => {
     const [oidPart1, oidPart2, ...rest] = oid.split(".").map(Number);
     if (oidPart1 === undefined || oidPart2 === undefined) {
       throw new Error("oid does not contain part 1 or 2");
@@ -39,16 +39,21 @@ export const Asn1Encoder = {
     );
   },
 
-  bitString: (bitString: Uint8Array) => {
+  bitString: (bitString: Uint8Array<ArrayBuffer>) => {
     // assume bitString is always aligned octets, so we need 0 unused bits
     const unusedBits = 0;
-    const data = concatUint8Arrays(Uint8Array.of(unusedBits), bitString);
+    const data = concatUint8Arrays(
+      Uint8Array.of(unusedBits),
+      bitString,
+    );
     return Asn1Encoder.custom(ASN1_TAGS.BITSTRING, data);
   },
 
-  uintBytes: (bytes: Uint8Array): Uint8Array => {
+  uintBytes: (bytes: Uint8Array<ArrayBuffer>): Uint8Array<ArrayBuffer> => {
     if (bytes[0] === undefined) {
-      throw new Error("Try to encode integer but no value in Uint8Array");
+      throw new Error(
+        "Try to encode integer but no value in Uint8Array<ArrayBuffer>",
+      );
     }
 
     // Add leading zero byte if the most significant bit is 1 so it's not mistaken as negative number!
@@ -70,13 +75,13 @@ export const Asn1Encoder = {
     return Asn1Encoder.uintBytes(unsignedIntegerToUint8Array(n));
   },
 
-  sequence: (...values: Uint8Array[]): Uint8Array =>
+  sequence: (...values: Uint8Array<ArrayBuffer>[]): Uint8Array<ArrayBuffer> =>
     Asn1Encoder.custom(ASN1_TAGS.SEQUENCE, concatUint8Arrays(...values)),
 
-  utf8String: (str: string): Uint8Array =>
+  utf8String: (str: string): Uint8Array<ArrayBuffer> =>
     Asn1Encoder.custom(ASN1_TAGS.UTF8_STRING, new TextEncoder().encode(str)),
 
-  length: (length: number): Uint8Array => {
+  length: (length: number): Uint8Array<ArrayBuffer> => {
     if (length < 128) {
       return Uint8Array.of(length);
     }
@@ -96,9 +101,9 @@ export const Asn1Encoder = {
     );
   },
 
-  octetString: (value: Uint8Array): Uint8Array =>
+  octetString: (value: Uint8Array<ArrayBuffer>): Uint8Array<ArrayBuffer> =>
     Asn1Encoder.custom(ASN1_TAGS.OCTET_STRING, value),
 
-  set: (value: Uint8Array): Uint8Array =>
+  set: (value: Uint8Array<ArrayBuffer>): Uint8Array<ArrayBuffer> =>
     Asn1Encoder.custom(ASN1_TAGS.SET, value),
 };

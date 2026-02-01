@@ -8,8 +8,8 @@ export async function generateKeyPair(): Promise<CryptoKeyPair> {
 
 export async function sign(
   key: CryptoKey,
-  data: Uint8Array,
-): Promise<Uint8Array> {
+  data: Uint8Array<ArrayBuffer>,
+): Promise<Uint8Array<ArrayBuffer>> {
   const signature = await crypto.subtle.sign(
     {
       name: key.algorithm.name,
@@ -18,5 +18,5 @@ export async function sign(
     key,
     data,
   );
-  return new Uint8Array(signature);
+  return new Uint8Array<ArrayBuffer>(signature);
 }

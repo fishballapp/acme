@@ -2,8 +2,13 @@ import { uint8ArrayToNumber } from "../utils/Uint8ArrayHelpers.ts";
 import { ASN1_TAGS } from "./Asn1.ts";
 
 export const decodeTagLengthValue = (
-  asn1Der: Uint8Array,
-): [tag: number, length: number, value: Uint8Array, tlvDer: Uint8Array] => {
+  asn1Der: Uint8Array<ArrayBuffer>,
+): [
+  tag: number,
+  length: number,
+  value: Uint8Array<ArrayBuffer>,
+  tlvDer: Uint8Array<ArrayBuffer>,
+] => {
   const [tag, lengthOrLengthByteCount] = asn1Der;
   const restDer = asn1Der.slice(2);
   if (tag === undefined) {
@@ -37,7 +42,7 @@ export const decodeTagLengthValue = (
   ];
 };
 
-export const decodeTime = (utcTimeTLVDer: Uint8Array): Date => {
+export const decodeTime = (utcTimeTLVDer: Uint8Array<ArrayBuffer>): Date => {
   const [tag, , value] = decodeTagLengthValue(utcTimeTLVDer);
 
   if (tag !== ASN1_TAGS.UTC_TIME && tag !== ASN1_TAGS.GENERALIZED_TIME) {
@@ -51,7 +56,9 @@ export const decodeTime = (utcTimeTLVDer: Uint8Array): Date => {
   return parseAsn1TimeString(new TextDecoder().decode(value));
 };
 
-export const decodeSequence = (sequenceTLVDer: Uint8Array): Uint8Array[] => {
+export const decodeSequence = (
+  sequenceTLVDer: Uint8Array<ArrayBuffer>,
+): Uint8Array<ArrayBuffer>[] => {
   const [tag, length, sequenceValueDer] = decodeTagLengthValue(sequenceTLVDer);
 
   if (tag !== ASN1_TAGS.SEQUENCE) {

@@ -2,6 +2,7 @@
   "prettier.enable": false,
   "deno.enable": true,
   "deno.lint": true,
+  "typescript.validate.enable": false,
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "denoland.vscode-deno",
   "editor.codeActionsOnSave": {

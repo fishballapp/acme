@@ -11,7 +11,7 @@ jobs:
     name: "Format & Lint & Type Check"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x # Run with latest stable Deno.
@@ -22,7 +22,7 @@ jobs:
     name: "Unit Test (Deno)"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x # Run with latest stable Deno.
@@ -31,11 +31,11 @@ jobs:
     name: "Unit Test (Node.js)"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x # Run with latest stable Deno.
       - uses: actions/setup-node@v4
         with:
-          node-version: ">=20"
+          node-version: ">=25"
       - run: deno task build:npm:unit

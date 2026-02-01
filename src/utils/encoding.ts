@@ -1,39 +1,24 @@
+const toUint8Array = (
+  input: string | ArrayBuffer | Uint8Array<ArrayBuffer>,
+) => {
+  if (input instanceof Uint8Array) return input;
+  if (input instanceof ArrayBuffer) return new Uint8Array(input);
+  return new TextEncoder().encode(input);
+};
+
 export const encodeBase64Url = (
-  input: string | ArrayBuffer | Uint8Array,
-): string =>
-  encodeBase64(input)
-    // https://github.com/denoland/std/pull/3682#issuecomment-2417603682
-    .replace(/=?=$/, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
-
-export const encodeBase64 = (input: ArrayBuffer | string | Uint8Array) => {
-  const str: string = (() => {
-    if (typeof input === "string") return input;
-    return String.fromCharCode(
-      ...(input instanceof ArrayBuffer ? new Uint8Array(input) : input),
-    );
-  })();
-  return btoa(str);
+  input: string | ArrayBuffer | Uint8Array<ArrayBuffer>,
+): string => {
+  return toUint8Array(input).toBase64({
+    alphabet: "base64url",
+    omitPadding: true,
+  });
 };
 
-export const decodeBase64 = (input: string): Uint8Array => {
-  const binaryString = atob(input);
-
-  const bytes = Uint8Array.from(
-    { length: binaryString.length },
-    (_, i) => binaryString.charCodeAt(i),
-  );
-
-  return bytes;
+export const encodeBase64 = (
+  input: ArrayBuffer | string | Uint8Array<ArrayBuffer>,
+): string => {
+  return toUint8Array(input).toBase64({
+    alphabet: "base64",
+  });
 };
-
-/* unused
-export const decodeBase64Url = (input: string): Uint8Array =>
-  decodeBase64(
-    input
-      .replace(/-/g, "+")
-      .replace(/_/g, "/")
-      .padEnd(input.length + (4 - (input.length % 4)) % 4, "="),
-  );
-*/
