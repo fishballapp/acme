@@ -205,8 +205,12 @@ export class Dns01Challenge extends AcmeChallenge {
    * {@link DnsTxtRecord} needed to be set to fulfill the challenge.
    */
   async getDnsRecordAnswer(): Promise<DnsTxtRecord> {
+    const domain = this.authorization.domain.startsWith("*.")
+      ? this.authorization.domain.slice(2)
+      : this.authorization.domain;
+
     return {
-      name: `_acme-challenge.${this.authorization.domain}.`,
+      name: `_acme-challenge.${domain}.`,
       type: "TXT",
       content: await this.digestToken(),
     };
