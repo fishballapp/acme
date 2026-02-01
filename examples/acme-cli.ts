@@ -1,9 +1,11 @@
+// this is just an example file!
+// deno-lint-ignore-file no-import-prefix no-unversioned-import
 import {
   ACME_DIRECTORY_URLS,
   AcmeClient,
   DnsUtils,
   TimeoutError,
-} from "@fishballpkg/acme";
+} from "jsr:@fishballpkg/acme";
 
 const alertList = (...messages: string[]) => {
   for (const message of messages) {
