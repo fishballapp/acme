@@ -28,7 +28,7 @@ There are multiple tiers of tests in this repository:
   - **Prerequisites**: Docker must be running.
   - **Start Pebble**: `deno task pebble:start` (starts Pebble and `challtestsrv`
     via Docker Compose)
-  - **Run Imtegration Tests**: `deno task test:integration`
+  - **Run Integration Tests**: `deno task test:integration`
   - **Stop Pebble**: `deno task pebble:stop`
   - Location: `integration/`
 
