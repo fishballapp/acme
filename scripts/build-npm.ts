@@ -1,6 +1,8 @@
-import { build, type BuildOptions, emptyDir } from "jsr:@deno/dnt";
-import { join } from "jsr:@std/path";
 import DENO_JSON from "../deno.json" with { type: "json" };
+import { dnt, path } from "./scripts-deps.ts";
+
+const { build, emptyDir } = dnt;
+const { join } = path;
 
 const PROJECT_ROOT = join(
   import.meta.dirname ?? (() => {
@@ -16,7 +18,7 @@ const OUT_DIR = join(
 
 const GITHUB_REPO = "https://github.com/fishballapp/acme";
 
-export const dntConfig: BuildOptions = {
+export const dntConfig: dnt.BuildOptions = {
   entryPoints: Object.entries(DENO_JSON.exports).map(([name, path]) => ({
     kind: "export",
     name,

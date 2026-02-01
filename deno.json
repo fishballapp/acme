@@ -30,6 +30,5 @@
     "exclude": ["**/*.test.ts"]
   },
   "exclude": ["dist*"],
-  "imports": {},
   "license": "MIT"
 }

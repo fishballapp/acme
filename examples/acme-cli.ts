@@ -3,7 +3,7 @@ import {
   AcmeClient,
   DnsUtils,
   TimeoutError,
-} from "jsr:@fishballpkg/acme";
+} from "@fishballpkg/acme";
 
 const alertList = (...messages: string[]) => {
   for (const message of messages) {
