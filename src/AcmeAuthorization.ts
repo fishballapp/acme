@@ -95,7 +95,11 @@ export class AcmeAuthorization {
   #challenges?: readonly AcmeChallenge[];
 
   /**
-   * The domain associated with this authorization
+   * The domain associated with this authorization.
+   *
+   * For wildcard authorizations, this will include the `*.` prefix (e.g., `*.example.com`).
+   * The ACME server returns the base domain in the identifier, but this getter
+   * reconstructs the wildcard prefix when {@link AcmeAuthorizationObjectSnapshot.wildcard} is `true`.
    *
    * Analogous to the `value` in {@link AcmeAuthorizationObjectSnapshot.identifier}
    */
