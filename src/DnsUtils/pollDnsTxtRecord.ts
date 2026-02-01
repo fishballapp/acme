@@ -8,9 +8,9 @@ import { defaultResolveDns, type ResolveDnsFunction } from "./resolveDns.ts";
  */
 export type PollDnsTxtRecordOptions = {
   /**
-   * The content of the `TXT` to stop polling.
+   * The contents of the `TXT` to stop polling.
    */
-  pollUntil: string;
+  pollUntil: string | string[];
   /**
    * The number of milliseconds to wait before the next lookup happen. (Default: 5000)
    */
@@ -99,12 +99,14 @@ export const pollDnsTxtRecord = async (
 ): Promise<void> => {
   const {
     resolveDns = defaultResolveDns,
-    pollUntil,
     interval = 5000,
     onAfterFailAttempt,
     onBeforeAttempt,
     timeout = 30_000,
   } = options;
+  const pollUntil = typeof options.pollUntil === "string"
+    ? [options.pollUntil]
+    : options.pollUntil;
 
   const [
     nameServerIps,
@@ -151,6 +153,7 @@ export const pollDnsTxtRecord = async (
   while (Date.now() <= timeoutTime) {
     onBeforeAttempt?.();
 
+    // latestRecordss contians records from each name server we test
     latestRecordss = await Promise.all(
       supportedNameServerIps.length <= 0
         ? [resolveDnsTxt(domain)] // no authoritative NS provided, just try looking up without it.
@@ -164,7 +167,9 @@ export const pollDnsTxtRecord = async (
     );
 
     if (
-      latestRecordss.every((records) => records.includes(pollUntil))
+      pollUntil.every((v) =>
+        latestRecordss?.every((records) => records.includes(v))
+      )
     ) {
       // successful!
       return;
