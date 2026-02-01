@@ -159,9 +159,10 @@ of domains (including the first) would be used in Subject Alternative Name (SAN)
 field of the certificate. This allows the certificate you obtain later to work
 for all those domains.
 
-> **Wildcard domains:** You can request wildcard certificates by including `*.example.com`
-> in your domain list. Note that when using DNS-01 challenges for wildcards, the
-> DNS record is still placed at `_acme-challenge.example.com` (without the `*.` prefix).
+> **Wildcard domains:** You can request wildcard certificates by including
+> `*.example.com` in your domain list. Note that when using DNS-01 challenges
+> for wildcards, the DNS record is still placed at `_acme-challenge.example.com`
+> (without the `*.` prefix).
 
 `AcmeOrder#authorizations` represent "your proof of control over the domains in
 the order". For each domain you provide, you will get an authorization object.
