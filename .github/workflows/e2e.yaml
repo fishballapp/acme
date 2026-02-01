@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    if: ${{ (github.event_name != 'pull_request_target' || github.event.label.name == 'e2e:approve') }}
+    if: ${{ github.event_name != 'pull_request_target' || github.event.label.name == 'e2e:approve' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
