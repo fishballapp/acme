@@ -1,10 +1,8 @@
 import {
   ACME_DIRECTORY_URLS,
   AcmeAccount,
-  AcmeAuthorization,
   AcmeClient,
   AcmeOrder,
-  Dns01Challenge,
   DnsUtils,
 } from "../src/mod.ts";
 import { expect, it } from "../test_deps.ts";
@@ -14,7 +12,6 @@ import { randomFishballTestingSubdomain } from "./utils/randomFishballTestingSub
 
 const EMAIL = "e2e-wildcard@test.acme.pkg.fishball.dev";
 const DOMAIN = randomFishballTestingSubdomain(); // e.g., "abc.fishball-testing.dev"
-const WILDCARD_DOMAIN = `*.${DOMAIN}`; // e.g., "*.abc.fishball-testing.dev"
 
 const cloudflareZone = await CloudflareZone.init();
 
@@ -30,7 +27,9 @@ it("can talk to ACME server and successfully retrieve a wildcard certificate", a
   console.log("✅ Account Creation");
 
   // Request both the base domain and the wildcard
-  const acmeOrder = await acmeAccount.createOrder({ domains: [DOMAIN, WILDCARD_DOMAIN] });
+  const acmeOrder = await acmeAccount.createOrder({
+    domains: [DOMAIN, `*.${DOMAIN}`],
+  });
   expect(acmeOrder instanceof AcmeOrder).toBe(true);
   console.log("✅ Order Creation");
 
@@ -38,49 +37,37 @@ it("can talk to ACME server and successfully retrieve a wildcard certificate", a
   expect(acmeOrder.authorizations.length).toBe(2);
   console.log("✅ Order > Authorization(s) count correct");
 
-  const challengesToSolve = [];
+  const challenges = acmeOrder.authorizations.map((auth) => {
+    const challenge = auth.findDns01Challenge();
+    expectToBeDefined(challenge);
+    return challenge;
+  });
 
-  for (const authorization of acmeOrder.authorizations) {
-    const dns01Challenge = authorization.findDns01Challenge();
-    expectToBeDefined(dns01Challenge);
-    expect(dns01Challenge instanceof Dns01Challenge).toBe(true);
-    
-    // The critical check: does the DNS record answer strip the *.?
-    const expectedRecord = await dns01Challenge.getDnsRecordAnswer();
-    
-    // The TXT record for *.example.com must be at _acme-challenge.example.com
-    // The TXT record for example.com must be at _acme-challenge.example.com
-    // So both authorizations will point to the SAME record name, but different tokens.
-    expect(expectedRecord.name).toBe(`_acme-challenge.${DOMAIN}.`);
-    
-    challengesToSolve.push({
-      challenge: dns01Challenge,
-      record: expectedRecord,
-    });
-  }
+  const dnsTxtRecords = await Promise.all(
+    challenges
+      .map(async (challenge) => {
+        const dnsRecord = await challenge.getDnsRecordAnswer();
+        expectToBeDefined(dnsRecord);
+        // The TXT record for *.example.com must be at _acme-challenge.example.com
+        // The TXT record for example.com must be at _acme-challenge.example.com
+        // So both authorizations will point to the SAME record name, but different tokens.
+        expect(dnsRecord.name).toBe(`_acme-challenge.${DOMAIN}.`);
+        return dnsRecord;
+      }),
+  );
+
   console.log("✅ Challenges identified and DNS records validated");
 
   // Create DNS records (likely 2 TXT records on the same name)
-  await cloudflareZone.createDnsRecords(
-    challengesToSolve.map((c) => ({
-      type: c.record.type,
-      name: c.record.name,
-      content: c.record.content,
-    }))
-  );
+  await cloudflareZone.createDnsRecords(dnsTxtRecords);
   console.log("⏳ Creating DNS records for _acme-challenge...");
 
-  // Poll for the first record (just to ensure propagation started)
-  // Since both records are on the same name, we need to make sure we find BOTH values
-  const expectedContents = challengesToSolve.map(c => c.record.content);
-  
-  await DnsUtils.pollDnsTxtRecord(challengesToSolve[0].record.name, {
-    pollUntil: (records) => {
-      const flatRecords = records.flat();
-      return expectedContents.every(content => flatRecords.includes(content));
-    },
+  await DnsUtils.pollDnsTxtRecord(`_acme-challenge.${DOMAIN}.`, {
+    pollUntil: dnsTxtRecords.map(({ content }) => content),
     onBeforeAttempt: () =>
-      console.log(`⏳ Polling dns record for ${challengesToSolve[0].record.name}...`),
+      console.log(
+        `⏳ Polling dns record for ${dnsTxtRecords[0]?.name}...`,
+      ),
     onAfterFailAttempt: (recordss) => {
       console.log(
         `⏳ Received DNS records: `,
@@ -94,7 +81,7 @@ it("can talk to ACME server and successfully retrieve a wildcard certificate", a
   await new Promise((res) => setTimeout(res, 5000));
 
   // Submit all challenges
-  await Promise.all(challengesToSolve.map(c => c.challenge.submit()));
+  await Promise.all(challenges.map((challenge) => challenge.submit()));
   console.log("✅ Challenges Submitted");
 
   await acmeOrder.pollStatus({
