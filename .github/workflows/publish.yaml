@@ -45,5 +45,3 @@ jobs:
             echo "Publishing version $VERSION of $PACKAGE_NAME"
             npm publish --provenance --access public
           fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.FISHBALLPKG_NPM_TOKEN }}
