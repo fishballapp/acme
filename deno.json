@@ -4,6 +4,9 @@
   "exports": {
     ".": "./src/mod.ts",
     "./DnsUtils": "./src/DnsUtils/mod.ts",
+    "./resolveDns.deno": "./src/resolveDns.deno.ts",
+    "./resolveDns.node": "./src/resolveDns.node.ts",
+    "./resolveDns.fetch": "./src/resolveDns.fetch.ts",
     "./CertUtils": "./src/CertUtils/mod.ts",
     "./CryptoKeyUtils": "./src/CryptoKeyUtils/mod.ts",
     "./generateCSR": "./src/utils/generateCSR.ts",

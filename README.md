@@ -266,6 +266,7 @@ import {
   AcmeOrder,
   AcmeWorkflows,
 } from "@fishballpkg/acme";
+import { resolveDns } from "@fishballpkg/acme/resolveDns.fetch";
 
 const client = await AcmeClient.init(
   ACME_DIRECTORY_URLS.LETS_ENCRYPT_STAGING,
@@ -283,6 +284,7 @@ const {
   updateDnsRecords: async (dnsRecords) => {
     // ... update dns records
   },
+  resolveDns,
 });
 
 console.log(certificate); // Logs the certificate in PEM format
