@@ -4,9 +4,12 @@ import {
   AcmeOrder,
   AcmeWorkflows,
 } from "@fishballpkg/acme";
+import { createResolveDns } from "../src/DnsUtils/resolveDns.deno.ts";
 import { describe, expect, it } from "../test_deps.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
 import { randomFishballTestingSubdomain } from "./utils/randomFishballTestingSubdomain.ts";
+
+const resolveDns = createResolveDns({ queryAuthoritativeNameServers: true });
 
 const EMAIL = "e2e@test.acme.pkg.fishball.dev";
 const DOMAINS = [
@@ -35,6 +38,7 @@ describe("requestCertificates", () => {
       updateDnsRecords: async (dnsRecords) => {
         await cloudflareZone.createDnsRecords(dnsRecords);
       },
+      resolveDns,
     });
 
     expect(certKeyPair.privateKey).toBeInstanceOf(CryptoKey);

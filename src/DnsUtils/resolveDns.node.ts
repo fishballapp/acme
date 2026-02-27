@@ -1,11 +1,10 @@
 /**
  * Node.js implementation of `resolveDns`.
- *
- * This file will be used in Node.js. Thanks to DNT's build mapping. See more in `scripts/build-npm.ts`.
  */
 
 import { Resolver } from "node:dns/promises";
 import { isIPv4, isIPv6 } from "node:net";
+import { createAuthoritativeResolveDns } from "./_createAuthoritativeResolveDns.ts";
 import type { ResolveDnsFunction } from "./resolveDns.ts";
 
 export const resolveDns: ResolveDnsFunction = async (
@@ -22,6 +21,27 @@ export const resolveDns: ResolveDnsFunction = async (
 
   // deno-lint-ignore no-explicit-any -- typescript is hard
   return (await resolver.resolve(domain, recordType)) as any;
+};
+
+export type CreateResolveDnsOptions = {
+  /**
+   * When `true`, TXT lookups will query all authoritative nameservers
+   * individually and only return records present in ALL of them.
+   *
+   * This is useful for verifying DNS propagation during ACME DNS-01 challenges.
+   *
+   * Default: `false`
+   */
+  queryAuthoritativeNameServers?: boolean;
+};
+
+export const createResolveDns = (
+  options: CreateResolveDnsOptions = {},
+): ResolveDnsFunction => {
+  if (options.queryAuthoritativeNameServers) {
+    return createAuthoritativeResolveDns(resolveDns);
+  }
+  return resolveDns;
 };
 
 function ipPort(ip: string, port: number): string {

@@ -19,11 +19,13 @@ const OUT_DIR = join(
 const GITHUB_REPO = "https://github.com/fishballapp/acme";
 
 export const dntConfig: dnt.BuildOptions = {
-  entryPoints: Object.entries(DENO_JSON.exports).map(([name, path]) => ({
-    kind: "export",
-    name,
-    path: join(PROJECT_ROOT, path),
-  })),
+  entryPoints: Object.entries(DENO_JSON.exports)
+    .filter(([name]) => name !== "./resolveDns.deno") // exclude Deno-specific resolver from NPM build
+    .map(([name, path]) => ({
+      kind: "export",
+      name,
+      path: join(PROJECT_ROOT, path),
+    })),
   outDir: OUT_DIR,
   test: false,
   shims: {
@@ -50,10 +52,7 @@ export const dntConfig: dnt.BuildOptions = {
       node: ">=25",
     },
   },
-  mappings: {
-    [`${PROJECT_ROOT}/src/DnsUtils/resolveDns.deno.ts`]:
-      `${PROJECT_ROOT}/src/DnsUtils/resolveDns.node.ts`,
-  },
+  mappings: {},
   postBuild() {
     // steps to run after building and before running the tests
     for (const fileToCopy of ["LICENSE", "README.md"]) {
