@@ -50,7 +50,10 @@ export const dntConfig: dnt.BuildOptions = {
       node: ">=25",
     },
   },
-  mappings: {},
+  mappings: {
+    [`${PROJECT_ROOT}/src/DnsUtils/resolveDns.deno.ts`]:
+      `${PROJECT_ROOT}/src/DnsUtils/resolveDns.node.ts`,
+  },
   postBuild() {
     // steps to run after building and before running the tests
     for (const fileToCopy of ["LICENSE", "README.md"]) {
