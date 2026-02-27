@@ -5,10 +5,16 @@ import {
   AcmeOrder,
   DnsUtils,
 } from "../src/mod.ts";
+import { resolveDns as baseResolveDns } from "../src/resolveDns.deno.ts";
 import { expect, it } from "../test_deps.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
 import { expectToBeDefined } from "./utils/expectToBeDefined.ts";
 import { randomFishballTestingSubdomain } from "./utils/randomFishballTestingSubdomain.ts";
+
+import type { ResolveDnsFunction } from "../src/DnsUtils/resolveDns.ts";
+
+const resolveDns: ResolveDnsFunction = (query, type, options) =>
+  baseResolveDns(query, type, { ...options, authoritative: true });
 
 const EMAIL = "e2e-wildcard@test.acme.pkg.fishball.dev";
 const DOMAIN = randomFishballTestingSubdomain(); // e.g., "abc.fishball-testing.dev"
@@ -64,6 +70,7 @@ it("can talk to ACME server and successfully retrieve a wildcard certificate", a
 
   await DnsUtils.pollDnsTxtRecord(`_acme-challenge.${DOMAIN}.`, {
     pollUntil: dnsTxtRecords.map(({ content }) => content),
+    resolveDns,
     onBeforeAttempt: () =>
       console.log(
         `⏳ Polling dns record for ${dnsTxtRecords[0]?.name}...`,

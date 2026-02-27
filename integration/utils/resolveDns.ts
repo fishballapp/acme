@@ -1,7 +1,5 @@
-import {
-  defaultResolveDns,
-  type ResolveDnsFunction,
-} from "../../src/DnsUtils/resolveDns.ts";
+import type { ResolveDnsFunction } from "../../src/DnsUtils/resolveDns.ts";
+import { resolveDns as baseResolveDns } from "../../src/resolveDns.deno.ts";
 
 /**
  * A resolveDns function specifically for integration tests to allow TXT lookups to be done via pebble-testchallsrv
@@ -11,11 +9,10 @@ export const resolveDns: ResolveDnsFunction = async (query, recordType) => {
     // this would be treated as record not found
     throw new Error();
   }
-  return (await defaultResolveDns(query, recordType, {
+  return (await baseResolveDns(query, recordType, {
     nameServer: {
       ipAddr: "127.0.0.1",
       port: 8053,
     },
-  } // deno-lint-ignore no-explicit-any -- typescript is hard
-  )) as any;
+  })) as any;
 };

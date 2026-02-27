@@ -12,6 +12,12 @@ import { CloudflareZone } from "./utils/cloudflare.ts";
 import { expectToBeDefined } from "./utils/expectToBeDefined.ts";
 import { randomFishballTestingSubdomain } from "./utils/randomFishballTestingSubdomain.ts";
 
+import type { ResolveDnsFunction } from "../src/DnsUtils/resolveDns.ts";
+import { resolveDns as baseResolveDns } from "../src/resolveDns.deno.ts";
+
+const resolveDns: ResolveDnsFunction = (query, type, options) =>
+  baseResolveDns(query, type, { ...options, authoritative: true });
+
 const EMAIL = "e2e@test.acme.pkg.fishball.dev";
 const DOMAIN = randomFishballTestingSubdomain();
 
@@ -55,6 +61,7 @@ it("can talk to ACME server and successfully create an account, order then all t
 
   await DnsUtils.pollDnsTxtRecord(expectedRecord.name, {
     pollUntil: expectedRecord.content,
+    resolveDns,
     onBeforeAttempt: () =>
       console.log(`⏳ Polling dns record for ${expectedRecord.name}...`),
     onAfterFailAttempt: (recordss) => {

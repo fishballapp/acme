@@ -1,4 +1,4 @@
-import { defaultResolveDns, type ResolveDnsFunction } from "./resolveDns.ts";
+import type { ResolveDnsFunction } from "./resolveDns.ts";
 export type FindAuthoritativeNameServerIpsConfig = {
   /**
    * A function to resolve DNS record.
@@ -13,7 +13,7 @@ export type FindAuthoritativeNameServerIpsConfig = {
    *
    * You should provide an implementation of {@link ResolveDnsFunction} that can resolve those records type correctly.
    */
-  resolveDns?: ResolveDnsFunction;
+  resolveDns: ResolveDnsFunction;
 };
 
 /**
@@ -22,9 +22,9 @@ export type FindAuthoritativeNameServerIpsConfig = {
  */
 export const findAuthoritativeNameServerIps = async (
   domain: string,
-  config: FindAuthoritativeNameServerIpsConfig = {},
+  config: FindAuthoritativeNameServerIpsConfig,
 ): Promise<string[]> => {
-  const { resolveDns = defaultResolveDns } = config;
+  const { resolveDns } = config;
   while (domain.includes(".")) { // continue the loop if we haven't reached TLD
     const nameServers = await (async () => {
       try {
@@ -41,14 +41,14 @@ export const findAuthoritativeNameServerIps = async (
 
     const ips = (await Promise.all(
       [
-        ...nameServers.map(async (ns) => {
+        ...nameServers.map(async (ns: string) => {
           try {
             return await resolveDns(ns, "A");
           } catch {
             return [];
           }
         }),
-        ...nameServers.map(async (ns) => {
+        ...nameServers.map(async (ns: string) => {
           try {
             return await resolveDns(ns, "AAAA");
           } catch {
@@ -58,7 +58,7 @@ export const findAuthoritativeNameServerIps = async (
       ],
     )).flat();
 
-    return [...new Set(ips)];
+    return [...new Set(ips as string[])];
   }
 
   return [];
