@@ -24,7 +24,8 @@
   },
   "permissions": {
     "unit": {
-      "run": ["openssl"]
+      "run": ["openssl"],
+      "net": ["dns.google", "dns.google:443"]
     },
     "integration": {
       "net": ["localhost", "127.0.0.1", "8.8.8.8", "[2001:4860:4860::8888]"]
