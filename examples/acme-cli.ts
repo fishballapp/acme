@@ -6,6 +6,9 @@ import {
   DnsUtils,
   TimeoutError,
 } from "jsr:@fishballpkg/acme";
+import { resolveDns as baseResolveDns } from "jsr:@fishballpkg/acme/resolveDns.deno";
+
+const resolveDns = DnsUtils.withAuthoritativeLookup(baseResolveDns);
 
 const alertList = (...messages: string[]) => {
   for (const message of messages) {
@@ -88,7 +91,7 @@ while (true) {
   console.log("⏳ Polling DNS to verify TXT records are updated correctly...");
   try {
     await Promise.all(expectedRecords.map(async ({ name, content }) => {
-      await DnsUtils.pollDnsTxtRecord(name, { pollUntil: content });
+      await DnsUtils.pollDnsTxtRecord(name, { pollUntil: content, resolveDns });
     }));
     break;
   } catch (e) {

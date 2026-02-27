@@ -45,14 +45,19 @@ export type PollDnsTxtRecordOptions = {
  * @example
  * ```ts
  * import {
- *   pollDnsTxtRecord
+ *   pollDnsTxtRecord,
+ *   withAuthoritativeLookup
  * } from "@fishballpkg/acme/DnsUtils";
+ * import { resolveDns as baseResolveDns } from "@fishballpkg/acme/resolveDns.deno";
+ *
+ * const resolveDns = withAuthoritativeLookup(baseResolveDns);
  *
  * const domain = "subdomain.example.com"
  * await pollDnsTxtRecord(
  *   domain,
  *   {
  *     pollUntil: "expected txt content",
+ *     resolveDns,
  *     onBeforeAttempt: () => {
  *       console.log(`Looking up DNS records...`);
  *     },
