@@ -82,7 +82,7 @@ export const createAuthoritativeResolveDns = (
       return intersection.map((record) => [record]);
     } else {
       // A/AAAA/NS results are string[] — intersect directly
-      const allRecordSets = allResults as string[][];
+      const allRecordSets = allResults as unknown as string[][];
       const firstSet = allRecordSets[0]!;
       return firstSet.filter((record) =>
         allRecordSets.every((records) => records.includes(record))
