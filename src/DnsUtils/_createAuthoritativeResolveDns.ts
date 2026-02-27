@@ -5,13 +5,13 @@ import type { ResolveDnsFunction } from "./resolveDns.ts";
 /**
  * Wraps a base {@link ResolveDnsFunction} with authoritative nameserver checking.
  *
- * For TXT queries (without an explicit `nameServer` option), the returned resolver:
+ * For queries without an explicit `nameServer` option, the returned resolver:
  * 1. Discovers authoritative nameservers for the domain (cached per domain)
  * 2. Queries each authoritative nameserver individually
- * 3. Returns only TXT records found in ALL authoritative nameservers (intersection)
+ * 3. Returns only records found in ALL authoritative nameservers (intersection)
  *
- * For non-TXT queries or queries with an explicit `nameServer`, it passes through
- * to the base resolver unchanged.
+ * For queries with an explicit `nameServer`, it passes through to the base
+ * resolver unchanged.
  */
 export const createAuthoritativeResolveDns = (
   resolveDns: ResolveDnsFunction,
@@ -39,7 +39,7 @@ export const createAuthoritativeResolveDns = (
 
   // deno-lint-ignore no-explicit-any -- typescript is hard
   return (async (domain: string, recordType: string, options?: any) => {
-    if (recordType !== "TXT" || options?.nameServer) {
+    if (options?.nameServer) {
       return await resolveDns(
         domain,
         // deno-lint-ignore no-explicit-any
@@ -51,35 +51,43 @@ export const createAuthoritativeResolveDns = (
     const nsIps = await getSupportedNsIps(domain);
 
     if (nsIps.length === 0) {
-      return await resolveDns(domain, "TXT");
+      // deno-lint-ignore no-explicit-any
+      return await resolveDns(domain, recordType as any);
     }
 
     const allResults = await Promise.all(
       nsIps.map(async (ip) => {
         try {
-          return await resolveDns(domain, "TXT", {
+          // deno-lint-ignore no-explicit-any
+          return await resolveDns(domain, recordType as any, {
             nameServer: { ipAddr: ip },
           });
         } catch {
-          return [] as string[][];
+          return [];
         }
       }),
     );
 
-    // Flatten each NS result (join chunks per record)
-    const allRecordStrings = allResults.map((records) =>
-      records.map((chunks) => chunks.join(""))
-    );
+    if (allResults.length === 0) return [];
 
-    // Intersection: only records present in ALL nameservers
-    if (allRecordStrings.length === 0) return [] as string[][];
-
-    const firstSet = allRecordStrings[0]!;
-    const intersection = firstSet.filter((record) =>
-      allRecordStrings.every((records) => records.includes(record))
-    );
-
-    return intersection.map((record) => [record]);
+    if (recordType === "TXT") {
+      // TXT results are string[][] — join chunks for comparison, intersect, re-wrap
+      const allRecordStrings = (allResults as string[][][]).map((records) =>
+        records.map((chunks) => chunks.join(""))
+      );
+      const firstSet = allRecordStrings[0]!;
+      const intersection = firstSet.filter((record) =>
+        allRecordStrings.every((records) => records.includes(record))
+      );
+      return intersection.map((record) => [record]);
+    } else {
+      // A/AAAA/NS results are string[] — intersect directly
+      const allRecordSets = allResults as string[][];
+      const firstSet = allRecordSets[0]!;
+      return firstSet.filter((record) =>
+        allRecordSets.every((records) => records.includes(record))
+      );
+    }
     // deno-lint-ignore no-explicit-any
   }) as any;
 };

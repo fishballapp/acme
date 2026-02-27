@@ -25,7 +25,7 @@ export const resolveDns: ResolveDnsFunction = async (
 
 export type CreateResolveDnsOptions = {
   /**
-   * When `true`, TXT lookups will query all authoritative nameservers
+   * When `true`, lookups will query all authoritative nameservers
    * individually and only return records present in ALL of them.
    *
    * This is useful for verifying DNS propagation during ACME DNS-01 challenges.
