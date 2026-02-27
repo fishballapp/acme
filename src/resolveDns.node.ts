@@ -26,4 +26,6 @@ const baseResolveDns: ResolveDnsFunction = async (
 };
 
 // Node.js's native `dns/promises` wrapped with authoritative lookup support
-export const resolveDns = withAuthoritativeLookup(baseResolveDns);
+export const resolveDns: ResolveDnsFunction = withAuthoritativeLookup(
+  baseResolveDns,
+);

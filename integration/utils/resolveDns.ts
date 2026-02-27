@@ -14,5 +14,5 @@ export const resolveDns: ResolveDnsFunction = async (query, recordType) => {
       ipAddr: "127.0.0.1",
       port: 8053,
     },
-  })) as any;
+  })) as never;
 };

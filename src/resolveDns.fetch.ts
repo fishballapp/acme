@@ -59,12 +59,12 @@ export const createResolveDns = (
           text = text.slice(1, -1);
         }
         return [text]; // return as chunks
-      });
+      }) as never;
     }
 
-    return answers.map((a: { data: string }) => a.data) as any;
+    return answers.map((a: { data: string }) => a.data) as never;
   };
 };
 
 // Default export if you just want to use the default settings
-export const resolveDns = createResolveDns();
+export const resolveDns: ResolveDnsFunction = createResolveDns();
