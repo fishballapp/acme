@@ -94,7 +94,9 @@ import { createResolveDnsFetch } from "@fishballpkg/acme/resolveDns.fetch";
 
 const resolveDns = createResolveDnsFetch();
 // or pass a custom DoH endpoint:
-// const resolveDns = createResolveDnsFetch({ endpoint: "https://your-doh.example/dns-query" });
+// const resolveDns = createResolveDnsFetch({
+//   endpoint: "https://your-doh.example/dns-query",
+// });
 ```
 
 Then pass `resolveDns` into workflows/utilities that accept it.
