@@ -75,6 +75,32 @@ Since `fishballpkg/acme` is built in 100% TypeScript with no external
 dependencies whatsoever, it is compatible with all modern JavaScript platforms
 that support the [WebCrypto] and [fetch].
 
+### DNS resolver entrypoints
+
+DNS resolution is now pluggable. You can import a resolver implementation and
+inject it anywhere the library accepts `resolveDns` (for example
+`AcmeWorkflows.requestCertificate`):
+
+- `@fishballpkg/acme/resolveDns.deno`
+- `@fishballpkg/acme/resolveDns.node`
+- `@fishballpkg/acme/resolveDns.fetch`
+
+### Browser usage
+
+In browsers, use the fetch/DoH resolver:
+
+```ts
+import { createResolveDnsFetch } from "@fishballpkg/acme/resolveDns.fetch";
+
+const resolveDns = createResolveDnsFetch();
+// or pass a custom DoH endpoint:
+// const resolveDns = createResolveDnsFetch({ endpoint: "https://your-doh.example/dns-query" });
+```
+
+Then pass `resolveDns` into workflows/utilities that accept it.
+For full browser flows, ensure your ACME server and DoH endpoint are reachable
+from the browser (including CORS policy).
+
 ## Who is this for?
 
 This package is for you if you are:
