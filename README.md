@@ -283,10 +283,75 @@ const {
   updateDnsRecords: async (dnsRecords) => {
     // ... update dns records
   },
+  resolveDns, // Provide your preferred DNS resolver here
 });
 
 console.log(certificate); // Logs the certificate in PEM format
 ```
+
+## Customizing DNS Resolution
+
+ACME clients rely heavily on DNS resolution (e.g., verifying `TXT` records in
+`DNS-01` challenges before submission). `@fishballpkg/acme` completely decouples
+this logic from the core library, enabling you to use it in any environment—even
+the browser!
+
+We provide three out-of-the-box DNS resolvers:
+
+### 1. Deno (Native)
+
+Ideal for Deno backends.
+
+```ts
+import { resolveDns } from "@fishballpkg/acme/resolveDns.deno";
+```
+
+### 2. Node.js (Native)
+
+Ideal for Node.js backends.
+
+```ts
+import { resolveDns } from "@fishballpkg/acme/resolveDns.node";
+```
+
+### 3. Fetch (Browser / Edge via DoH)
+
+Because browsers and many edge runtimes lack native DNS APIs, we provide a
+resolver that uses DNS-over-HTTPS (DoH). By default, it uses Cloudflare's DoH
+endpoint (`https://cloudflare-dns.com/dns-query`), but you can configure it to
+use any standard DoH JSON API.
+
+```ts
+import { resolveDns } from "@fishballpkg/acme/resolveDns.fetch";
+
+// Or, to use a custom DoH endpoint:
+// import { createResolveDns } from "@fishballpkg/acme/resolveDns.fetch";
+// const resolveDns = createResolveDns({ endpoint: "https://dns.google/resolve" });
+```
+
+### "Clever" Authoritative Lookups
+
+Often, DNS records take time to propagate across all authoritative nameservers
+for a domain. If you try to submit a challenge too early, the ACME server might
+query an outdated nameserver and fail the challenge.
+
+To mitigate this, our `deno` and `node` resolvers support "clever authoritative
+lookups". By wrapping your base resolver query with `{ authoritative: true }`,
+they dynamically discover the domain's authoritative nameservers and ensure your
+TXT records have fully propagated to _all_ of them before returning.
+
+```ts
+// pollDnsTxtRecord natively injects `authoritative: true` under the hood if you pass it these resolvers!
+import { resolveDns } from "@fishballpkg/acme/resolveDns.deno";
+
+await DnsUtils.pollDnsTxtRecord("_acme-challenge.example.com", {
+  pollUntil: "expected-token-value",
+  resolveDns,
+});
+```
+
+_(Note: The Web/Fetch resolver does not support `authoritative: true` as DoH
+acts as a recursive resolver and cannot target specific IP addresses.)_
 
 ## Roadmap
 
