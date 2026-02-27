@@ -1,7 +1,7 @@
 import { createAuthoritativeResolveDns } from "./_createAuthoritativeResolveDns.ts";
 import type { ResolveDnsFunction } from "./resolveDns.ts";
 
-export const resolveDns: ResolveDnsFunction = Deno.resolveDns;
+export const resolveDns = Deno.resolveDns;
 
 export type CreateResolveDnsOptions = {
   /**
@@ -19,7 +19,9 @@ export const createResolveDns = (
   options: CreateResolveDnsOptions = {},
 ): ResolveDnsFunction => {
   if (options.queryAuthoritativeNameServers) {
-    return createAuthoritativeResolveDns(resolveDns);
+    // deno-lint-ignore no-explicit-any -- Deno.resolveDns overloads are compatible with ResolveDnsFunction
+    return createAuthoritativeResolveDns(resolveDns as any);
   }
-  return resolveDns;
+  // deno-lint-ignore no-explicit-any -- Deno.resolveDns overloads are compatible with ResolveDnsFunction
+  return resolveDns as any;
 };
