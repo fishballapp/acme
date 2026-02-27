@@ -23,7 +23,7 @@ describe("resolveDns.fetch", () => {
     const mockFetch: typeof globalThis.fetch = async (_input, _init) =>
       new Response(JSON.stringify({
         Status: 0,
-        Answer: [{ type: 16, data: "\"hello\" \"world\"" }],
+        Answer: [{ type: 16, data: '"hello" "world"' }],
       }));
     globalThis.fetch = mockFetch;
 
