@@ -27,21 +27,43 @@ export const resolveDns: ResolveDnsFunction = async (
   if (typeParam === undefined) {
     throw new Error(`Unsupported record type: ${recordType}`);
   }
-  const url = new URL("https://dns.google/resolve");
-  url.searchParams.set("name", query);
-  url.searchParams.set("type", typeParam.toString());
+  const endpoints = [
+    "https://cloudflare-dns.com/dns-query",
+    "https://dns.google/resolve",
+  ];
 
-  const response = await fetch(url.toString(), {
-    headers: {
-      "Accept": "application/dns-json",
-    },
-  });
+  let result;
+  let lastError: Error | undefined;
 
-  if (!response.ok) {
-    throw new Error(`Failed to resolve DNS over HTTPS: ${response.statusText}`);
+  for (const endpoint of endpoints) {
+    try {
+      const url = new URL(endpoint);
+      url.searchParams.set("name", query);
+      url.searchParams.set("type", typeParam.toString());
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          "Accept": "application/dns-json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to resolve DNS over HTTPS at ${endpoint}: ${response.statusText}`,
+        );
+      }
+
+      result = await response.json();
+      break; // Successfully fetched
+    } catch (e) {
+      lastError = e as Error;
+      // Continue to next endpoint
+    }
   }
 
-  const result = await response.json();
+  if (!result) {
+    throw lastError ?? new Error("Failed to resolve DNS over HTTPS");
+  }
 
   if (!result.Answer) {
     return [];
