@@ -1,1 +1,1 @@
-export { resolveDns } from "./DnsUtils/resolveDns.fetch.ts";
+export * from "./DnsUtils/resolveDns.fetch.ts";

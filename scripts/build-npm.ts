@@ -53,8 +53,6 @@ export const dntConfig: dnt.BuildOptions = {
   mappings: {
     [`${PROJECT_ROOT}/src/DnsUtils/resolveDns.deno.ts`]:
       `${PROJECT_ROOT}/src/DnsUtils/resolveDns.node.ts`,
-    [`${PROJECT_ROOT}/src/resolveDns.node.ts`]:
-      `${PROJECT_ROOT}/src/DnsUtils/resolveDns.node.ts`,
   },
   postBuild() {
     // steps to run after building and before running the tests

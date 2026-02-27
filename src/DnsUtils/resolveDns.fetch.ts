@@ -7,21 +7,25 @@ const DNS_RECORD_TYPES = {
   AAAA: 28,
 } as const;
 
-export const resolveDns: ResolveDnsFunction = async (
-  query,
-  recordType,
-) => {
+export type ResolveDnsFetchConfig = {
+  endpoint?: string | URL;
+};
+
+const EXTRACT_QUOTED_TXT_CHUNK_PATTERN = /"((?:[^"\\]|\\.)*)"/g;
+
+export const createResolveDnsFetch = (
+  config: ResolveDnsFetchConfig = {},
+): ResolveDnsFunction =>
+async (query, recordType) => {
   const recordTypeCode = DNS_RECORD_TYPES[recordType];
-  const response = await fetch(
-    `https://dns.google/resolve?name=${
-      encodeURIComponent(query)
-    }&type=${recordTypeCode}`,
-    {
-      headers: {
-        Accept: "application/dns-json",
-      },
+  const url = new URL(config.endpoint ?? "https://dns.google/resolve");
+  url.searchParams.set("name", query);
+  url.searchParams.set("type", `${recordTypeCode}`);
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/dns-json",
     },
-  );
+  });
 
   if (!response.ok) {
     throw new Error(`Cannot resolve DNS query. HTTP ${response.status}`);
@@ -47,9 +51,13 @@ export const resolveDns: ResolveDnsFunction = async (
   return answers.map(parseTxtRecord);
 };
 
+export const resolveDns = createResolveDnsFetch();
+
 const parseTxtRecord = (value: string): string[] => {
-  const chunks = [...value.matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((v) =>
-    v[1] ?? ""
+  const chunks = [...value.matchAll(EXTRACT_QUOTED_TXT_CHUNK_PATTERN)].map((
+    match,
+  ) =>
+    match[1] ?? ""
   );
 
   return chunks.length <= 0 ? [stripWrappingQuotes(value)] : chunks;

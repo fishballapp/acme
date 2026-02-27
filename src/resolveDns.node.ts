@@ -1,1 +1,1 @@
-export { resolveDns } from "./DnsUtils/resolveDns.deno.ts";
+export { resolveDns } from "./DnsUtils/resolveDns.node.ts";

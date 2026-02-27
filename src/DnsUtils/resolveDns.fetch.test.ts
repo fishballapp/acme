@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "../../test_deps.ts";
-import { resolveDns } from "./resolveDns.fetch.ts";
+import { createResolveDnsFetch, resolveDns } from "./resolveDns.fetch.ts";
 
 const originalFetch = globalThis.fetch;
 
@@ -9,21 +9,23 @@ afterEach(() => {
 
 describe("resolveDns.fetch", () => {
   it("should resolve non-TXT records using DoH answers", async () => {
-    globalThis.fetch = (async () =>
+    const mockFetch: typeof globalThis.fetch = async (_input, _init) =>
       new Response(JSON.stringify({
         Status: 0,
         Answer: [{ type: 1, data: "1.2.3.4" }],
-      }))) as typeof globalThis.fetch;
+      }));
+    globalThis.fetch = mockFetch;
 
     await expect(resolveDns("example.com", "A")).resolves.toEqual(["1.2.3.4"]);
   });
 
   it("should return TXT records as chunk arrays", async () => {
-    globalThis.fetch = (async () =>
+    const mockFetch: typeof globalThis.fetch = async (_input, _init) =>
       new Response(JSON.stringify({
         Status: 0,
         Answer: [{ type: 16, data: "\"hello\" \"world\"" }],
-      }))) as typeof globalThis.fetch;
+      }));
+    globalThis.fetch = mockFetch;
 
     await expect(resolveDns("example.com", "TXT")).resolves.toEqual([[
       "hello",
@@ -32,13 +34,29 @@ describe("resolveDns.fetch", () => {
   });
 
   it("should throw when DoH status indicates an error", async () => {
-    globalThis.fetch = (async () =>
+    const mockFetch: typeof globalThis.fetch = async (_input, _init) =>
       new Response(JSON.stringify({
         Status: 3,
-      }))) as typeof globalThis.fetch;
+      }));
+    globalThis.fetch = mockFetch;
 
     await expect(resolveDns("example.com", "NS")).rejects.toThrow(
       "Status 3",
     );
+  });
+
+  it("should support custom DoH endpoint", async () => {
+    let requestedUrl = "";
+    const mockFetch: typeof globalThis.fetch = async (url) => {
+      requestedUrl = `${url}`;
+      return new Response(JSON.stringify({ Status: 0, Answer: [] }));
+    };
+    globalThis.fetch = mockFetch;
+
+    await createResolveDnsFetch({
+      endpoint: "https://example-resolver.test/dns-query",
+    })("example.com", "A");
+
+    expect(requestedUrl).toContain("example-resolver.test/dns-query");
   });
 });
