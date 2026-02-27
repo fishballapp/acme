@@ -19,13 +19,11 @@ const OUT_DIR = join(
 const GITHUB_REPO = "https://github.com/fishballapp/acme";
 
 export const dntConfig: dnt.BuildOptions = {
-  entryPoints: Object.entries(DENO_JSON.exports)
-    .filter(([name]) => name !== "./resolveDns.deno") // exclude Deno-specific resolver from NPM build
-    .map(([name, path]) => ({
-      kind: "export",
-      name,
-      path: join(PROJECT_ROOT, path),
-    })),
+  entryPoints: Object.entries(DENO_JSON.exports).map(([name, path]) => ({
+    kind: "export",
+    name,
+    path: join(PROJECT_ROOT, path),
+  })),
   outDir: OUT_DIR,
   test: false,
   shims: {
