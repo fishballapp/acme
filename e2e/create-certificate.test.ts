@@ -7,6 +7,7 @@ import {
   Dns01Challenge,
   DnsUtils,
 } from "../src/mod.ts";
+import { resolveDns } from "../src/resolveDns.deno.ts";
 import { expect, it } from "../test_deps.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
 import { expectToBeDefined } from "./utils/expectToBeDefined.ts";
@@ -55,6 +56,7 @@ it("can talk to ACME server and successfully create an account, order then all t
 
   await DnsUtils.pollDnsTxtRecord(expectedRecord.name, {
     pollUntil: expectedRecord.content,
+    resolveDns,
     onBeforeAttempt: () =>
       console.log(`⏳ Polling dns record for ${expectedRecord.name}...`),
     onAfterFailAttempt: (recordss) => {

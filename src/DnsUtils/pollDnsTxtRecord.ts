@@ -1,7 +1,7 @@
 import { TimeoutError } from "../errors.ts";
 import { getIpVersion, getSupportedIpVersions } from "./_helpers.ts";
 import { findAuthoritativeNameServerIps } from "./findAuthoritativeNameServerIps.ts";
-import { defaultResolveDns, type ResolveDnsFunction } from "./resolveDns.ts";
+import type { ResolveDnsFunction } from "./ResolveDnsFunction.ts";
 
 /**
  * Config object for {@link pollDnsTxtRecord}
@@ -26,7 +26,7 @@ export type PollDnsTxtRecordOptions = {
   /**
    * A function to resolve DNS record.
    */
-  resolveDns?: ResolveDnsFunction;
+  resolveDns: ResolveDnsFunction;
   /**
    * A list of IPv4 or IPv6 addresses that will be used for TXT lookups.
    *
@@ -98,7 +98,7 @@ export const pollDnsTxtRecord = async (
   options: PollDnsTxtRecordOptions,
 ): Promise<void> => {
   const {
-    resolveDns = defaultResolveDns,
+    resolveDns,
     interval = 5000,
     onAfterFailAttempt,
     onBeforeAttempt,

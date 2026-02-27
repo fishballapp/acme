@@ -6,4 +6,4 @@
 
 export * from "./findAuthoritativeNameServerIps.ts";
 export * from "./pollDnsTxtRecord.ts";
-export * from "./resolveDns.ts";
+export * from "./ResolveDnsFunction.ts";

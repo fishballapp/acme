@@ -6,7 +6,7 @@
 
 import { Resolver } from "node:dns/promises";
 import { isIPv4, isIPv6 } from "node:net";
-import type { ResolveDnsFunction } from "./resolveDns.ts";
+import type { ResolveDnsFunction } from "./DnsUtils/ResolveDnsFunction.ts";
 
 export const resolveDns: ResolveDnsFunction = async (
   domain,

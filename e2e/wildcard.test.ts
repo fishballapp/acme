@@ -5,6 +5,7 @@ import {
   AcmeOrder,
   DnsUtils,
 } from "../src/mod.ts";
+import { resolveDns } from "../src/resolveDns.deno.ts";
 import { expect, it } from "../test_deps.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
 import { expectToBeDefined } from "./utils/expectToBeDefined.ts";
@@ -64,6 +65,7 @@ it("can talk to ACME server and successfully retrieve a wildcard certificate", a
 
   await DnsUtils.pollDnsTxtRecord(`_acme-challenge.${DOMAIN}.`, {
     pollUntil: dnsTxtRecords.map(({ content }) => content),
+    resolveDns,
     onBeforeAttempt: () =>
       console.log(
         `⏳ Polling dns record for ${dnsTxtRecords[0]?.name}...`,

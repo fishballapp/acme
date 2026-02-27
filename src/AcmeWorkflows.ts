@@ -22,7 +22,7 @@ export type RequestCertificatesConfig = {
    * Default: `5000`
    */
   delayAfterDnsRecordsConfirmed?: number;
-  resolveDns?: DnsUtils.ResolveDnsFunction;
+  resolveDns: DnsUtils.ResolveDnsFunction;
   /**
    * The number of milliseconds to poll resources before giving up and throw an error.
    *

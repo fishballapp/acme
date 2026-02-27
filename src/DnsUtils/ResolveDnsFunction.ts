@@ -11,5 +11,3 @@ export type ResolveDnsFunction = <R extends "A" | "AAAA" | "NS" | "TXT">(
     };
   },
 ) => Promise<"TXT" extends R ? string[][] : string[]>;
-
-export { resolveDns as defaultResolveDns } from "./resolveDns.deno.ts";
