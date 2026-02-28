@@ -334,7 +334,7 @@ await AcmeWorkflows.requestCertificate({
   domains,
   updateDnsRecords,
   resolveDns,
-  dnsPollingWindow: 10 * 60_000, // optional, defaults to 10 minutes
+  dnsTimeout: 10 * 60_000, // optional, defaults to 10 minutes
 });
 ```
 

@@ -20,7 +20,7 @@ export type PollDnsTxtRecordOptions = {
    *
    * Default: `600000` (10 minutes)
    */
-  pollingWindow?: number;
+  timeout?: number;
   /**
    * A callback that executes before each DNS lookup.
    */
@@ -83,7 +83,7 @@ export const pollDnsTxtRecord = async (
   const {
     resolveDns,
     interval = DEFAULT_INTERVAL,
-    pollingWindow = DEFAULT_POLLING_WINDOW,
+    timeout = DEFAULT_TIMEOUT,
     onAfterFailAttempt,
     onBeforeAttempt,
   } = options;
@@ -102,7 +102,7 @@ export const pollDnsTxtRecord = async (
     return records.map((chunks) => chunks.join("")); // long txt are chunked
   };
 
-  const timeoutTime = Date.now() + pollingWindow;
+  const timeoutTime = Date.now() + timeout;
   let latestRecordss: string[][] | undefined;
 
   while (Date.now() <= timeoutTime) {
@@ -136,4 +136,4 @@ Expected record: ${pollUntil}`);
 };
 
 const DEFAULT_INTERVAL = 5_000;
-const DEFAULT_POLLING_WINDOW = 10 * 60_000;
+const DEFAULT_TIMEOUT = 10 * 60_000;
