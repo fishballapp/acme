@@ -20,7 +20,7 @@ export const createUnanimousResolveDns = (
         resolveDnses.map((resolveDns) => resolveDns(query, "TXT")),
       );
       const joinedRecordss = allRecordss.map((records) =>
-        deduplicate(records.map((chunks) => chunks.join("")))
+        records.map((chunks) => chunks.join(""))
       );
 
       const commonRecords = intersectAll(joinedRecordss);
@@ -40,21 +40,21 @@ export const createUnanimousResolveDns = (
 };
 
 const intersectAll = (recordss: readonly string[][]): string[] => {
-  let commonRecords = deduplicate(recordss[0] ?? []);
-  for (let i = 1; i < recordss.length; i++) {
-    commonRecords = intersect(commonRecords, recordss[i] ?? []);
+  const [firstRecords, ...remainingRecordss] = recordss;
+  if (firstRecords === undefined) {
+    return [];
   }
-  return commonRecords;
-};
 
-const intersect = (
-  recordsA: readonly string[],
-  recordsB: readonly string[],
-): string[] => {
-  const recordsBSet = new Set(recordsB);
-  return deduplicate(recordsA.filter((record) => recordsBSet.has(record)));
-};
+  let commonRecords = new Set(firstRecords);
+  for (const records of remainingRecordss) {
+    const recordSet = new Set(records);
+    commonRecords = new Set(
+      [...commonRecords].filter((record) => recordSet.has(record)),
+    );
+    if (commonRecords.size === 0) {
+      break;
+    }
+  }
 
-const deduplicate = (records: readonly string[]): string[] => {
-  return [...new Set(records)];
+  return [...commonRecords];
 };
