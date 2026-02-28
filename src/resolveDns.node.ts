@@ -5,6 +5,7 @@
 import { Resolver } from "node:dns/promises";
 import { isIPv4, isIPv6 } from "node:net";
 import type { ResolveDnsFunction } from "./DnsUtils/resolveDns.ts";
+export * from "./resolveDns.nameServers.ts";
 
 type NameServerConfig = {
   ipAddr: string;

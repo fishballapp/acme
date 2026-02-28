@@ -1,4 +1,5 @@
 import type { ResolveDnsFunction } from "./DnsUtils/resolveDns.ts";
+export * from "./resolveDns.nameServers.ts";
 
 type NameServerConfig = {
   ipAddr: string;

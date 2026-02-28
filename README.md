@@ -338,6 +338,37 @@ await AcmeWorkflows.requestCertificate({
 });
 ```
 
+### Public DNS IP Constants (Node / Deno)
+
+`@fishballpkg/acme/resolveDns.node` and `@fishballpkg/acme/resolveDns.deno` also
+export common public DNS IP constants:
+
+- `RECOMMENDED_PUBLIC_DNS_IPS`
+- `PUBLIC_DNS_IPS`
+
+```ts
+import { AcmeWorkflows, DnsUtils } from "@fishballpkg/acme";
+import {
+  createResolveDns,
+  RECOMMENDED_PUBLIC_DNS_IPS,
+} from "@fishballpkg/acme/resolveDns.node";
+
+const resolveDns = DnsUtils.createUnanimousTxtResolveDns(
+  RECOMMENDED_PUBLIC_DNS_IPS.map((ipAddr) =>
+    createResolveDns({
+      nameServer: { ipAddr },
+    })
+  ),
+);
+
+await AcmeWorkflows.requestCertificate({
+  acmeAccount,
+  domains,
+  updateDnsRecords,
+  resolveDns,
+});
+```
+
 ## Roadmap
 
 - [x] Account
