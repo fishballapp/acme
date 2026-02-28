@@ -1,16 +1,17 @@
 import type { ResolveDnsFunction } from "./resolveDns.ts";
 
 /**
- * Compose multiple DNS resolvers into one resolver that only returns records
- * visible across all configured resolvers.
+ * Compose multiple DNS resolvers into one resolver for conservative ACME TXT
+ * verification.
  *
- * This is useful for conservative verification before submitting ACME
- * challenges.
+ * - `TXT` lookups return only records visible across all configured resolvers.
+ * - Non-`TXT` lookups are delegated to the first resolver unchanged.
  */
-export const createUnanimousResolveDns = (
+export const createUnanimousTxtResolveDns = (
   resolveDnses: readonly ResolveDnsFunction[],
 ): ResolveDnsFunction => {
-  if (resolveDnses.length <= 0) {
+  const primaryResolveDns = resolveDnses[0];
+  if (primaryResolveDns === undefined) {
     throw new Error("Expected at least 1 resolver");
   }
 
@@ -18,27 +19,25 @@ export const createUnanimousResolveDns = (
     query: string,
     recordType: R,
   ): Promise<"TXT" extends R ? string[][] : string[]> => {
-    if (recordType === "TXT") {
-      const allRecordss = await Promise.all(
-        resolveDnses.map((resolveDns) => resolveDns(query, "TXT")),
+    if (recordType !== "TXT") {
+      const records = await primaryResolveDns(
+        query,
+        recordType as "A" | "AAAA" | "NS",
       );
-      const joinedRecordss = allRecordss.map((records) =>
-        records.map((chunks) => chunks.join(""))
-      );
-
-      const commonRecords = intersectAll(joinedRecordss);
       // deno-lint-ignore no-explicit-any -- TS generic inference for conditional return type is difficult here.
-      return commonRecords.map((record) => [record]) as any;
+      return records as any;
     }
 
     const allRecordss = await Promise.all(
-      resolveDnses.map((resolveDns) =>
-        resolveDns(query, recordType as "A" | "AAAA" | "NS")
-      ),
+      resolveDnses.map((resolveDns) => resolveDns(query, "TXT")),
     );
-    const commonRecords = intersectAll(allRecordss);
+    const joinedRecordss = allRecordss.map((records) =>
+      deduplicate(records.map((chunks) => chunks.join("")))
+    );
+
+    const commonRecords = intersectAll(joinedRecordss);
     // deno-lint-ignore no-explicit-any -- TS generic inference for conditional return type is difficult here.
-    return commonRecords as any;
+    return commonRecords.map((record) => [record]) as any;
   };
 };
 

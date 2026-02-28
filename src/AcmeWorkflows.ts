@@ -22,6 +22,13 @@ export type RequestCertificatesConfig = {
    * Default: `5000`
    */
   delayAfterDnsRecordsConfirmed?: number;
+  /**
+   * Maximum duration (ms) to keep polling DNS `TXT` records for challenge
+   * verification before failing.
+   *
+   * Default: `600000` (10 minutes)
+   */
+  dnsPollingWindow?: number;
   resolveDns: DnsUtils.ResolveDnsFunction;
   /**
    * The number of milliseconds to poll resources before giving up and throw an error.
@@ -58,6 +65,7 @@ export const requestCertificate = async (
     domains,
     updateDnsRecords,
     delayAfterDnsRecordsConfirmed = 5000,
+    dnsPollingWindow,
     resolveDns,
     timeout,
   } = config;
@@ -87,6 +95,7 @@ export const requestCertificate = async (
   await Promise.all(expectedRecords.map(async (expectedRecord) => {
     await DnsUtils.pollDnsTxtRecord(expectedRecord.name, {
       pollUntil: expectedRecord.content,
+      pollingWindow: dnsPollingWindow,
       resolveDns,
     });
   }));

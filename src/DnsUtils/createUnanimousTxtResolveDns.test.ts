@@ -1,5 +1,5 @@
 import { describe, expect, it } from "../../test_deps.ts";
-import { createUnanimousResolveDns } from "./createUnanimousResolveDns.ts";
+import { createUnanimousTxtResolveDns } from "./createUnanimousTxtResolveDns.ts";
 import type { ResolveDnsFunction } from "./resolveDns.ts";
 
 type MockRecords = {
@@ -16,9 +16,9 @@ const createMockResolveDns = (records: MockRecords): ResolveDnsFunction => {
   };
 };
 
-describe("createUnanimousResolveDns", () => {
-  it("returns records that are visible from all resolvers for TXT", async () => {
-    const resolveDns = createUnanimousResolveDns([
+describe("createUnanimousTxtResolveDns", () => {
+  it("returns TXT records that are visible from all resolvers", async () => {
+    const resolveDns = createUnanimousTxtResolveDns([
       createMockResolveDns({
         A: [],
         AAAA: [],
@@ -44,29 +44,29 @@ describe("createUnanimousResolveDns", () => {
     ]);
   });
 
-  it("returns records that are visible from all resolvers for non-TXT", async () => {
-    const resolveDns = createUnanimousResolveDns([
+  it("delegates non-TXT records to the first resolver", async () => {
+    const resolveDns = createUnanimousTxtResolveDns([
       createMockResolveDns({
-        A: ["1.1.1.1", "8.8.8.8"],
-        AAAA: [],
-        NS: [],
+        A: ["1.1.1.1"],
+        AAAA: ["2001:db8::1"],
+        NS: ["ns1.example.com"],
         TXT: [],
       }),
       createMockResolveDns({
-        A: ["8.8.8.8", "9.9.9.9"],
-        AAAA: [],
-        NS: [],
+        A: ["8.8.8.8"],
+        AAAA: ["2001:4860:4860::8888"],
+        NS: ["ns2.example.com"],
         TXT: [],
       }),
     ]);
 
     await expect(resolveDns("example.com", "A")).resolves.toEqual([
-      "8.8.8.8",
+      "1.1.1.1",
     ]);
   });
 
   it("throws when no resolvers are provided", () => {
-    expect(() => createUnanimousResolveDns([])).toThrow(
+    expect(() => createUnanimousTxtResolveDns([])).toThrow(
       "Expected at least 1 resolver",
     );
   });
