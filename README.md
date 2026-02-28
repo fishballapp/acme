@@ -18,7 +18,7 @@ scratch.
 
 ## Migration Guide (v0.14.x -> v0.15.0)
 
-This guide maps from `origin/main` (`v0.14.0`) to `v0.15.0`.
+This guide maps from `v0.14.x` to `v0.15.0`.
 
 ### 1. `resolveDns` is now explicit in workflows
 
