@@ -1,4 +1,5 @@
 import type { ResolveDnsFunction } from "./DnsUtils/resolveDns.ts";
+export { DOH_ENDPOINTS } from "./resolveDns.nameServers.ts";
 
 /**
  * DNS-over-HTTPS resolver endpoints that work with this implementation.
@@ -9,21 +10,13 @@ import type { ResolveDnsFunction } from "./DnsUtils/resolveDns.ts";
  * - Node.js (with a fetch-enabled runtime)
  * - Edge runtimes / workers
  */
-export const DOH_ENDPOINT_CLOUDFLARE = "https://cloudflare-dns.com/dns-query";
-export const DOH_ENDPOINT_GOOGLE = "https://dns.google/resolve";
-
-export const DOH_ENDPOINTS = {
-  cloudflare: DOH_ENDPOINT_CLOUDFLARE,
-  google: DOH_ENDPOINT_GOOGLE,
-} as const;
-
 export type ResolveDnsDohOptions = {
   /**
    * DNS-over-HTTPS JSON endpoint.
    *
    * Choose one of:
-   * - {@link DOH_ENDPOINT_CLOUDFLARE}
-   * - {@link DOH_ENDPOINT_GOOGLE}
+   * - `DOH_ENDPOINTS.cloudflare`
+   * - `DOH_ENDPOINTS.google`
    * or provide your own compatible endpoint.
    */
   endpoint: string;
