@@ -1,5 +1,5 @@
 import type { ResolveDnsFunction } from "./DnsUtils/resolveDns.ts";
-export { DOH_ENDPOINTS } from "./resolveDns.nameServers.ts";
+export { PUBLIC_DNS } from "./resolveDns.nameServers.ts";
 
 /**
  * DNS-over-HTTPS resolver endpoints that work with this implementation.
@@ -15,8 +15,9 @@ export type ResolveDnsDohOptions = {
    * DNS-over-HTTPS JSON endpoint.
    *
    * Choose one of:
-   * - `DOH_ENDPOINTS.cloudflare`
-   * - `DOH_ENDPOINTS.google`
+   * - `PUBLIC_DNS.cloudflare.doh[0]`
+   * - `PUBLIC_DNS.google.doh[0]`
+   * - `PUBLIC_DNS.quad9.doh[0]`
    * or provide your own compatible endpoint.
    */
   endpoint: string;

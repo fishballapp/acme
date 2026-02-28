@@ -30,30 +30,3 @@ export const RECOMMENDED_PUBLIC_DNS_IPS = [
   PUBLIC_DNS.google.ipv4[0],
   PUBLIC_DNS.quad9.ipv4[0],
 ] as const;
-
-/**
- * Common public DNS resolver IPs grouped by provider.
- */
-export const PUBLIC_DNS_IPS = {
-  cloudflare: {
-    ipv4: PUBLIC_DNS.cloudflare.ipv4,
-    ipv6: PUBLIC_DNS.cloudflare.ipv6,
-  },
-  google: {
-    ipv4: PUBLIC_DNS.google.ipv4,
-    ipv6: PUBLIC_DNS.google.ipv6,
-  },
-  quad9: {
-    ipv4: PUBLIC_DNS.quad9.ipv4,
-    ipv6: PUBLIC_DNS.quad9.ipv6,
-  },
-} as const;
-
-/**
- * DNS-over-HTTPS JSON endpoints known to work with
- * `@fishballpkg/acme/resolveDns.doh`.
- */
-export const DOH_ENDPOINTS = {
-  cloudflare: PUBLIC_DNS.cloudflare.doh[0],
-  google: PUBLIC_DNS.google.doh[0],
-} as const;

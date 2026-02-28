@@ -295,13 +295,10 @@ console.log(certificate); // Logs the certificate in PEM format
 
 ```ts
 import { AcmeWorkflows } from "@fishballpkg/acme";
-import {
-  createResolveDns,
-  DOH_ENDPOINTS,
-} from "@fishballpkg/acme/resolveDns.doh";
+import { createResolveDns, PUBLIC_DNS } from "@fishballpkg/acme/resolveDns.doh";
 
 const resolveDns = createResolveDns({
-  endpoint: DOH_ENDPOINTS.cloudflare, // or DOH_ENDPOINTS.google
+  endpoint: PUBLIC_DNS.cloudflare.doh[0], // or PUBLIC_DNS.google.doh[0]
 });
 
 await AcmeWorkflows.requestCertificate({
@@ -319,14 +316,12 @@ accept records that all resolvers can see.
 
 ```ts
 import { AcmeWorkflows, DnsUtils } from "@fishballpkg/acme";
-import {
-  createResolveDns,
-  DOH_ENDPOINTS,
-} from "@fishballpkg/acme/resolveDns.doh";
+import { createResolveDns, PUBLIC_DNS } from "@fishballpkg/acme/resolveDns.doh";
 
 const resolveDns = DnsUtils.createUnanimousResolveDns([
-  createResolveDns({ endpoint: DOH_ENDPOINTS.cloudflare }),
-  createResolveDns({ endpoint: DOH_ENDPOINTS.google }),
+  createResolveDns({ endpoint: PUBLIC_DNS.cloudflare.doh[0] }),
+  createResolveDns({ endpoint: PUBLIC_DNS.google.doh[0] }),
+  createResolveDns({ endpoint: PUBLIC_DNS.quad9.doh[0] }),
 ]);
 
 await AcmeWorkflows.requestCertificate({
@@ -345,7 +340,6 @@ export common public DNS IP constants:
 
 - `PUBLIC_DNS`
 - `RECOMMENDED_PUBLIC_DNS_IPS`
-- `PUBLIC_DNS_IPS`
 
 ```ts
 import { AcmeWorkflows, DnsUtils } from "@fishballpkg/acme";
