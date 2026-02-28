@@ -1,5 +1,5 @@
 import { describe, expect, it } from "../../test_deps.ts";
-import { createUnanimousTxtResolveDns } from "./createUnanimousTxtResolveDns.ts";
+import { createUnanimousResolveDns } from "./createUnanimousResolveDns.ts";
 import type { ResolveDnsFunction } from "./resolveDns.ts";
 
 type MockRecords = {
@@ -16,9 +16,9 @@ const createMockResolveDns = (records: MockRecords): ResolveDnsFunction => {
   };
 };
 
-describe("createUnanimousTxtResolveDns", () => {
+describe("createUnanimousResolveDns", () => {
   it("returns TXT records that are visible from all resolvers", async () => {
-    const resolveDns = createUnanimousTxtResolveDns([
+    const resolveDns = createUnanimousResolveDns([
       createMockResolveDns({
         A: [],
         AAAA: [],
@@ -44,29 +44,35 @@ describe("createUnanimousTxtResolveDns", () => {
     ]);
   });
 
-  it("delegates non-TXT records to the first resolver", async () => {
-    const resolveDns = createUnanimousTxtResolveDns([
+  it("returns non-TXT records that are visible from all resolvers", async () => {
+    const resolveDns = createUnanimousResolveDns([
       createMockResolveDns({
-        A: ["1.1.1.1"],
+        A: ["1.1.1.1", "8.8.8.8"],
         AAAA: ["2001:db8::1"],
-        NS: ["ns1.example.com"],
+        NS: ["ns1.example.com", "ns-shared.example.com"],
         TXT: [],
       }),
       createMockResolveDns({
-        A: ["8.8.8.8"],
-        AAAA: ["2001:4860:4860::8888"],
-        NS: ["ns2.example.com"],
+        A: ["8.8.8.8", "9.9.9.9"],
+        AAAA: ["2001:db8::1", "2001:4860:4860::8888"],
+        NS: ["ns2.example.com", "ns-shared.example.com"],
         TXT: [],
       }),
     ]);
 
     await expect(resolveDns("example.com", "A")).resolves.toEqual([
-      "1.1.1.1",
+      "8.8.8.8",
+    ]);
+    await expect(resolveDns("example.com", "AAAA")).resolves.toEqual([
+      "2001:db8::1",
+    ]);
+    await expect(resolveDns("example.com", "NS")).resolves.toEqual([
+      "ns-shared.example.com",
     ]);
   });
 
   it("throws when no resolvers are provided", () => {
-    expect(() => createUnanimousTxtResolveDns([])).toThrow(
+    expect(() => createUnanimousResolveDns([])).toThrow(
       "Expected at least 1 resolver",
     );
   });

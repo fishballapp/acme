@@ -315,7 +315,7 @@ await AcmeWorkflows.requestCertificate({
 ### Multi-Resolver Verification (Strict)
 
 For more conservative DNS verification, combine multiple resolvers and only
-accept `TXT` records that all resolvers can see.
+accept records that all resolvers can see.
 
 ```ts
 import { AcmeWorkflows, DnsUtils } from "@fishballpkg/acme";
@@ -324,7 +324,7 @@ import {
   DOH_ENDPOINTS,
 } from "@fishballpkg/acme/resolveDns.doh";
 
-const resolveDns = DnsUtils.createUnanimousTxtResolveDns([
+const resolveDns = DnsUtils.createUnanimousResolveDns([
   createResolveDns({ endpoint: DOH_ENDPOINTS.cloudflare }),
   createResolveDns({ endpoint: DOH_ENDPOINTS.google }),
 ]);
@@ -353,7 +353,7 @@ import {
   RECOMMENDED_PUBLIC_DNS_IPS,
 } from "@fishballpkg/acme/resolveDns.node";
 
-const resolveDns = DnsUtils.createUnanimousTxtResolveDns(
+const resolveDns = DnsUtils.createUnanimousResolveDns(
   RECOMMENDED_PUBLIC_DNS_IPS.map((ipAddr) =>
     createResolveDns({
       nameServer: { ipAddr },
