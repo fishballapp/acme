@@ -10,10 +10,6 @@ export type PollDnsTxtRecordOptions = {
    */
   pollUntil: string | string[];
   /**
-   * The number of milliseconds to wait before the next lookup happen. (Default: 5000)
-   */
-  interval?: number;
-  /**
    * A callback that executes before each DNS lookup.
    */
   onBeforeAttempt?: () => void;
@@ -26,15 +22,11 @@ export type PollDnsTxtRecordOptions = {
    * A function to resolve DNS record.
    */
   resolveDns: ResolveDnsFunction;
-  /**
-   * The number of milliseconds to poll before giving up and throw an error. (Default: 30000)
-   */
-  timeout?: number;
 };
 
 /**
- * Lookup the DNS `TXT` record for `domain` every `interval`
- * (in ms, default: 5000) until the record matches `pollUntil`.
+ * Lookup the DNS `TXT` record for `domain` until the record matches
+ * `pollUntil`.
  *
  * The returned promise resolves only when every expected `pollUntil` value
  * appears in the records returned by the provided resolver.
@@ -78,10 +70,8 @@ export const pollDnsTxtRecord = async (
 ): Promise<void> => {
   const {
     resolveDns,
-    interval = 5000,
     onAfterFailAttempt,
     onBeforeAttempt,
-    timeout = 30_000,
   } = options;
   const pollUntil = typeof options.pollUntil === "string"
     ? [options.pollUntil]
@@ -98,7 +88,7 @@ export const pollDnsTxtRecord = async (
     return records.map((chunks) => chunks.join("")); // long txt are chunked
   };
 
-  const timeoutTime = Date.now() + timeout;
+  const timeoutTime = Date.now() + POLL_TIMEOUT;
   let latestRecordss: string[][] | undefined;
 
   while (Date.now() <= timeoutTime) {
@@ -121,7 +111,7 @@ export const pollDnsTxtRecord = async (
     }
 
     onAfterFailAttempt?.(latestRecordss);
-    await new Promise((res) => setTimeout(res, interval));
+    await new Promise((res) => setTimeout(res, POLL_INTERVAL));
   }
 
   throw new TimeoutError(`Giving up on polling dns txt record
@@ -130,3 +120,6 @@ ${JSON.stringify(latestRecordss, null, 2)}
 
 Expected record: ${pollUntil}`);
 };
+
+const POLL_INTERVAL = 5_000;
+const POLL_TIMEOUT = 30_000;

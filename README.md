@@ -312,6 +312,31 @@ await AcmeWorkflows.requestCertificate({
 });
 ```
 
+### Multi-Resolver Verification (Strict)
+
+For more conservative DNS verification, combine multiple resolvers and only
+accept records that all resolvers can see.
+
+```ts
+import { AcmeWorkflows, DnsUtils } from "@fishballpkg/acme";
+import {
+  createResolveDns,
+  DOH_ENDPOINTS,
+} from "@fishballpkg/acme/resolveDns.doh";
+
+const resolveDns = DnsUtils.createUnanimousResolveDns([
+  createResolveDns({ endpoint: DOH_ENDPOINTS.cloudflare }),
+  createResolveDns({ endpoint: DOH_ENDPOINTS.google }),
+]);
+
+await AcmeWorkflows.requestCertificate({
+  acmeAccount,
+  domains,
+  updateDnsRecords,
+  resolveDns,
+});
+```
+
 ## Roadmap
 
 - [x] Account

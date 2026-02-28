@@ -88,7 +88,6 @@ export const requestCertificate = async (
     await DnsUtils.pollDnsTxtRecord(expectedRecord.name, {
       pollUntil: expectedRecord.content,
       resolveDns,
-      timeout,
     });
   }));
 
