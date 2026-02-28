@@ -1,1 +1,1 @@
-export const resolveDns = Deno.resolveDns;
+export { createResolveDns, resolveDns } from "../resolveDns.deno.ts";

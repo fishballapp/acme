@@ -1,7 +1,9 @@
-import {
-  defaultResolveDns,
-  type ResolveDnsFunction,
-} from "../../src/DnsUtils/resolveDns.ts";
+import { createResolveDns } from "../../src/resolveDns.deno.ts";
+import type { ResolveDnsFunction } from "../../src/DnsUtils/resolveDns.ts";
+
+const defaultResolveDns = createResolveDns({
+  defaultAuthoritativeForTxt: false,
+});
 
 /**
  * A resolveDns function specifically for integration tests to allow TXT lookups to be done via pebble-testchallsrv
