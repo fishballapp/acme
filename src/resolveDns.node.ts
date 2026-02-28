@@ -7,37 +7,50 @@ import { isIPv4, isIPv6 } from "node:net";
 import type { ResolveDnsFunction } from "./DnsUtils/resolveDns.ts";
 import { withAuthoritativeLookup } from "./DnsUtils/withAuthoritativeLookup.ts";
 
+type NameServerConfig = {
+  ipAddr: string;
+  port?: number;
+};
+
 export type ResolveDnsNodeOptions = {
   /**
    * Whether TXT lookups should use authoritative name server intersection by
-   * default. This can still be overridden per call using
-   * `options.authoritative`.
+   * default.
    *
    * Default: `true`
    */
   defaultAuthoritativeForTxt?: boolean;
-};
-
-const baseResolveDns: ResolveDnsFunction = async (
-  domain,
-  recordType,
-  options,
-) => {
-  const resolver = new Resolver();
-  if (options?.nameServer?.ipAddr !== undefined) {
-    resolver.setServers([
-      ipPort(options.nameServer.ipAddr, options.nameServer.port ?? 53),
-    ]);
-  }
-
-  // deno-lint-ignore no-explicit-any -- TS generic inference for conditional return type is difficult here.
-  return (await resolver.resolve(domain, recordType)) as any;
+  /**
+   * If provided, all non-authoritative queries use this nameserver by default.
+   */
+  nameServer?: NameServerConfig;
 };
 
 export const createResolveDns = (
   options: ResolveDnsNodeOptions = {},
 ): ResolveDnsFunction => {
-  const { defaultAuthoritativeForTxt = true } = options;
+  const { defaultAuthoritativeForTxt = true, nameServer } = options;
+
+  const baseResolveDns = async <
+    R extends "A" | "AAAA" | "NS" | "TXT",
+  >(
+    domain: string,
+    recordType: R,
+    queryOptions?: {
+      nameServer?: NameServerConfig;
+    },
+  ): Promise<"TXT" extends R ? string[][] : string[]> => {
+    const resolver = new Resolver();
+    const configuredNameServer = queryOptions?.nameServer ?? nameServer;
+    if (configuredNameServer !== undefined) {
+      resolver.setServers([
+        ipPort(configuredNameServer.ipAddr, configuredNameServer.port ?? 53),
+      ]);
+    }
+
+    // deno-lint-ignore no-explicit-any -- TS generic inference for conditional return type is difficult here.
+    return (await resolver.resolve(domain, recordType)) as any;
+  };
 
   return withAuthoritativeLookup(baseResolveDns, {
     defaultAuthoritativeForTxt,

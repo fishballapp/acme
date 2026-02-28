@@ -30,11 +30,6 @@ type DnsJsonResponse = {
 
 /**
  * A DNS resolver that uses DNS-over-HTTPS (DoH) via `fetch`.
- *
- * Note:
- * - `options.nameServer` is ignored because DoH resolvers are recursive and
- *   do not support direct authoritative server IP targeting.
- * - `options.authoritative` is ignored for the same reason.
  */
 export const createResolveDns = (
   options: ResolveDnsFetchOptions = {},
