@@ -288,6 +288,30 @@ const {
 console.log(certificate); // Logs the certificate in PEM format
 ```
 
+### DNS-over-HTTPS Resolver (Browser-Friendly)
+
+`@fishballpkg/acme/resolveDns.doh` can be used in any runtime that supports
+`fetch`, including browsers.
+
+```ts
+import { AcmeWorkflows } from "@fishballpkg/acme";
+import {
+  createResolveDns,
+  DOH_ENDPOINTS,
+} from "@fishballpkg/acme/resolveDns.doh";
+
+const resolveDns = createResolveDns({
+  endpoint: DOH_ENDPOINTS.cloudflare, // or DOH_ENDPOINTS.google
+});
+
+await AcmeWorkflows.requestCertificate({
+  acmeAccount,
+  domains,
+  updateDnsRecords,
+  resolveDns,
+});
+```
+
 ## Roadmap
 
 - [x] Account

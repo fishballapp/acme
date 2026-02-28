@@ -1,5 +1,14 @@
 import type { ResolveDnsFunction } from "./DnsUtils/resolveDns.ts";
 
+/**
+ * DNS-over-HTTPS resolver endpoints that work with this implementation.
+ *
+ * This resolver can be used in any runtime that supports `fetch`, including:
+ * - Browsers
+ * - Deno
+ * - Node.js (with a fetch-enabled runtime)
+ * - Edge runtimes / workers
+ */
 export const DOH_ENDPOINT_CLOUDFLARE = "https://cloudflare-dns.com/dns-query";
 export const DOH_ENDPOINT_GOOGLE = "https://dns.google/resolve";
 
@@ -41,6 +50,9 @@ type DnsJsonResponse = {
 
 /**
  * A DNS resolver that uses DNS-over-HTTPS (DoH) via `fetch`.
+ *
+ * This implementation is runtime-agnostic and works in any environment where
+ * `fetch` is available, including browsers.
  */
 export const createResolveDns = (
   options: ResolveDnsDohOptions,
