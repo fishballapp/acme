@@ -16,6 +16,76 @@ scratch.
 > organisation associated with your selected ACME directory, including any
 > additional or future terms of service.
 
+## Migration Guide (v0.15.0)
+
+This release includes breaking changes around DNS resolvers.
+
+### 1. DoH module path and endpoint constants
+
+- Old: `@fishballpkg/acme/resolveDns.fetch`
+- New: `@fishballpkg/acme/resolveDns.doh`
+
+- Old:
+  - `DOH_ENDPOINTS.cloudflare`
+  - `DOH_ENDPOINTS.google`
+- New:
+  - `PUBLIC_DNS.cloudflare.doh[0]`
+  - `PUBLIC_DNS.google.doh[0]`
+  - `PUBLIC_DNS.quad9.doh[0]`
+
+```ts
+import { createResolveDns, PUBLIC_DNS } from "@fishballpkg/acme/resolveDns.doh";
+
+const resolveDns = createResolveDns({
+  endpoint: PUBLIC_DNS.cloudflare.doh[0],
+});
+```
+
+### 2. Public DNS constants shape
+
+`PUBLIC_DNS` is now provider-first:
+
+```ts
+PUBLIC_DNS.google.ipv4; // ["8.8.8.8", "8.8.4.4"]
+PUBLIC_DNS.google.ipv6; // ["2001:4860:4860::8888", "2001:4860:4860::8844"]
+PUBLIC_DNS.google.doh; // ["https://dns.google/resolve"]
+```
+
+### 3. Authoritative lookup helpers removed from `DnsUtils`
+
+These exports are removed:
+
+- `DnsUtils.findAuthoritativeNameServerIps`
+- `DnsUtils.withAuthoritativeLookup`
+
+If you need stricter propagation checks, use:
+
+- `DnsUtils.createUnanimousResolveDns([...resolvers])`
+
+### 4. Node/Deno resolver options simplified
+
+`createResolveDns` from `resolveDns.node` / `resolveDns.deno` only accepts:
+
+- `nameServer?: { ipAddr: string; port?: number }`
+
+The `defaultAuthoritativeForTxt` behavior was removed.
+
+### 5. DNS polling timeout behavior
+
+`DnsUtils.pollDnsTxtRecord` still supports:
+
+- `interval?: number`
+- `timeout?: number`
+
+But default `timeout` increased from `30000` to `600000` (10 minutes).
+
+### 6. Workflow timeout split
+
+In `AcmeWorkflows.requestCertificate(...)`:
+
+- `timeout` now controls ACME order polling (`ready` / `valid`) only.
+- Use `dnsTimeout` to control DNS TXT polling timeout.
+
 ## Example
 
 Run this [example CLI tool] to generate a certificate for your domain with Let's
