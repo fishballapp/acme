@@ -10,6 +10,12 @@ export type PollDnsTxtRecordOptions = {
    */
   pollUntil: string | string[];
   /**
+   * Delay (ms) between DNS lookup attempts.
+   *
+   * Default: `5000`
+   */
+  interval?: number;
+  /**
    * Maximum duration (ms) to keep polling before failing.
    *
    * Default: `600000` (10 minutes)
@@ -76,6 +82,7 @@ export const pollDnsTxtRecord = async (
 ): Promise<void> => {
   const {
     resolveDns,
+    interval = DEFAULT_INTERVAL,
     pollingWindow = DEFAULT_POLLING_WINDOW,
     onAfterFailAttempt,
     onBeforeAttempt,
@@ -118,7 +125,7 @@ export const pollDnsTxtRecord = async (
     }
 
     onAfterFailAttempt?.(latestRecordss);
-    await new Promise((res) => setTimeout(res, POLL_INTERVAL));
+    await new Promise((res) => setTimeout(res, interval));
   }
 
   throw new TimeoutError(`Giving up on polling dns txt record
@@ -128,5 +135,5 @@ ${JSON.stringify(latestRecordss, null, 2)}
 Expected record: ${pollUntil}`);
 };
 
-const POLL_INTERVAL = 5_000;
+const DEFAULT_INTERVAL = 5_000;
 const DEFAULT_POLLING_WINDOW = 10 * 60_000;
