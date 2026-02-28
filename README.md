@@ -16,75 +16,82 @@ scratch.
 > organisation associated with your selected ACME directory, including any
 > additional or future terms of service.
 
-## Migration Guide (v0.15.0)
+## Migration Guide (v0.14.x -> v0.15.0)
 
-This release includes breaking changes around DNS resolvers.
+This guide maps from `origin/main` (`v0.14.0`) to `v0.15.0`.
 
-### 1. DoH module path and endpoint constants
+### 1. `resolveDns` is now explicit in workflows
 
-- Old: `@fishballpkg/acme/resolveDns.fetch`
-- New: `@fishballpkg/acme/resolveDns.doh`
+In `v0.14.x`, `AcmeWorkflows.requestCertificate(...)` accepted optional
+`resolveDns` and fell back to the old default DNS behavior.
 
-- Old:
-  - `DOH_ENDPOINTS.cloudflare`
-  - `DOH_ENDPOINTS.google`
-- New:
-  - `PUBLIC_DNS.cloudflare.doh[0]`
-  - `PUBLIC_DNS.google.doh[0]`
-  - `PUBLIC_DNS.quad9.doh[0]`
+In `v0.15.0`, `resolveDns` is required.
 
 ```ts
-import { createResolveDns, PUBLIC_DNS } from "@fishballpkg/acme/resolveDns.doh";
+import { resolveDns } from "@fishballpkg/acme/resolveDns.deno";
+// or "@fishballpkg/acme/resolveDns.node"
 
-const resolveDns = createResolveDns({
-  endpoint: PUBLIC_DNS.cloudflare.doh[0],
+await AcmeWorkflows.requestCertificate({
+  acmeAccount,
+  domains,
+  updateDnsRecords,
+  resolveDns,
 });
 ```
 
-### 2. Public DNS constants shape
+### 2. `pollDnsTxtRecord` API changed
 
-`PUBLIC_DNS` is now provider-first:
+From `v0.14.x` to `v0.15.0`:
+
+- `resolveDns` changed from optional to required.
+- `nameServerIps` was removed.
+- `interval` is still supported.
+- `timeout` is still supported.
+- default `timeout` increased from `30000` to `600000` (10 minutes).
+
+If you previously relied on implicit authoritative-name-server behavior via
+`nameServerIps` / discovery, build a resolver explicitly and pass it in.
+
+### 3. `timeout` in `requestCertificate` is now split
+
+In `v0.14.x`, `timeout` applied to both:
+
+- DNS TXT polling
+- ACME order status polling
+
+In `v0.15.0`:
+
+- `timeout` controls ACME order polling (`ready` / `valid`).
+- `dnsTimeout` controls DNS TXT polling.
+
+### 4. `DnsUtils` exports removed/changed
+
+From `v0.14.x`:
+
+- `DnsUtils.findAuthoritativeNameServerIps` removed.
+- `DnsUtils.defaultResolveDns` removed.
+- `ResolveDnsFunction` no longer accepts the third `options` argument
+  (`nameServer` override per call).
+
+If you need strict propagation checks across multiple resolvers, use:
+
+- `DnsUtils.createUnanimousResolveDns([...resolvers])`
+
+### 5. New resolver entrypoints and `PUBLIC_DNS`
+
+`v0.15.0` adds runtime-specific resolver entrypoints:
+
+- `@fishballpkg/acme/resolveDns.deno`
+- `@fishballpkg/acme/resolveDns.node`
+- `@fishballpkg/acme/resolveDns.doh`
+
+The shared DNS constants are now available as `PUBLIC_DNS`:
 
 ```ts
 PUBLIC_DNS.google.ipv4; // ["8.8.8.8", "8.8.4.4"]
 PUBLIC_DNS.google.ipv6; // ["2001:4860:4860::8888", "2001:4860:4860::8844"]
 PUBLIC_DNS.google.doh; // ["https://dns.google/resolve"]
 ```
-
-### 3. Authoritative lookup helpers removed from `DnsUtils`
-
-These exports are removed:
-
-- `DnsUtils.findAuthoritativeNameServerIps`
-- `DnsUtils.withAuthoritativeLookup`
-
-If you need stricter propagation checks, use:
-
-- `DnsUtils.createUnanimousResolveDns([...resolvers])`
-
-### 4. Node/Deno resolver options simplified
-
-`createResolveDns` from `resolveDns.node` / `resolveDns.deno` only accepts:
-
-- `nameServer?: { ipAddr: string; port?: number }`
-
-The `defaultAuthoritativeForTxt` behavior was removed.
-
-### 5. DNS polling timeout behavior
-
-`DnsUtils.pollDnsTxtRecord` still supports:
-
-- `interval?: number`
-- `timeout?: number`
-
-But default `timeout` increased from `30000` to `600000` (10 minutes).
-
-### 6. Workflow timeout split
-
-In `AcmeWorkflows.requestCertificate(...)`:
-
-- `timeout` now controls ACME order polling (`ready` / `valid`) only.
-- Use `dnsTimeout` to control DNS TXT polling timeout.
 
 ## Example
 
