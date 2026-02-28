@@ -85,12 +85,14 @@ If you need strict propagation checks across multiple resolvers, use:
 - `@fishballpkg/acme/resolveDns.node`
 - `@fishballpkg/acme/resolveDns.doh`
 
-The shared DNS constants are now available as `PUBLIC_DNS`:
+The shared DNS constants are now available as `PUBLIC_DNS` and
+`RECOMMENDED_PUBLIC_DNS_IPS`:
 
 ```ts
 PUBLIC_DNS.google.ipv4; // ["8.8.8.8", "8.8.4.4"]
 PUBLIC_DNS.google.ipv6; // ["2001:4860:4860::8888", "2001:4860:4860::8844"]
 PUBLIC_DNS.google.doh; // ["https://dns.google/resolve"]
+RECOMMENDED_PUBLIC_DNS_IPS; // ["1.1.1.1", "8.8.8.8", "9.9.9.9"]
 ```
 
 ## Example
@@ -422,11 +424,11 @@ export common public DNS IP constants:
 import { AcmeWorkflows, DnsUtils } from "@fishballpkg/acme";
 import {
   createResolveDns,
-  PUBLIC_DNS,
+  RECOMMENDED_PUBLIC_DNS_IPS,
 } from "@fishballpkg/acme/resolveDns.node";
 
 const resolveDns = DnsUtils.createUnanimousResolveDns(
-  PUBLIC_DNS.google.ipv4.map((ipAddr) =>
+  RECOMMENDED_PUBLIC_DNS_IPS.map((ipAddr) =>
     createResolveDns({
       nameServer: { ipAddr },
     })
