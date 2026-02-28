@@ -18,14 +18,11 @@ scratch.
 
 ## Migration Guide (v0.14.x -> v0.15.0)
 
-This guide maps from `v0.14.x` to `v0.15.0`.
+If you want behavior close to `v0.14.x`, do this first:
 
-### 1. `resolveDns` is now explicit in workflows
+### 1. Pass an explicit resolver to workflows
 
-In `v0.14.x`, `AcmeWorkflows.requestCertificate(...)` accepted optional
-`resolveDns` and fell back to the old default DNS behavior.
-
-In `v0.15.0`, `resolveDns` is required.
+`AcmeWorkflows.requestCertificate(...)` now requires `resolveDns`.
 
 ```ts
 import { resolveDns } from "@fishballpkg/acme/resolveDns.deno";
@@ -36,64 +33,84 @@ await AcmeWorkflows.requestCertificate({
   domains,
   updateDnsRecords,
   resolveDns,
+  dnsTimeout: 30_000, // v0.14-style DNS timeout
+  timeout: 30_000, // v0.14-style order polling timeout
 });
 ```
 
-### 2. `pollDnsTxtRecord` API changed
+### 2. If you call `pollDnsTxtRecord` directly
 
-From `v0.14.x` to `v0.15.0`:
+Old behavior:
 
-- `resolveDns` changed from optional to required.
-- `nameServerIps` was removed.
-- `interval` is still supported.
-- `timeout` is still supported.
-- default `timeout` increased from `30000` to `600000` (10 minutes).
+- `resolveDns` was optional.
+- `nameServerIps` and authoritative discovery were built in.
 
-If you previously relied on implicit authoritative-name-server behavior via
-`nameServerIps` / discovery, build a resolver explicitly and pass it in.
+New behavior:
 
-### 3. `timeout` in `requestCertificate` is now split
+- `resolveDns` is required.
+- `nameServerIps` is removed.
+- Use your own resolver strategy explicitly.
 
-In `v0.14.x`, `timeout` applied to both:
-
-- DNS TXT polling
-- ACME order status polling
-
-In `v0.15.0`:
-
-- `timeout` controls ACME order polling (`ready` / `valid`).
-- `dnsTimeout` controls DNS TXT polling.
-
-### 4. `DnsUtils` exports removed/changed
-
-From `v0.14.x`:
-
-- `DnsUtils.findAuthoritativeNameServerIps` removed.
-- `DnsUtils.defaultResolveDns` removed.
-- `ResolveDnsFunction` no longer accepts the third `options` argument
-  (`nameServer` override per call).
-
-If you need strict propagation checks across multiple resolvers, use:
-
-- `DnsUtils.createUnanimousResolveDns([...resolvers])`
-
-### 5. New resolver entrypoints and `PUBLIC_DNS`
-
-`v0.15.0` adds runtime-specific resolver entrypoints:
-
-- `@fishballpkg/acme/resolveDns.deno`
-- `@fishballpkg/acme/resolveDns.node`
-- `@fishballpkg/acme/resolveDns.doh`
-
-The shared DNS constants are now available as `PUBLIC_DNS` and
-`RECOMMENDED_PUBLIC_DNS_IPS`:
+Closest strict replacement for old “check across multiple resolvers” behavior:
 
 ```ts
-PUBLIC_DNS.google.ipv4; // ["8.8.8.8", "8.8.4.4"]
-PUBLIC_DNS.google.ipv6; // ["2001:4860:4860::8888", "2001:4860:4860::8844"]
-PUBLIC_DNS.google.doh; // ["https://dns.google/resolve"]
-RECOMMENDED_PUBLIC_DNS_IPS; // ["1.1.1.1", "8.8.8.8", "9.9.9.9"]
+import { DnsUtils } from "@fishballpkg/acme";
+import {
+  createResolveDns,
+  RECOMMENDED_PUBLIC_DNS_IPS,
+} from "@fishballpkg/acme/resolveDns.node";
+
+const resolveDns = DnsUtils.createUnanimousResolveDns(
+  RECOMMENDED_PUBLIC_DNS_IPS.map((ipAddr) =>
+    createResolveDns({
+      nameServer: { ipAddr },
+    })
+  ),
+);
+
+await DnsUtils.pollDnsTxtRecord("_acme-challenge.example.com.", {
+  pollUntil: "expected-value",
+  resolveDns,
+  interval: 5000,
+  timeout: 30_000, // match v0.14 timeout if you want
+});
 ```
+
+### 3. If you used per-query nameserver overrides
+
+Old (`v0.14.x`):
+
+```ts
+await resolveDns("example.com", "TXT", {
+  nameServer: { ipAddr: "8.8.8.8" },
+});
+```
+
+New (`v0.15.0`):
+
+```ts
+import { createResolveDns } from "@fishballpkg/acme/resolveDns.node";
+
+const resolveDns = createResolveDns({
+  nameServer: { ipAddr: "8.8.8.8" },
+});
+await resolveDns("example.com", "TXT");
+```
+
+### New capabilities you can opt into
+
+- Use DoH resolvers (browser-friendly) via `@fishballpkg/acme/resolveDns.doh`.
+- Use `PUBLIC_DNS.<provider>.doh[0]` for known DoH endpoints.
+- Use `DnsUtils.createUnanimousResolveDns([...])` for strict multi-resolver
+  intersection.
+- Configure DNS timeout separately from ACME order polling timeout:
+- Use `dnsTimeout` for DNS TXT polling.
+- Use `timeout` for order status polling.
+- Use provider grouped constants:
+- Use `PUBLIC_DNS.<provider>.ipv4`.
+- Use `PUBLIC_DNS.<provider>.ipv6`.
+- Use `PUBLIC_DNS.<provider>.doh`.
+- Use `RECOMMENDED_PUBLIC_DNS_IPS`.
 
 ## Example
 
