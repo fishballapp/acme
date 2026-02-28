@@ -1,12 +1,23 @@
 import type { ResolveDnsFunction } from "./DnsUtils/resolveDns.ts";
 
-export type ResolveDnsFetchOptions = {
+export const DOH_ENDPOINT_CLOUDFLARE = "https://cloudflare-dns.com/dns-query";
+export const DOH_ENDPOINT_GOOGLE = "https://dns.google/resolve";
+
+export const DOH_ENDPOINTS = {
+  cloudflare: DOH_ENDPOINT_CLOUDFLARE,
+  google: DOH_ENDPOINT_GOOGLE,
+} as const;
+
+export type ResolveDnsDohOptions = {
   /**
    * DNS-over-HTTPS JSON endpoint.
    *
-   * Default: `https://cloudflare-dns.com/dns-query`
+   * Choose one of:
+   * - {@link DOH_ENDPOINT_CLOUDFLARE}
+   * - {@link DOH_ENDPOINT_GOOGLE}
+   * or provide your own compatible endpoint.
    */
-  endpoint?: string;
+  endpoint: string;
 };
 
 type DnsRecordType = "A" | "AAAA" | "NS" | "TXT";
@@ -32,9 +43,9 @@ type DnsJsonResponse = {
  * A DNS resolver that uses DNS-over-HTTPS (DoH) via `fetch`.
  */
 export const createResolveDns = (
-  options: ResolveDnsFetchOptions = {},
+  options: ResolveDnsDohOptions,
 ): ResolveDnsFunction => {
-  const endpoint = options.endpoint ?? "https://cloudflare-dns.com/dns-query";
+  const { endpoint } = options;
 
   return async (domain, recordType) => {
     const url = new URL(endpoint);
@@ -74,8 +85,6 @@ export const createResolveDns = (
     return answers.map((answer) => answer.data) as any;
   };
 };
-
-export const resolveDns: ResolveDnsFunction = createResolveDns();
 
 const stripWrappingQuotes = (value: string): string => {
   if (value.startsWith('"') && value.endsWith('"')) {
