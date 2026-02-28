@@ -60,10 +60,7 @@ export type PollDnsTxtRecordOptions = {
  *       console.log(`Looking up DNS records...`);
  *     },
  *     onAfterFailAttempt: (recordss) => {
- *       for (const [i, records] of recordss.entries()) {
- *         console.log(`Record in Authoritative Name Server ${i}`);
- *         console.log(records);
- *       }
+ *       console.log(recordss);
  *       console.log("Retrying later...");
  *     },
  *   },
@@ -107,7 +104,7 @@ export const pollDnsTxtRecord = async (
   while (Date.now() <= timeoutTime) {
     onBeforeAttempt?.();
 
-    // latestRecordss contians records from each name server we test
+    // latestRecordss contains records returned by resolveDns in this attempt.
     try {
       latestRecordss = [await resolveDnsTxt(domain)];
     } catch {

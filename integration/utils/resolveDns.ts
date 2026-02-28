@@ -2,7 +2,6 @@ import { createResolveDns } from "../../src/resolveDns.deno.ts";
 import type { ResolveDnsFunction } from "../../src/DnsUtils/resolveDns.ts";
 
 const defaultResolveDns = createResolveDns({
-  defaultAuthoritativeForTxt: false,
   nameServer: {
     ipAddr: "127.0.0.1",
     port: 8053,
