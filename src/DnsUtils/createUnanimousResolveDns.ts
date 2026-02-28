@@ -47,10 +47,7 @@ const intersectAll = (recordss: readonly string[][]): string[] => {
 
   let commonRecords = new Set(firstRecords);
   for (const records of remainingRecordss) {
-    const recordSet = new Set(records);
-    commonRecords = new Set(
-      [...commonRecords].filter((record) => recordSet.has(record)),
-    );
+    commonRecords = commonRecords.intersection(new Set(records));
     if (commonRecords.size === 0) {
       break;
     }
