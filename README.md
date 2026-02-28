@@ -343,6 +343,7 @@ await AcmeWorkflows.requestCertificate({
 `@fishballpkg/acme/resolveDns.node` and `@fishballpkg/acme/resolveDns.deno` also
 export common public DNS IP constants:
 
+- `PUBLIC_DNS`
 - `RECOMMENDED_PUBLIC_DNS_IPS`
 - `PUBLIC_DNS_IPS`
 
@@ -350,11 +351,11 @@ export common public DNS IP constants:
 import { AcmeWorkflows, DnsUtils } from "@fishballpkg/acme";
 import {
   createResolveDns,
-  RECOMMENDED_PUBLIC_DNS_IPS,
+  PUBLIC_DNS,
 } from "@fishballpkg/acme/resolveDns.node";
 
 const resolveDns = DnsUtils.createUnanimousResolveDns(
-  RECOMMENDED_PUBLIC_DNS_IPS.map((ipAddr) =>
+  PUBLIC_DNS.google.ipv4.map((ipAddr) =>
     createResolveDns({
       nameServer: { ipAddr },
     })
