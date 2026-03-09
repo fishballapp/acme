@@ -52,6 +52,11 @@ const DNS_RESPONSE_CODES = {
  *
  * This implementation is runtime-agnostic and works in any environment where
  * `fetch` is available, including browsers.
+ *
+ * Behavior:
+ * - Returns `[]` for `NXDOMAIN` responses.
+ * - Throws for other DNS failure statuses (for example `SERVFAIL`) and network
+ *   / HTTP errors.
  */
 export const createResolveDns = (
   options: ResolveDnsDohOptions,

@@ -297,6 +297,12 @@ const {
 console.log(certificate); // Logs the certificate in PEM format
 ```
 
+If you provide your own `resolveDns` implementation, follow this contract:
+
+- Return `[]` when the requested record type is simply not visible yet.
+- Throw only for actual resolver failures such as transport, configuration, or
+  upstream DNS server errors.
+
 ### DNS-over-HTTPS Resolver (Browser-Friendly)
 
 `@fishballpkg/acme/resolveDns.doh` can be used in any runtime that supports
@@ -318,10 +324,18 @@ await AcmeWorkflows.requestCertificate({
 });
 ```
 
+`resolveDns.doh` treats `NXDOMAIN` as "no records yet" and returns `[]`. Other
+DNS failure statuses, plus HTTP/network failures, throw an error.
+
 ### Multi-Resolver Verification (Strict)
 
 For more conservative DNS verification, combine multiple resolvers and only
 accept records that all resolvers can see.
+
+Each resolver in the set should follow the same contract:
+
+- Return `[]` when a record is missing.
+- Throw when the resolver itself has failed.
 
 ```ts
 import { AcmeWorkflows, DnsUtils } from "@fishballpkg/acme";
