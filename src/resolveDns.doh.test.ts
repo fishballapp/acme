@@ -1,12 +1,17 @@
 import { describe, expect, it } from "../test_deps.ts";
 import { createResolveDns } from "./resolveDns.doh.ts";
 
+type MockFetch = (
+  ...args: Parameters<typeof fetch>
+) => Response | Promise<Response>;
+
 const withMockFetch = async (
-  mockFetch: typeof fetch,
+  mockFetch: MockFetch,
   fn: () => Promise<void>,
 ): Promise<void> => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = mockFetch;
+  globalThis.fetch =
+    ((...args) => Promise.resolve(mockFetch(...args))) as typeof fetch;
   try {
     await fn();
   } finally {
@@ -29,7 +34,7 @@ const createJsonResponse = (
 
 describe("createResolveDns (DoH)", () => {
   it("returns single-string TXT answers as single chunks", async () => {
-    await withMockFetch(async () =>
+    await withMockFetch(() =>
       createJsonResponse({
         Status: 0,
         Answer: [{ type: 16, data: '"value"' }],
@@ -45,7 +50,7 @@ describe("createResolveDns (DoH)", () => {
   });
 
   it("parses TXT answers with multiple quoted chunks and escapes", async () => {
-    await withMockFetch(async () =>
+    await withMockFetch(() =>
       createJsonResponse({
         Status: 0,
         Answer: [
@@ -65,7 +70,7 @@ describe("createResolveDns (DoH)", () => {
   });
 
   it("falls back to a single TXT chunk for unexpected unquoted data", async () => {
-    await withMockFetch(async () =>
+    await withMockFetch(() =>
       createJsonResponse({
         Status: 0,
         Answer: [{ type: 16, data: "unquoted-value" }],
@@ -81,7 +86,7 @@ describe("createResolveDns (DoH)", () => {
   });
 
   it("returns non-TXT answers unchanged", async () => {
-    await withMockFetch(async () =>
+    await withMockFetch(() =>
       createJsonResponse({
         Status: 0,
         Answer: [
@@ -101,7 +106,7 @@ describe("createResolveDns (DoH)", () => {
   });
 
   it("returns an empty array when the DoH response status is non-zero", async () => {
-    await withMockFetch(async () =>
+    await withMockFetch(() =>
       createJsonResponse({
         Status: 3,
       }), async () => {
@@ -116,7 +121,7 @@ describe("createResolveDns (DoH)", () => {
   });
 
   it("throws on non-2xx HTTP responses", async () => {
-    await withMockFetch(async () =>
+    await withMockFetch(() =>
       new Response("nope", {
         status: 503,
         statusText: "Service Unavailable",
