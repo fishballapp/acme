@@ -16,6 +16,12 @@ scratch.
 > organisation associated with your selected ACME directory, including any
 > additional or future terms of service.
 
+## Migration Guide (v0.14.x -> v0.15.0)
+
+See the full migration guide:
+
+- [Migrate from `v0.14.x` to `v0.15.0`](./docs/migrations/0.15.0.md)
+
 ## Example
 
 Run this [example CLI tool] to generate a certificate for your domain with Let's
@@ -266,12 +272,14 @@ import {
   AcmeOrder,
   AcmeWorkflows,
 } from "@fishballpkg/acme";
+import { resolveDns } from "@fishballpkg/acme/resolveDns.deno";
+// Node.js users can import `resolveDns` from "@fishballpkg/acme/resolveDns.node".
 
 const client = await AcmeClient.init(
   ACME_DIRECTORY_URLS.LETS_ENCRYPT_STAGING,
 );
 
-const acmeAccount = await client.createAccount({ email: EMAIL });
+const acmeAccount = await client.createAccount({ emails: [EMAIL] });
 
 const {
   certificate,
@@ -283,9 +291,100 @@ const {
   updateDnsRecords: async (dnsRecords) => {
     // ... update dns records
   },
+  resolveDns,
 });
 
 console.log(certificate); // Logs the certificate in PEM format
+```
+
+If you provide your own `resolveDns` implementation, follow this contract:
+
+- Return `[]` when the requested record type is simply not visible yet.
+- Throw only for actual resolver failures such as transport, configuration, or
+  upstream DNS server errors.
+
+### DNS-over-HTTPS Resolver (Browser-Friendly)
+
+`@fishballpkg/acme/resolveDns.doh` can be used in any runtime that supports
+`fetch`, including browsers.
+
+```ts
+import { AcmeWorkflows } from "@fishballpkg/acme";
+import { createResolveDns, PUBLIC_DNS } from "@fishballpkg/acme/resolveDns.doh";
+
+const resolveDns = createResolveDns({
+  endpoint: PUBLIC_DNS.cloudflare.doh[0], // or PUBLIC_DNS.google.doh[0]
+});
+
+await AcmeWorkflows.requestCertificate({
+  acmeAccount,
+  domains,
+  updateDnsRecords,
+  resolveDns,
+});
+```
+
+`resolveDns.doh` treats `NXDOMAIN` as "no records yet" and returns `[]`. Other
+DNS failure statuses, plus HTTP/network failures, throw an error.
+
+### Multi-Resolver Verification (Strict)
+
+For more conservative DNS verification, combine multiple resolvers and only
+accept records that all resolvers can see.
+
+Each resolver in the set should follow the same contract:
+
+- Return `[]` when a record is missing.
+- Throw when the resolver itself has failed.
+
+```ts
+import { AcmeWorkflows, DnsUtils } from "@fishballpkg/acme";
+import { createResolveDns, PUBLIC_DNS } from "@fishballpkg/acme/resolveDns.doh";
+
+const resolveDns = DnsUtils.createUnanimousResolveDns([
+  createResolveDns({ endpoint: PUBLIC_DNS.cloudflare.doh[0] }),
+  createResolveDns({ endpoint: PUBLIC_DNS.google.doh[0] }),
+  createResolveDns({ endpoint: PUBLIC_DNS.quad9.doh[0] }),
+]);
+
+await AcmeWorkflows.requestCertificate({
+  acmeAccount,
+  domains,
+  updateDnsRecords,
+  resolveDns,
+  dnsTimeout: 10 * 60_000, // optional, defaults to 10 minutes
+});
+```
+
+### Public DNS IP Constants (Node / Deno)
+
+`@fishballpkg/acme/resolveDns.node` and `@fishballpkg/acme/resolveDns.deno` also
+export common public DNS IP constants:
+
+- `PUBLIC_DNS`
+- `RECOMMENDED_PUBLIC_DNS_IPS`
+
+```ts
+import { AcmeWorkflows, DnsUtils } from "@fishballpkg/acme";
+import {
+  createResolveDns,
+  RECOMMENDED_PUBLIC_DNS_IPS,
+} from "@fishballpkg/acme/resolveDns.node";
+
+const resolveDns = DnsUtils.createUnanimousResolveDns(
+  RECOMMENDED_PUBLIC_DNS_IPS.map((ipAddr) =>
+    createResolveDns({
+      nameServer: { ipAddr },
+    })
+  ),
+);
+
+await AcmeWorkflows.requestCertificate({
+  acmeAccount,
+  domains,
+  updateDnsRecords,
+  resolveDns,
+});
 ```
 
 ## Roadmap

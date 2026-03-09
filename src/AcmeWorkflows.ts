@@ -22,7 +22,25 @@ export type RequestCertificatesConfig = {
    * Default: `5000`
    */
   delayAfterDnsRecordsConfirmed?: number;
-  resolveDns?: DnsUtils.ResolveDnsFunction;
+  /**
+   * Maximum duration (ms) to keep polling DNS `TXT` records for challenge
+   * verification before failing.
+   *
+   * Default: `600000` (10 minutes)
+   */
+  dnsTimeout?: number;
+  /**
+   * DNS resolver used to verify challenge TXT records.
+   *
+   * Use one of the runtime-specific exports such as:
+   * - `@fishballpkg/acme/resolveDns.deno`
+   * - `@fishballpkg/acme/resolveDns.node`
+   * - `@fishballpkg/acme/resolveDns.doh`
+   *
+   * Custom resolvers should return `[]` when a record is not found yet, and
+   * only throw for actual resolver failures.
+   */
+  resolveDns: DnsUtils.ResolveDnsFunction;
   /**
    * The number of milliseconds to poll resources before giving up and throw an error.
    *
@@ -58,6 +76,7 @@ export const requestCertificate = async (
     domains,
     updateDnsRecords,
     delayAfterDnsRecordsConfirmed = 5000,
+    dnsTimeout,
     resolveDns,
     timeout,
   } = config;
@@ -87,12 +106,8 @@ export const requestCertificate = async (
   await Promise.all(expectedRecords.map(async (expectedRecord) => {
     await DnsUtils.pollDnsTxtRecord(expectedRecord.name, {
       pollUntil: expectedRecord.content,
+      timeout: dnsTimeout,
       resolveDns,
-      nameServerIps: await DnsUtils.findAuthoritativeNameServerIps(
-        expectedRecord.name,
-        { resolveDns },
-      ),
-      timeout,
     });
   }));
 

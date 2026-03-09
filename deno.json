@@ -1,13 +1,16 @@
 {
   "name": "@fishballpkg/acme",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "exports": {
     ".": "./src/mod.ts",
     "./DnsUtils": "./src/DnsUtils/mod.ts",
     "./CertUtils": "./src/CertUtils/mod.ts",
     "./CryptoKeyUtils": "./src/CryptoKeyUtils/mod.ts",
     "./generateCSR": "./src/utils/generateCSR.ts",
-    "./workflows": "./src/AcmeWorkflows.ts"
+    "./workflows": "./src/AcmeWorkflows.ts",
+    "./resolveDns.deno": "./src/resolveDns.deno.ts",
+    "./resolveDns.node": "./src/resolveDns.node.ts",
+    "./resolveDns.doh": "./src/resolveDns.doh.ts"
   },
   "tasks": {
     "test:e2e": "deno test --lock -A e2e",
@@ -24,7 +27,7 @@
       "run": ["openssl"]
     },
     "integration": {
-      "net": ["localhost", "127.0.0.1", "8.8.8.8", "[2001:4860:4860::8888]"]
+      "net": ["localhost", "127.0.0.1"]
     }
   },
   "compilerOptions": {

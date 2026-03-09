@@ -4,6 +4,7 @@ import {
   AcmeOrder,
   AcmeWorkflows,
 } from "@fishballpkg/acme";
+import { resolveDns } from "@fishballpkg/acme/resolveDns.deno";
 import { describe, expect, it } from "../test_deps.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
 import { randomFishballTestingSubdomain } from "./utils/randomFishballTestingSubdomain.ts";
@@ -35,6 +36,7 @@ describe("requestCertificates", () => {
       updateDnsRecords: async (dnsRecords) => {
         await cloudflareZone.createDnsRecords(dnsRecords);
       },
+      resolveDns,
     });
 
     expect(certKeyPair.privateKey).toBeInstanceOf(CryptoKey);

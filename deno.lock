@@ -3,21 +3,27 @@
   "specifiers": {
     "jsr:@david/code-block-writer@^13.0.3": "13.0.3",
     "jsr:@david/which-runtime@*": "0.2.1",
+    "jsr:@david/which-runtime@0.2.1": "0.2.1",
     "jsr:@deno/dnt@*": "0.42.3",
     "jsr:@deno/dnt@0.42.3": "0.42.3",
     "jsr:@std/assert@^1.0.14": "1.0.18",
     "jsr:@std/assert@^1.0.17": "1.0.18",
     "jsr:@std/dotenv@*": "0.225.2",
+    "jsr:@std/dotenv@0.225.6": "0.225.6",
     "jsr:@std/encoding@*": "1.0.10",
+    "jsr:@std/encoding@1.0.10": "1.0.10",
     "jsr:@std/expect@*": "1.0.17",
+    "jsr:@std/expect@1.0.17": "1.0.17",
     "jsr:@std/fmt@1": "1.0.9",
     "jsr:@std/fs@1": "1.0.22",
     "jsr:@std/internal@^1.0.10": "1.0.12",
     "jsr:@std/internal@^1.0.12": "1.0.12",
     "jsr:@std/path@*": "1.1.4",
     "jsr:@std/path@1": "1.1.4",
+    "jsr:@std/path@1.1.4": "1.1.4",
     "jsr:@std/path@^1.1.4": "1.1.4",
     "jsr:@std/testing@*": "1.0.17",
+    "jsr:@std/testing@1.0.17": "1.0.17",
     "jsr:@ts-morph/bootstrap@0.27": "0.27.0",
     "jsr:@ts-morph/common@0.27": "0.27.0",
     "npm:@types/node@*": "22.5.4"
@@ -47,6 +53,9 @@
     },
     "@std/dotenv@0.225.2": {
       "integrity": "e2025dce4de6c7bca21dece8baddd4262b09d5187217e231b033e088e0c4dd23"
+    },
+    "@std/dotenv@0.225.6": {
+      "integrity": "1d6f9db72f565bd26790fa034c26e45ecb260b5245417be76c2279e5734c421b"
     },
     "@std/encoding@1.0.10": {
       "integrity": "8783c6384a2d13abd5e9e87a7ae0520a30e9f56aeeaa3bdf910a3eaaf5c811a1"

@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## 0.15.0
+
+- BREAKING: `AcmeWorkflows.requestCertificate(...)` now requires an explicit
+  `resolveDns`.
+- BREAKING: `DnsUtils.pollDnsTxtRecord(...)` now requires an explicit
+  `resolveDns`; built-in authoritative nameserver discovery and `nameServerIps`
+  were removed.
+- Added runtime-specific DNS resolver entrypoints:
+  - `@fishballpkg/acme/resolveDns.deno`
+  - `@fishballpkg/acme/resolveDns.node`
+  - `@fishballpkg/acme/resolveDns.doh`
+- Added `DnsUtils.createUnanimousResolveDns([...])` for strict multi-resolver
+  intersection.
+- Added `dnsTimeout` to configure DNS TXT polling separately from ACME order
+  polling timeout.
+
 ## 0.12.0
 
 - Implemented `CryptoKeyUtils` with utility functions to help with exporting and
