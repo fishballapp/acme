@@ -37,8 +37,17 @@ export const createResolveDns = (
       ]);
     }
 
-    // deno-lint-ignore no-explicit-any -- TS generic inference for conditional return type is difficult here.
-    return (await resolver.resolve(domain, recordType)) as any;
+    try {
+      // deno-lint-ignore no-explicit-any -- TS generic inference for conditional return type is difficult here.
+      return (await resolver.resolve(domain, recordType)) as any;
+    } catch (error) {
+      if (!isNodeDnsRecordNotFoundError(error)) {
+        throw error;
+      }
+
+      // deno-lint-ignore no-explicit-any -- Empty result preserves the resolver contract.
+      return [] as any;
+    }
   };
 };
 
@@ -49,3 +58,12 @@ function ipPort(ip: string, port: number): string {
   if (isIPv6(ip)) return `[${ip}]:${port}`;
   throw new Error("Invalid IP address");
 }
+
+const isNodeDnsRecordNotFoundError = (
+  error: unknown,
+): error is NodeJS.ErrnoException => {
+  return typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error.code === "ENODATA" || error.code === "ENOTFOUND");
+};

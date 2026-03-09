@@ -13,8 +13,8 @@ const defaultResolveDns = createResolveDns({
  */
 const resolveDnsTxtOnly = async (query: string, recordType: "TXT") => {
   if (recordType !== "TXT") {
-    // this would be treated as record not found
-    throw new Error();
+    // Non-TXT records are intentionally unavailable in this integration helper.
+    return [];
   }
   return (await defaultResolveDns(
     query,

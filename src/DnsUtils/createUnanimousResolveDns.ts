@@ -3,6 +3,10 @@ import type { ResolveDnsFunction } from "./resolveDns.ts";
 /**
  * Compose multiple DNS resolvers into one resolver that only returns records
  * visible across all configured resolvers.
+ *
+ * Each resolver is expected to return `[]` when a record is missing. Thrown
+ * errors are propagated because unanimity cannot be determined reliably when a
+ * resolver fails.
  */
 export const createUnanimousResolveDns = (
   resolveDnses: readonly ResolveDnsFunction[],

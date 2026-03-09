@@ -43,6 +43,9 @@ export type PollDnsTxtRecordOptions = {
  * The returned promise resolves only when every expected `pollUntil` value
  * appears in the records returned by the provided resolver.
  *
+ * The resolver should return `[]` when the record is not visible yet. Thrown
+ * errors are surfaced immediately.
+ *
  * Note: To avoid issues with DNS-01 challenges, it is advisable waiting some additional
  * time after this succeeds before submitting the challenge to ensure DNS
  * records are propagated correctly.
@@ -109,11 +112,7 @@ export const pollDnsTxtRecord = async (
     onBeforeAttempt?.();
 
     // latestRecordss contains records returned by resolveDns in this attempt.
-    try {
-      latestRecordss = [await resolveDnsTxt(domain)];
-    } catch {
-      latestRecordss = [[]];
-    }
+    latestRecordss = [await resolveDnsTxt(domain)];
 
     if (
       pollUntil.every((v) =>

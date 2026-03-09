@@ -42,6 +42,11 @@ type DnsJsonResponse = {
   Answer?: DnsJsonAnswer[];
 };
 
+const DNS_RESPONSE_CODES = {
+  NOERROR: 0,
+  NXDOMAIN: 3,
+} as const;
+
 /**
  * A DNS resolver that uses DNS-over-HTTPS (DoH) via `fetch`.
  *
@@ -71,10 +76,17 @@ export const createResolveDns = (
     }
 
     const body: DnsJsonResponse = await res.json();
-    if (body.Status !== 0) {
-      // For statuses like NXDOMAIN(3), SERVFAIL(2), etc., treat as no records.
+    if (body.Status === DNS_RESPONSE_CODES.NXDOMAIN) {
       // deno-lint-ignore no-explicit-any -- TS generic inference for conditional return type is difficult here.
       return [] as any;
+    }
+
+    if (body.Status !== DNS_RESPONSE_CODES.NOERROR) {
+      throw new Error(
+        `Failed to resolve DNS for ${domain} (${recordType}): DNS response status ${
+          body.Status ?? "unknown"
+        }`,
+      );
     }
 
     const answers = (body.Answer ?? []).filter((answer) =>

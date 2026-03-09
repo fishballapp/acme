@@ -105,7 +105,7 @@ describe("createResolveDns (DoH)", () => {
     });
   });
 
-  it("returns an empty array when the DoH response status is non-zero", async () => {
+  it("returns an empty array for NXDOMAIN responses", async () => {
     await withMockFetch(() =>
       createJsonResponse({
         Status: 3,
@@ -116,6 +116,21 @@ describe("createResolveDns (DoH)", () => {
 
       await expect(resolveDns("missing.example.com", "TXT")).resolves.toEqual(
         [],
+      );
+    });
+  });
+
+  it("throws when the DoH endpoint returns a DNS failure status", async () => {
+    await withMockFetch(() =>
+      createJsonResponse({
+        Status: 2,
+      }), async () => {
+      const resolveDns = createResolveDns({
+        endpoint: "https://dns.example.test/resolve",
+      });
+
+      await expect(resolveDns("example.com", "TXT")).rejects.toThrow(
+        "Failed to resolve DNS for example.com (TXT): DNS response status 2",
       );
     });
   });

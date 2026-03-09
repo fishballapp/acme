@@ -24,11 +24,20 @@ export const createResolveDns = (
     domain: string,
     recordType: R,
   ): Promise<"TXT" extends R ? string[][] : string[]> => {
-    return (await Deno.resolveDns(
-      domain,
-      recordType,
-      nameServer === undefined ? undefined : { nameServer },
-    ) as unknown) as "TXT" extends R ? string[][] : string[];
+    try {
+      return (await Deno.resolveDns(
+        domain,
+        recordType,
+        nameServer === undefined ? undefined : { nameServer },
+      ) as unknown) as "TXT" extends R ? string[][] : string[];
+    } catch (error) {
+      if (!(error instanceof Deno.errors.NotFound)) {
+        throw error;
+      }
+
+      // deno-lint-ignore no-explicit-any -- Empty result preserves the resolver contract.
+      return [] as any;
+    }
   };
 };
 

@@ -16,6 +16,12 @@ const createMockResolveDns = (records: MockRecords): ResolveDnsFunction => {
   };
 };
 
+const createRejectingResolveDns = (
+  error: Error & { code?: string },
+): ResolveDnsFunction => {
+  return () => Promise.reject(error);
+};
+
 describe("createUnanimousResolveDns", () => {
   it("returns TXT records that are visible from all resolvers", async () => {
     const resolveDns = createUnanimousResolveDns([
@@ -69,6 +75,47 @@ describe("createUnanimousResolveDns", () => {
     await expect(resolveDns("example.com", "NS")).resolves.toEqual([
       "ns-shared.example.com",
     ]);
+  });
+
+  it("treats empty results as empty results", async () => {
+    const resolveDns = createUnanimousResolveDns([
+      createMockResolveDns({
+        A: ["1.1.1.1"],
+        AAAA: [],
+        NS: [],
+        TXT: [["shared"]],
+      }),
+      createMockResolveDns({
+        A: [],
+        AAAA: [],
+        NS: [],
+        TXT: [],
+      }),
+    ]);
+
+    await expect(resolveDns("example.com", "TXT")).resolves.toEqual([]);
+    await expect(resolveDns("example.com", "A")).resolves.toEqual([]);
+  });
+
+  it("propagates unexpected resolver failures", async () => {
+    const resolveDns = createUnanimousResolveDns([
+      createMockResolveDns({
+        A: ["1.1.1.1"],
+        AAAA: [],
+        NS: [],
+        TXT: [["shared"]],
+      }),
+      createRejectingResolveDns(
+        Object.assign(
+          new Error("queryTxt ECONNREFUSED example.com"),
+          { code: "ECONNREFUSED" },
+        ),
+      ),
+    ]);
+
+    await expect(resolveDns("example.com", "TXT")).rejects.toThrow(
+      "queryTxt ECONNREFUSED example.com",
+    );
   });
 
   it("throws when no resolvers are provided", () => {
