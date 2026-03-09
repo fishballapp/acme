@@ -82,14 +82,29 @@ export const createResolveDns = (
     );
 
     if (recordType === "TXT") {
-      // TXT answers are returned as quoted strings in this DoH JSON format.
+      // TXT answers are returned as quoted character-strings in this DoH JSON
+      // format. A single TXT record may contain multiple quoted chunks.
       // deno-lint-ignore no-explicit-any -- TS generic inference for conditional return type is difficult here.
-      return answers.map((answer) => [stripWrappingQuotes(answer.data)]) as any;
+      return answers.map((answer) => parseTxtAnswerData(answer.data)) as any;
     }
 
     // deno-lint-ignore no-explicit-any -- TS generic inference for conditional return type is difficult here.
     return answers.map((answer) => answer.data) as any;
   };
+};
+
+const parseTxtAnswerData = (value: string): string[] => {
+  return tryParseQuotedTxtChunks(value) ?? [stripWrappingQuotes(value)];
+};
+
+const tryParseQuotedTxtChunks = (value: string): string[] | undefined => {
+  if (!TXT_QUOTED_CHUNKS_PATTERN.test(value)) {
+    return undefined;
+  }
+
+  return [...value.matchAll(TXT_QUOTED_CHUNK_PATTERN)].map((match) =>
+    decodeTxtChunk(match[1] ?? "")
+  );
 };
 
 const stripWrappingQuotes = (value: string): string => {
@@ -98,3 +113,15 @@ const stripWrappingQuotes = (value: string): string => {
   }
   return value;
 };
+
+const decodeTxtChunk = (value: string): string => {
+  return value.replace(
+    TXT_ESCAPE_PATTERN,
+    (_match, escape: string) =>
+      /^\d{3}$/.test(escape) ? String.fromCharCode(Number(escape)) : escape,
+  );
+};
+
+const TXT_QUOTED_CHUNKS_PATTERN = /^\s*(?:"(?:\\[0-9]{3}|\\.|[^"\\])*"\s*)+$/;
+const TXT_QUOTED_CHUNK_PATTERN = /"((?:\\[0-9]{3}|\\.|[^"\\])*)"/g;
+const TXT_ESCAPE_PATTERN = /\\([0-9]{3}|.)/g;

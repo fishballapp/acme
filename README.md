@@ -272,12 +272,14 @@ import {
   AcmeOrder,
   AcmeWorkflows,
 } from "@fishballpkg/acme";
+import { resolveDns } from "@fishballpkg/acme/resolveDns.deno";
+// Node.js users can import `resolveDns` from "@fishballpkg/acme/resolveDns.node".
 
 const client = await AcmeClient.init(
   ACME_DIRECTORY_URLS.LETS_ENCRYPT_STAGING,
 );
 
-const acmeAccount = await client.createAccount({ email: EMAIL });
+const acmeAccount = await client.createAccount({ emails: [EMAIL] });
 
 const {
   certificate,
@@ -289,6 +291,7 @@ const {
   updateDnsRecords: async (dnsRecords) => {
     // ... update dns records
   },
+  resolveDns,
 });
 
 console.log(certificate); // Logs the certificate in PEM format
