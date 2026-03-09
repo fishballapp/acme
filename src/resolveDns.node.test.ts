@@ -17,10 +17,12 @@ const withMockResolverResolve = async (
 
 describe("createResolveDns (Node)", () => {
   it("returns an empty array when Node reports record not found", async () => {
-    await withMockResolverResolve(async () => {
-      throw Object.assign(new Error("queryTxt ENODATA example.com"), {
-        code: "ENODATA",
-      });
+    await withMockResolverResolve(() => {
+      return Promise.reject(
+        Object.assign(new Error("queryTxt ENODATA example.com"), {
+          code: "ENODATA",
+        }),
+      );
     }, async () => {
       const resolveDns = createResolveDns();
       await expect(resolveDns("example.com", "TXT")).resolves.toEqual([]);
@@ -28,10 +30,12 @@ describe("createResolveDns (Node)", () => {
   });
 
   it("rethrows unexpected Node resolver failures", async () => {
-    await withMockResolverResolve(async () => {
-      throw Object.assign(new Error("queryTxt ECONNREFUSED example.com"), {
-        code: "ECONNREFUSED",
-      });
+    await withMockResolverResolve(() => {
+      return Promise.reject(
+        Object.assign(new Error("queryTxt ECONNREFUSED example.com"), {
+          code: "ECONNREFUSED",
+        }),
+      );
     }, async () => {
       const resolveDns = createResolveDns();
       await expect(resolveDns("example.com", "TXT")).rejects.toThrow(

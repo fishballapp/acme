@@ -11,17 +11,17 @@ describe("pollDnsTxtRecord", () => {
     let attempts = 0;
     const failAttempts: string[][][] = [];
 
-    const resolveDns: ResolveDnsFunction = async (_domain, recordType) => {
+    const resolveDns: ResolveDnsFunction = (_domain, recordType) => {
       attempts += 1;
       expect(recordType).toBe("TXT");
 
       if (attempts === 1) {
         // deno-lint-ignore no-explicit-any -- The mock only serves the requested record type.
-        return [] as any;
+        return Promise.resolve([] as any);
       }
 
       // deno-lint-ignore no-explicit-any -- The mock only serves the requested record type.
-      return [["expected-value"]] as any;
+      return Promise.resolve([["expected-value"]] as any);
     };
 
     await expect(pollDnsTxtRecord("example.com", {
@@ -37,11 +37,11 @@ describe("pollDnsTxtRecord", () => {
   });
 
   it("surfaces unexpected resolver failures immediately", async () => {
-    const resolveDns: ResolveDnsFunction = async () => {
-      throw createDnsError(
+    const resolveDns: ResolveDnsFunction = () => {
+      return Promise.reject(createDnsError(
         "ECONNREFUSED",
         "queryTxt ECONNREFUSED example.com",
-      );
+      ));
     };
 
     await expect(pollDnsTxtRecord("example.com", {
