@@ -145,6 +145,30 @@ considered a good practice to do so as it allows the CA to reach out for
 important notifications, such as certificate expiration reminders or policy
 changes.
 
+#### External Account Binding (EAB)
+
+Some CAs (e.g. ZeroSSL, Google Trust Services, HARICA) require you to bind your
+new ACME account to an existing account on their platform. They give you a **key
+identifier** (`kid`) and an **HMAC key** out-of-band (the key is normally
+provided in base64url-encoded form, as
+[recommended by RFC 8555](https://datatracker.ietf.org/doc/html/rfc8555#section-7.3.4)).
+Pass them as `externalAccountBinding`:
+
+```ts
+const account = await acmeClient.createAccount({
+  emails: ["yo@fishball.app"],
+  externalAccountBinding: {
+    kid: "<the key identifier from your CA>",
+    hmacKey: "<the base64url-encoded HMAC key from your CA>",
+  },
+});
+```
+
+We sign the binding with `HS256`, which every EAB-enabled CA supports. If the
+CA's directory advertises `meta.externalAccountRequired`, calling
+`createAccount` without an `externalAccountBinding` throws immediately — before
+any request is made.
+
 ### 0x03: Create order and get the challenges
 
 ```ts
@@ -391,7 +415,7 @@ await AcmeWorkflows.requestCertificate({
 
 - [x] Account
   - [x] Creation (`AcmeClient#createAccount`)
-    - [ ] External Account Binding (Maybe? Submit an issue if you'd like this?)
+    - [x] External Account Binding (`createAccount({ externalAccountBinding })`)
   - [x] Retrieval (`AcmeClient#login`)
   - [x] Update contacts
   - [x] Key Rollover
