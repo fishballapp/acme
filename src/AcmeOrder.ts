@@ -4,7 +4,7 @@ import type { AcmeAuthorizationObjectSnapshot } from "./AcmeAuthorization.ts";
 import { AcmeAuthorization } from "./AcmeAuthorization.ts";
 import { TimeoutError } from "./errors.ts";
 import { generateKeyPair } from "./utils/crypto.ts";
-import { encodeBase64Url } from "./utils/encoding.ts";
+import { encodeBase64Url } from "./utils/base64.ts";
 import { generateCSR } from "./utils/generateCSR.ts";
 
 /**

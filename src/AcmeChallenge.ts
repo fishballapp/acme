@@ -3,7 +3,7 @@ import type { DnsUtils } from "./mod.ts";
 
 import type { AcmeAccount } from "./AcmeAccount.ts";
 import type { AcmeAuthorization } from "./AcmeAuthorization.ts";
-import { encodeBase64Url } from "./utils/encoding.ts";
+import { encodeBase64Url } from "./utils/base64.ts";
 
 /**
  * Different ways to proof control over a domain to the Certificate Authority (CA).
