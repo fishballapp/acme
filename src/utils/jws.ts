@@ -1,5 +1,5 @@
 import { sign } from "../utils/crypto.ts";
-import { encodeBase64Url } from "./encoding.ts";
+import { encodeBase64Url } from "./base64.ts";
 
 export const jwsFetch = async (url: string, {
   method = "POST",

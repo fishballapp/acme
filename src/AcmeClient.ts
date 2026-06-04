@@ -7,12 +7,30 @@ import {
   AcmeError,
   BadNonceError,
 } from "./errors.ts";
-import { generateKeyPair } from "./utils/crypto.ts";
+import { generateKeyPair, importHmacKey } from "./utils/crypto.ts";
 import { emailsToAccountContacts } from "./utils/emailsToAccountContacts.ts";
-import { jwsFetch } from "./utils/jws.ts";
+import { jws, jwsFetch } from "./utils/jws.ts";
 
 const REPLAY_NONCE_HEADER_KEY = "Replay-Nonce";
 const MAX_RETRY_COUNT_ON_BAD_NONCE_ERROR = 5;
+
+/**
+ * The optional `meta` object advertised by the CA in its directory.
+ * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.1.1
+ */
+export type AcmeDirectoryMeta = {
+  /** A URL identifying the current terms of service. */
+  termsOfService?: string;
+  /** An HTTP or HTTPS URL locating a website providing more information about the CA. */
+  website?: string;
+  /** The hostnames that the CA recognizes as referring to itself for `CAA` record validation. */
+  caaIdentities?: string[];
+  /**
+   * If `true`, the CA requires every {@link AcmeClient.prototype.createAccount}
+   * request to carry an `externalAccountBinding`.
+   */
+  externalAccountRequired?: boolean;
+};
 
 /**
  * The directory object.
@@ -25,6 +43,23 @@ export type AcmeDirectory = {
   newOrder: string;
   renewalInfo: string;
   revokeCert: string;
+  meta?: AcmeDirectoryMeta;
+};
+
+/**
+ * Credentials for binding the new ACME account to an existing (non-ACME)
+ * account at the CA, both provided to you out-of-band by the CA.
+ *
+ * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.3.4
+ */
+export type ExternalAccountBinding = {
+  /** The key identifier the CA issued you for this binding. */
+  kid: string;
+  /**
+   * The symmetric MAC key the CA issued you, in its base64url-encoded form
+   * (as recommended by RFC 8555 §7.3.4). Used to `HS256`-sign the binding.
+   */
+  hmacKey: string;
 };
 
 /**
@@ -137,23 +172,65 @@ export class AcmeClient {
    * it is generally considered a good practice to do so as it allows the CA to reach out for important
    * notifications, such as certificate expiration reminders or policy changes.
    *
+   * Some CAs require you to bind the new account to an existing account at the
+   * CA. Pass the `kid` and `hmacKey` they gave you as {@link externalAccountBinding}.
+   * If the CA's directory advertises `meta.externalAccountRequired`, omitting it
+   * throws before any request is made.
+   *
    * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.3
+   * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.3.4
    */
   async createAccount(
-    { emails }: { emails: readonly string[] },
+    {
+      emails,
+      externalAccountBinding,
+    }: {
+      emails: readonly string[];
+      externalAccountBinding?: ExternalAccountBinding;
+    },
   ): Promise<AcmeAccount> {
+    if (
+      this.directory.meta?.externalAccountRequired &&
+      externalAccountBinding === undefined
+    ) {
+      throw new Error(
+        "This CA requires external account binding (the directory advertises `meta.externalAccountRequired`), but no `externalAccountBinding` was provided to createAccount().",
+      );
+    }
+
     const keyPair = await generateKeyPair();
+    const jwk = await crypto.subtle.exportKey("jwk", keyPair.publicKey);
+
+    const externalAccountBindingJws = await (async () => {
+      if (!externalAccountBinding) return;
+      const hmacKey = await importHmacKey(externalAccountBinding.hmacKey);
+      // The binding is a nested JWS MAC-ing the account's public key (jwk),
+      // proving control of the out-of-band CA credentials. Its protected
+      // header reuses the outer request url and carries no nonce.
+      // @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.3.4
+      return await jws(
+        hmacKey,
+        {
+          protected: {
+            alg: "HS256",
+            kid: externalAccountBinding.kid,
+            url: this.directory.newAccount,
+          },
+          payload: { ...jwk },
+        },
+      );
+    })();
 
     const response = await this.jwsFetch(
       this.directory.newAccount,
       {
         privateKey: keyPair.privateKey,
-        protected: {
-          jwk: await crypto.subtle.exportKey("jwk", keyPair.publicKey),
-        },
+        protected: { jwk },
         payload: {
           termsOfServiceAgreed: true,
           contact: emailsToAccountContacts(emails),
+          ...(externalAccountBindingJws &&
+            { externalAccountBinding: externalAccountBindingJws }),
         },
       },
     );

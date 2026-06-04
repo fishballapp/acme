@@ -1,4 +1,4 @@
-import { encodeBase64 } from "../utils/encoding.ts";
+import { encodeBase64 } from "../utils/base64.ts";
 import type { PemCryptoKeyPair } from "./PemCryptoKeyPair.ts";
 
 const formatPEM = (base64: string, type: string) => {

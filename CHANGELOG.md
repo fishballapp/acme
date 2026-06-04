@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 0.16.0
+
+- Added External Account Binding (EAB) support to
+  `AcmeClient.prototype.createAccount(...)` via the optional
+  `externalAccountBinding: { kid, hmacKey }` option, for CAs that require
+  binding to an existing account (e.g. ZeroSSL, Google Trust Services, HARICA).
+  (https://github.com/fishballapp/acme/pull/31)
+- `AcmeDirectory` now exposes the CA's `meta` object; `createAccount(...)`
+  throws early when `meta.externalAccountRequired` is set but no
+  `externalAccountBinding` is provided.
+- Internal: vendored a zero-dependency base64/base64url implementation
+  (`src/utils/base64.ts`) from `@std/encoding`, replacing reliance on the native
+  `Uint8Array` base64 methods.
+
 ## 0.15.0
 
 - BREAKING: `AcmeWorkflows.requestCertificate(...)` now requires an explicit
