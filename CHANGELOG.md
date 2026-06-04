@@ -2,13 +2,23 @@
 
 ## 0.17.0
 
-- Added `http-01` challenge support:
-  `AcmeAuthorization.prototype.findHttp01Challenge()` and the new
-  `Http01Challenge`, whose `getHttpResource()` returns the URL and the key
-  authorization string to serve over HTTP.
+- Added `http-01` challenge support via
+  `AcmeChallenge.prototype.getHttpResource()` (returns the URL and the key
+  authorization string to serve over HTTP) and
+  `AcmeAuthorization.prototype.findHttp01Challenge()`.
   (https://github.com/fishballapp/acme/pull/33)
+- `AcmeChallenge` is now generic over its challenge type (e.g.
+  `AcmeChallenge<"dns-01">`). The type-specific helpers `getDnsRecordAnswer()`
+  (dns-01) and `getHttpResource()` (http-01) live on `AcmeChallenge` and are
+  only callable on the matching type. Added the `AnyAcmeChallenge` union so a
+  challenge can be narrowed by its `.type`, and `findChallenge(type)` now
+  returns the precisely-typed challenge.
 - Added `AcmeChallenge.prototype.keyAuthorization()`, the raw key authorization
   shared by the `dns-01` and `http-01` flows.
+- BREAKING: `Dns01Challenge` is now a (deprecated) type alias for
+  `AcmeChallenge<"dns-01">` rather than a class — `Dns01Challenge.from(...)` and
+  `instanceof Dns01Challenge` no longer exist. Use `findDns01Challenge()` /
+  `findChallenge("dns-01")` and check `challenge.type` instead.
 - `AcmeAccount.prototype.keyRollover(...)` and
   `AcmeAccount.prototype.createOrder(...)` now throw `AcmeError` on failure
   instead of the raw parsed JSON response.

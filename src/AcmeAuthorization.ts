@@ -3,8 +3,7 @@ import {
   AcmeChallenge,
   type AcmeChallengeObjectSnapshot,
   type AcmeChallengeType,
-  Dns01Challenge,
-  Http01Challenge,
+  type AnyAcmeChallenge,
 } from "./AcmeChallenge.ts";
 import type { AcmeOrder } from "./AcmeOrder.ts";
 
@@ -93,7 +92,7 @@ export class AcmeAuthorization {
   /** The authorization url uniquely identifies the authorization and for retrieving {@link AcmeAuthorizationObjectSnapshot}. */
   readonly url: string;
   #domain?: string;
-  #challenges?: readonly AcmeChallenge[];
+  #challenges?: readonly AnyAcmeChallenge[];
 
   /**
    * The domain associated with this authorization.
@@ -116,7 +115,7 @@ export class AcmeAuthorization {
   /**
    * A list of {@link AcmeChallenge} the Certificate Authority can accept to verify control over this authorization / domain.
    */
-  get challenges(): readonly AcmeChallenge[] {
+  get challenges(): readonly AnyAcmeChallenge[] {
     if (this.#challenges === undefined) {
       throw new Error(
         "challenges are not initiated. Was this AcmeAuthorization object created with `await AcmeAuthorization.init(...)`?",
@@ -165,14 +164,13 @@ export class AcmeAuthorization {
     const authorizationResponse = await authorization.fetch();
 
     authorization.#challenges = authorizationResponse.challenges.map(
-      ({ token, type, url }) => {
-        return new AcmeChallenge({
+      ({ token, type, url }): AnyAcmeChallenge =>
+        new AcmeChallenge({
           authorization,
           token,
           type,
           url,
-        });
-      },
+        }),
     );
 
     if (authorizationResponse.identifier.type !== "dns") {
@@ -209,35 +207,25 @@ export class AcmeAuthorization {
    *
    * To get the list of challenges, use {@link AcmeAuthorization.prototype.challenges}
    */
-  findChallenge(
-    type: AcmeChallengeType,
-  ): AcmeChallenge | undefined {
-    return this.challenges.find((challenge) => {
-      return challenge.type === type;
-    });
+  findChallenge<T extends AcmeChallengeType>(
+    type: T,
+  ): AcmeChallenge<T> | undefined {
+    return this.challenges.find((challenge) => challenge.type === type) as
+      | AcmeChallenge<T>
+      | undefined;
   }
 
   /**
-   * Find the first {@link Dns01Challenge}.
+   * Find the first `dns-01` challenge.
    */
-  findDns01Challenge(): Dns01Challenge | undefined {
-    const challenge = this.findChallenge("dns-01");
-    if (challenge === undefined) {
-      return undefined;
-    }
-
-    return Dns01Challenge.from(challenge);
+  findDns01Challenge(): AcmeChallenge<"dns-01"> | undefined {
+    return this.findChallenge("dns-01");
   }
 
   /**
-   * Find the first {@link Http01Challenge}.
+   * Find the first `http-01` challenge.
    */
-  findHttp01Challenge(): Http01Challenge | undefined {
-    const challenge = this.findChallenge("http-01");
-    if (challenge === undefined) {
-      return undefined;
-    }
-
-    return Http01Challenge.from(challenge);
+  findHttp01Challenge(): AcmeChallenge<"http-01"> | undefined {
+    return this.findChallenge("http-01");
   }
 }

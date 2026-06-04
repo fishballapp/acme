@@ -3,7 +3,7 @@ import { encodeBase64Url as stdEncodeBase64Url } from "../test_deps.ts";
 import {
   AcmeChallenge,
   type AcmeChallengeType,
-  Http01Challenge,
+  type AnyAcmeChallenge,
 } from "./AcmeChallenge.ts";
 import type { AcmeAuthorization } from "./AcmeAuthorization.ts";
 import { generateKeyPair } from "./utils/crypto.ts";
@@ -14,10 +14,12 @@ const DOMAIN = "example.com";
 /**
  * Build a bare {@link AcmeChallenge} wired to a real key pair, without the
  * network round-trips that `AcmeAuthorization.init` would otherwise require.
+ * The `const T` on `AcmeChallenge` preserves the literal type, so e.g.
+ * `buildChallenge("http-01")` yields an `AcmeChallenge<"http-01">`.
  */
-const buildChallenge = async (
-  type: AcmeChallengeType,
-): Promise<{ challenge: AcmeChallenge; keyPair: CryptoKeyPair }> => {
+const buildChallenge = async <const T extends AcmeChallengeType>(
+  type: T,
+): Promise<{ challenge: AcmeChallenge<T>; keyPair: CryptoKeyPair }> => {
   const keyPair = await generateKeyPair();
   const authorization = {
     domain: DOMAIN,
@@ -71,12 +73,11 @@ describe("AcmeChallenge#keyAuthorization", () => {
   });
 });
 
-describe("Http01Challenge", () => {
+describe("AcmeChallenge#getHttpResource (http-01)", () => {
   it("serves the raw key authorization at the well-known path (RFC 8555 §8.3)", async () => {
     const { challenge, keyPair } = await buildChallenge("http-01");
-    const http = Http01Challenge.from(challenge);
 
-    const resource = await http.getHttpResource();
+    const resource = await challenge.getHttpResource();
 
     expect(resource.url).toBe(
       `http://${DOMAIN}/.well-known/acme-challenge/${TOKEN}`,
@@ -87,11 +88,41 @@ describe("Http01Challenge", () => {
     expect(resource.content).toBe(await challenge.keyAuthorization());
     expect(resource.content).not.toBe(await challenge.digestToken());
   });
+});
 
-  it("rejects a non-http-01 challenge", async () => {
+describe("AcmeChallenge#getDnsRecordAnswer (dns-01)", () => {
+  it("publishes the digest at the _acme-challenge TXT record (RFC 8555 §8.4)", async () => {
     const { challenge } = await buildChallenge("dns-01");
-    expect(() => Http01Challenge.from(challenge)).toThrow(
-      "Not a http-01 challenge",
-    );
+
+    const record = await challenge.getDnsRecordAnswer();
+
+    expect(record.type).toBe("TXT");
+    expect(record.name).toBe(`_acme-challenge.${DOMAIN}.`);
+    expect(record.content).toBe(await challenge.digestToken());
+  });
+});
+
+describe("narrowing AnyAcmeChallenge by `.type`", () => {
+  it("unlocks the type-specific methods", async () => {
+    // Typed as the *union of instantiations* (what `authorization.challenges`
+    // hands callers) — so `.type` is a discriminant that narrows.
+    const challenges: AnyAcmeChallenge[] = [
+      (await buildChallenge("dns-01")).challenge,
+      (await buildChallenge("http-01")).challenge,
+    ];
+
+    const seen: AcmeChallengeType[] = [];
+    for (const challenge of challenges) {
+      if (challenge.type === "dns-01") {
+        expect((await challenge.getDnsRecordAnswer()).type).toBe("TXT");
+        seen.push("dns-01");
+      } else if (challenge.type === "http-01") {
+        expect((await challenge.getHttpResource()).url).toContain(
+          "/.well-known/acme-challenge/",
+        );
+        seen.push("http-01");
+      }
+    }
+    expect(seen).toEqual(["dns-01", "http-01"]);
   });
 });

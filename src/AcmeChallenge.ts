@@ -50,7 +50,9 @@ export type AcmeChallengeObjectSnapshot = {
 /**
  * Represents a way to proof control over a domain as offered by the Certificate Authority's (CA).
  */
-export class AcmeChallenge {
+export class AcmeChallenge<
+  const T extends AcmeChallengeType = AcmeChallengeType,
+> {
   /** The {@link AcmeAuthorization} this challenge belongs to. */
   readonly authorization: AcmeAuthorization;
   /**
@@ -58,14 +60,14 @@ export class AcmeChallenge {
    * This is used to produce the key authorization value in
    * {@link AcmeChallenge.prototype.keyAuthorization},
    * {@link AcmeChallenge.prototype.digestToken},
-   * {@link Dns01Challenge.prototype.getDnsRecordAnswer} and
-   * {@link Http01Challenge.prototype.getHttpResource}.
+   * {@link AcmeChallenge.prototype.getDnsRecordAnswer} and
+   * {@link AcmeChallenge.prototype.getHttpResource}.
    *
    * This is *NOT* the value you put in your DNS record or HTTP resource.
    */
   readonly token: string;
   /** The challenge type. E.g. `dns-01`. */
-  readonly type: AcmeChallengeType;
+  readonly type: T;
   /**
    * The challenge url that uniquely identifies the challenge.
    * This is used to retrieve {@link AcmeAuthorizationObjectSnapshot} and the challenge submission.
@@ -87,7 +89,7 @@ export class AcmeChallenge {
   }: {
     authorization: AcmeAuthorization;
     token: string;
-    type: AcmeChallengeType;
+    type: T;
     url: string;
   }) {
     this.authorization = authorization;
@@ -160,7 +162,64 @@ export class AcmeChallenge {
 
     return await response.json();
   }
+
+  /**
+   * Digest the challenge token and return a `Promise` that resolves to the
+   * {@link DnsTxtRecord} needed to be set to fulfill the challenge.
+   *
+   * **Wildcard domains:** For wildcard authorizations (e.g., `*.example.com`),
+   * the DNS record name will use the base domain (`_acme-challenge.example.com.`)
+   * without the `*.` prefix, as per ACME protocol requirements.
+   */
+  async getDnsRecordAnswer(
+    this: AcmeChallenge<"dns-01">,
+  ): Promise<DnsTxtRecord> {
+    const domain = this.authorization.domain.startsWith("*.")
+      ? this.authorization.domain.slice(2)
+      : this.authorization.domain;
+
+    return {
+      name: `_acme-challenge.${domain}.`,
+      type: "TXT",
+      content: await this.digestToken(),
+    };
+  }
+
+  /**
+   * Returns a `Promise` that resolves to the {@link HttpResource} that must be
+   * served (the key authorization, unhashed) to fulfill the challenge.
+   */
+  async getHttpResource(this: AcmeChallenge<"http-01">): Promise<HttpResource> {
+    return {
+      url:
+        `http://${this.authorization.domain}/.well-known/acme-challenge/${this.token}`,
+      name: this.token,
+      content: await this.keyAuthorization(),
+    };
+  }
 }
+
+/**
+ * Any concrete {@link AcmeChallenge}, discriminable by its `.type`.
+ *
+ * This is a union of the per-type instantiations (as opposed to
+ * `AcmeChallenge<AcmeChallengeType>`), so narrowing on `.type` unlocks the
+ * type-specific methods:
+ *
+ * @example
+ * ```ts
+ * for (const challenge of authorization.challenges) {
+ *   if (challenge.type === "dns-01") {
+ *     await challenge.getDnsRecordAnswer();
+ *   } else if (challenge.type === "http-01") {
+ *     await challenge.getHttpResource();
+ *   }
+ * }
+ * ```
+ */
+export type AnyAcmeChallenge = {
+  [T in AcmeChallengeType]: AcmeChallenge<T>;
+}[AcmeChallengeType];
 
 async function getJWKThumbprint(jwk: JsonWebKey): Promise<string> {
   // Step 1: Create the canonical JSON string from required JWK fields,
@@ -182,53 +241,13 @@ async function getJWKThumbprint(jwk: JsonWebKey): Promise<string> {
 }
 
 /**
- * Represents a `dns-01` challenge and provides additional methods specifically for it.
+ * A `dns-01` challenge.
  *
- * You can retrieve this by calling {@link AcmeAuthorization.prototype.findDns01Challenge}.
+ * @deprecated Use `AcmeChallenge<"dns-01">` instead — e.g. via
+ * {@link AcmeAuthorization.prototype.findDns01Challenge} or
+ * `findChallenge("dns-01")`.
  */
-export class Dns01Challenge extends AcmeChallenge {
-  private constructor(init: {
-    authorization: AcmeAuthorization;
-    token: string;
-    type: AcmeChallengeType;
-    url: string;
-  }) {
-    super(init);
-  }
-
-  /**
-   * Constructor method to create an {@link Dns01Challenge} from a given {@link AcmeChallenge}.
-   *
-   * In most cases, you would use {@link AcmeAuthorization.prototype.findDns01Challenge} to retrieve this instead.
-   */
-  static from(challenge: AcmeChallenge): Dns01Challenge {
-    if (challenge.type !== "dns-01") {
-      throw new Error("Not a dns-01 challenge!");
-    }
-
-    return new Dns01Challenge(challenge);
-  }
-
-  /**
-   * Digest the challenge token and return a `Promise` that resolves to the
-   * {@link DnsTxtRecord} needed to be set to fulfill the challenge.
-   *
-   * **Wildcard domains:** For wildcard authorizations (e.g., `*.example.com`),
-   * the DNS record name will use the base domain (`_acme-challenge.example.com.`)
-   * without the `*.` prefix, as per ACME protocol requirements.
-   */
-  async getDnsRecordAnswer(): Promise<DnsTxtRecord> {
-    const domain = this.authorization.domain.startsWith("*.")
-      ? this.authorization.domain.slice(2)
-      : this.authorization.domain;
-
-    return {
-      name: `_acme-challenge.${domain}.`,
-      type: "TXT",
-      content: await this.digestToken(),
-    };
-  }
-}
+export type Dns01Challenge = AcmeChallenge<"dns-01">;
 
 /**
  * Represents a DNS `TXT` record
@@ -237,48 +256,6 @@ export interface DnsTxtRecord {
   name: string;
   type: "TXT";
   content: string;
-}
-
-/**
- * Represents a `http-01` challenge and provides additional methods specifically for it.
- *
- * You can retrieve this by calling {@link AcmeAuthorization.prototype.findHttp01Challenge}.
- */
-export class Http01Challenge extends AcmeChallenge {
-  private constructor(init: {
-    authorization: AcmeAuthorization;
-    token: string;
-    type: AcmeChallengeType;
-    url: string;
-  }) {
-    super(init);
-  }
-
-  /**
-   * Constructor method to create an {@link Http01Challenge} from a given {@link AcmeChallenge}.
-   *
-   * In most cases, you would use {@link AcmeAuthorization.prototype.findHttp01Challenge} to retrieve this instead.
-   */
-  static from(challenge: AcmeChallenge): Http01Challenge {
-    if (challenge.type !== "http-01") {
-      throw new Error("Not a http-01 challenge!");
-    }
-
-    return new Http01Challenge(challenge);
-  }
-
-  /**
-   * Returns a `Promise` that resolves to the {@link HttpResource} that must be
-   * served (the key authorization, unhashed) to fulfill the challenge.
-   */
-  async getHttpResource(): Promise<HttpResource> {
-    return {
-      url:
-        `http://${this.authorization.domain}/.well-known/acme-challenge/${this.token}`,
-      name: this.token,
-      content: await this.keyAuthorization(),
-    };
-  }
 }
 
 /**
