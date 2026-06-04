@@ -3,7 +3,6 @@ import {
   AcmeChallenge,
   type AcmeChallengeObjectSnapshot,
   type AcmeChallengeType,
-  Dns01Challenge,
 } from "./AcmeChallenge.ts";
 import type { AcmeOrder } from "./AcmeOrder.ts";
 
@@ -164,14 +163,13 @@ export class AcmeAuthorization {
     const authorizationResponse = await authorization.fetch();
 
     authorization.#challenges = authorizationResponse.challenges.map(
-      ({ token, type, url }) => {
-        return new AcmeChallenge({
+      ({ token, type, url }) =>
+        new AcmeChallenge({
           authorization,
           token,
           type,
           url,
-        });
-      },
+        }),
     );
 
     if (authorizationResponse.identifier.type !== "dns") {
@@ -200,29 +198,27 @@ export class AcmeAuthorization {
   }
 
   /**
-   * Find the {@link AcmeChallenge} as specified in `type`.
+   * Find the first challenge of the given `type`, narrowed to the matching
+   * {@link AcmeChallenge} — e.g. `findChallenge("dns-01")` resolves to an
+   * `AcmeChallenge<"dns-01">`.
    *
-   * {@link AcmeAuthorization.prototype.findDns01Challenge} is probably more useful in most cases.
-   *
-   * To get the list of challenges, use {@link AcmeAuthorization.prototype.challenges}
+   * To get the full list of challenges, use
+   * {@link AcmeAuthorization.prototype.challenges} (and narrow with
+   * {@link AcmeChallenge.prototype.is}).
    */
-  findChallenge(
-    type: AcmeChallengeType,
-  ): AcmeChallenge | undefined {
-    return this.challenges.find((challenge) => {
-      return challenge.type === type;
-    });
+  findChallenge<T extends AcmeChallengeType>(
+    type: T,
+  ): AcmeChallenge<T> | undefined {
+    return this.challenges.find((challenge) => challenge.is(type));
   }
 
   /**
-   * Find the first {@link Dns01Challenge}.
+   * Find the first `dns-01` challenge.
+   *
+   * @deprecated Use {@link AcmeAuthorization.prototype.findChallenge}`("dns-01")`
+   * instead. This method will be removed in the next version.
    */
-  findDns01Challenge(): Dns01Challenge | undefined {
-    const challenge = this.findChallenge("dns-01");
-    if (challenge === undefined) {
-      return undefined;
-    }
-
-    return Dns01Challenge.from(challenge);
+  findDns01Challenge(): AcmeChallenge<"dns-01"> | undefined {
+    return this.findChallenge("dns-01");
   }
 }

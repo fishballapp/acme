@@ -66,7 +66,7 @@ const acmeOrder = await acmeAccount.createOrder({ domains: DOMAINS });
 console.log("✅ Order created!");
 
 const dns01Challenges = acmeOrder.authorizations.map((auth) =>
-  auth.findDns01Challenge() ?? (() => {
+  auth.findChallenge("dns-01") ?? (() => {
     throw new Error(
       "Unexpected! DNS-01 challenge not found. The ACME server is not returning a DNS-01 challenge. This is DEFINITELY not our fault... (I guess...)",
     );

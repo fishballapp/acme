@@ -3,6 +3,7 @@ import { AcmeOrder, type AcmeOrderObjectSnapshot } from "./AcmeOrder.ts";
 import { generateKeyPair } from "./utils/crypto.ts";
 import { emailsToAccountContacts } from "./utils/emailsToAccountContacts.ts";
 import { jws } from "./utils/jws.ts";
+import { AcmeError } from "./errors.ts";
 
 /**
  * Represents the possible status values for an ACME account.
@@ -155,7 +156,7 @@ export class AcmeAccount {
     );
 
     if (!response.ok) {
-      throw await response.json();
+      throw new AcmeError(await response.json());
     }
 
     await response.body?.cancel();
@@ -190,7 +191,7 @@ export class AcmeAccount {
     );
 
     if (!response.ok) {
-      throw await response.json();
+      throw new AcmeError(await response.json());
     }
 
     const orderUrl = response.headers.get("Location");

@@ -4,7 +4,6 @@ import {
   AcmeAuthorization,
   AcmeClient,
   AcmeOrder,
-  Dns01Challenge,
   DnsUtils,
 } from "../src/mod.ts";
 import { resolveDns } from "../src/resolveDns.deno.ts";
@@ -39,9 +38,9 @@ it("can talk to ACME server and successfully create an account, order then all t
   expect(authorization instanceof AcmeAuthorization).toBe(true);
   console.log("✅ Order > Authorization(s)");
 
-  const dns01Challenge = authorization.findDns01Challenge();
+  const dns01Challenge = authorization.findChallenge("dns-01");
   expectToBeDefined(dns01Challenge);
-  expect(dns01Challenge instanceof Dns01Challenge).toBe(true);
+  expect(dns01Challenge.getType()).toBe("dns-01");
   console.log("✅ Order > Authorization(s) > dns-01 challenge (found!)");
 
   const expectedRecord = await dns01Challenge.getDnsRecordAnswer();

@@ -173,7 +173,7 @@ const order = await account.createOrder({
 });
 
 const dns01Challenges = order.authorizations.map((authorization) =>
-  authorization.findDns01Challenge()
+  authorization.findChallenge("dns-01")
 );
 ```
 
@@ -191,7 +191,7 @@ for all those domains.
 `AcmeOrder#authorizations` represent "your proof of control over the domains in
 the order". For each domain you provide, you will get an authorization object.
 
-`authorization.findDns01Challenge()` finds you the `dns-01` challenge in that
+`authorization.findChallenge("dns-01")` finds you the `dns-01` challenge in that
 authorization.
 
 ### 0x04: Find out how to update your DNS record
@@ -209,6 +209,24 @@ const txtRecordContent = await dns01Challenge.digestToken();
 
 These 2 methods basically does the same thing, except `.getDnsRecordAnswer()`
 provides slightly more guidance on how to the DNS record should be set up.
+
+#### Using `http-01` instead
+
+Prefer proving control by serving a file over HTTP? Use
+`findChallenge("http-01")` in place of `findChallenge("dns-01")`:
+
+```ts
+const http01Challenge = authorization.findChallenge("http-01");
+
+const {
+  url, // "http://yourdomain.com/.well-known/acme-challenge/<token>"
+  content, // serve this exact string as the response body
+} = await http01Challenge.getHttpResource();
+```
+
+Serve `content` unmodified at `url` over plain HTTP (port 80), then submit the
+challenge just like below. Note that `http-01` cannot be used for wildcard
+domains.
 
 ### 0x05: Submit challenges and finalize it!
 
@@ -415,7 +433,7 @@ await AcmeWorkflows.requestCertificate({
   - [x] Key Rollover
 - [x] Challenges
   - [x] DNS-01
-  - [ ] ~~HTTP-01~~
+  - [x] HTTP-01
   - [ ] ~~TLS-ALPN-01~~
 - [x] Certificate Management
   - [x] CSR Generation

@@ -41,7 +41,7 @@ it("should handle wildcard domains correctly", async () => {
   // version proves our fix works because the raw identifier.value is just the base domain.
 
   // Verify that the DNS record name does NOT contain the wildcard prefix
-  const dnsChallenge = wildcardAuth!.findDns01Challenge();
+  const dnsChallenge = wildcardAuth!.findChallenge("dns-01");
   expect(dnsChallenge).toBeDefined();
 
   const dnsRecord = await dnsChallenge!.getDnsRecordAnswer();
