@@ -3,7 +3,6 @@ import {
   AcmeChallenge,
   type AcmeChallengeObjectSnapshot,
   type AcmeChallengeType,
-  type AnyAcmeChallenge,
 } from "./AcmeChallenge.ts";
 import type { AcmeOrder } from "./AcmeOrder.ts";
 
@@ -92,7 +91,7 @@ export class AcmeAuthorization {
   /** The authorization url uniquely identifies the authorization and for retrieving {@link AcmeAuthorizationObjectSnapshot}. */
   readonly url: string;
   #domain?: string;
-  #challenges?: readonly AnyAcmeChallenge[];
+  #challenges?: readonly AcmeChallenge[];
 
   /**
    * The domain associated with this authorization.
@@ -115,7 +114,7 @@ export class AcmeAuthorization {
   /**
    * A list of {@link AcmeChallenge} the Certificate Authority can accept to verify control over this authorization / domain.
    */
-  get challenges(): readonly AnyAcmeChallenge[] {
+  get challenges(): readonly AcmeChallenge[] {
     if (this.#challenges === undefined) {
       throw new Error(
         "challenges are not initiated. Was this AcmeAuthorization object created with `await AcmeAuthorization.init(...)`?",
@@ -164,7 +163,7 @@ export class AcmeAuthorization {
     const authorizationResponse = await authorization.fetch();
 
     authorization.#challenges = authorizationResponse.challenges.map(
-      ({ token, type, url }): AnyAcmeChallenge =>
+      ({ token, type, url }) =>
         new AcmeChallenge({
           authorization,
           token,
@@ -199,33 +198,27 @@ export class AcmeAuthorization {
   }
 
   /**
-   * Find the {@link AcmeChallenge} as specified in `type`.
+   * Find the first challenge of the given `type`, narrowed to the matching
+   * {@link AcmeChallenge} — e.g. `findChallenge("dns-01")` resolves to an
+   * `AcmeChallenge<"dns-01">`.
    *
-   * {@link AcmeAuthorization.prototype.findDns01Challenge} or
-   * {@link AcmeAuthorization.prototype.findHttp01Challenge} is
-   * probably more useful in most cases.
-   *
-   * To get the list of challenges, use {@link AcmeAuthorization.prototype.challenges}
+   * To get the full list of challenges, use
+   * {@link AcmeAuthorization.prototype.challenges} (and narrow with
+   * {@link AcmeChallenge.prototype.is}).
    */
   findChallenge<T extends AcmeChallengeType>(
     type: T,
   ): AcmeChallenge<T> | undefined {
-    return this.challenges.find((challenge) => challenge.type === type) as
-      | AcmeChallenge<T>
-      | undefined;
+    return this.challenges.find((challenge) => challenge.is(type));
   }
 
   /**
    * Find the first `dns-01` challenge.
+   *
+   * @deprecated Use {@link AcmeAuthorization.prototype.findChallenge}`("dns-01")`
+   * instead. This method will be removed in the next version.
    */
   findDns01Challenge(): AcmeChallenge<"dns-01"> | undefined {
     return this.findChallenge("dns-01");
-  }
-
-  /**
-   * Find the first `http-01` challenge.
-   */
-  findHttp01Challenge(): AcmeChallenge<"http-01"> | undefined {
-    return this.findChallenge("http-01");
   }
 }

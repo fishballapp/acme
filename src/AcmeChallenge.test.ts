@@ -1,10 +1,6 @@
 import { describe, expect, it } from "../test_deps.ts";
 import { encodeBase64Url as stdEncodeBase64Url } from "../test_deps.ts";
-import {
-  AcmeChallenge,
-  type AcmeChallengeType,
-  type AnyAcmeChallenge,
-} from "./AcmeChallenge.ts";
+import { AcmeChallenge, type AcmeChallengeType } from "./AcmeChallenge.ts";
 import type { AcmeAuthorization } from "./AcmeAuthorization.ts";
 import { generateKeyPair } from "./utils/crypto.ts";
 
@@ -102,21 +98,21 @@ describe("AcmeChallenge#getDnsRecordAnswer (dns-01)", () => {
   });
 });
 
-describe("narrowing AnyAcmeChallenge by `.type`", () => {
+describe("narrowing via isType", () => {
   it("unlocks the type-specific methods", async () => {
-    // Typed as the *union of instantiations* (what `authorization.challenges`
-    // hands callers) — so `.type` is a discriminant that narrows.
-    const challenges: AnyAcmeChallenge[] = [
+    // Plain `AcmeChallenge[]` (what `authorization.challenges` hands callers);
+    // `isType(...)` narrows each element to the matching instantiation.
+    const challenges: AcmeChallenge[] = [
       (await buildChallenge("dns-01")).challenge,
       (await buildChallenge("http-01")).challenge,
     ];
 
     const seen: AcmeChallengeType[] = [];
     for (const challenge of challenges) {
-      if (challenge.type === "dns-01") {
+      if (challenge.is("dns-01")) {
         expect((await challenge.getDnsRecordAnswer()).type).toBe("TXT");
         seen.push("dns-01");
-      } else if (challenge.type === "http-01") {
+      } else if (challenge.is("http-01")) {
         expect((await challenge.getHttpResource()).url).toContain(
           "/.well-known/acme-challenge/",
         );

@@ -84,7 +84,7 @@ export const requestCertificate = async (
   const acmeOrder = await acmeAccount.createOrder({ domains });
 
   const dns01Challenges = acmeOrder.authorizations.map((authorization) => {
-    const challenge = authorization.findDns01Challenge();
+    const challenge = authorization.findChallenge("dns-01");
     if (challenge === undefined) {
       throw new Error(
         `Cannot find dns01 challenge for authorization ${

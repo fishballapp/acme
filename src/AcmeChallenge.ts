@@ -66,8 +66,7 @@ export class AcmeChallenge<
    * This is *NOT* the value you put in your DNS record or HTTP resource.
    */
   readonly token: string;
-  /** The challenge type. E.g. `dns-01`. */
-  readonly type: T;
+  readonly #type: T;
   /**
    * The challenge url that uniquely identifies the challenge.
    * This is used to retrieve {@link AcmeAuthorizationObjectSnapshot} and the challenge submission.
@@ -94,12 +93,53 @@ export class AcmeChallenge<
   }) {
     this.authorization = authorization;
     this.token = token;
-    this.type = type;
+    this.#type = type;
     this.url = url;
+  }
+
+  /**
+   * The challenge type. E.g. `dns-01`.
+   *
+   * Note: `challenge.getType() === "dns-01"` does **not** narrow `challenge` —
+   * use {@link AcmeChallenge.prototype.is} to narrow and unlock the
+   * type-specific methods.
+   */
+  getType(): T {
+    return this.#type;
+  }
+
+  /**
+   * The challenge type. E.g. `dns-01`.
+   *
+   * @deprecated Use {@link AcmeChallenge.prototype.getType} to read the type
+   * (and {@link AcmeChallenge.prototype.is} to narrow). This property will be
+   * made fully private in the next version.
+   */
+  get type(): T {
+    return this.#type;
   }
 
   get #account(): AcmeAccount {
     return this.authorization.order.account;
+  }
+
+  /**
+   * Type guard that narrows this challenge to a specific type, unlocking the
+   * type-specific methods. Prefer this over reading
+   * {@link AcmeChallenge.prototype.getType} — `challenge.getType() === "dns-01"`
+   * does **not** narrow `challenge`.
+   *
+   * @example
+   * ```ts
+   * if (challenge.is("dns-01")) {
+   *   await challenge.getDnsRecordAnswer();
+   * } else if (challenge.is("http-01")) {
+   *   await challenge.getHttpResource();
+   * }
+   * ```
+   */
+  is<U extends T>(type: U): this is AcmeChallenge<U> {
+    return this.#type === type;
   }
 
   /**
@@ -199,28 +239,6 @@ export class AcmeChallenge<
   }
 }
 
-/**
- * Any concrete {@link AcmeChallenge}, discriminable by its `.type`.
- *
- * This is a union of the per-type instantiations (as opposed to
- * `AcmeChallenge<AcmeChallengeType>`), so narrowing on `.type` unlocks the
- * type-specific methods:
- *
- * @example
- * ```ts
- * for (const challenge of authorization.challenges) {
- *   if (challenge.type === "dns-01") {
- *     await challenge.getDnsRecordAnswer();
- *   } else if (challenge.type === "http-01") {
- *     await challenge.getHttpResource();
- *   }
- * }
- * ```
- */
-export type AnyAcmeChallenge = {
-  [T in AcmeChallengeType]: AcmeChallenge<T>;
-}[AcmeChallengeType];
-
 async function getJWKThumbprint(jwk: JsonWebKey): Promise<string> {
   // Step 1: Create the canonical JSON string from required JWK fields,
   const canonicalJWK = JSON.stringify({
@@ -244,8 +262,7 @@ async function getJWKThumbprint(jwk: JsonWebKey): Promise<string> {
  * A `dns-01` challenge.
  *
  * @deprecated Use `AcmeChallenge<"dns-01">` instead — e.g. via
- * {@link AcmeAuthorization.prototype.findDns01Challenge} or
- * `findChallenge("dns-01")`.
+ * `findChallenge("dns-01")`. This alias will be removed in the next version.
  */
 export type Dns01Challenge = AcmeChallenge<"dns-01">;
 

@@ -39,7 +39,7 @@ it("can talk to ACME server and successfully retrieve a wildcard certificate", a
   console.log("✅ Order > Authorization(s) count correct");
 
   const challenges = acmeOrder.authorizations.map((auth) => {
-    const challenge = auth.findDns01Challenge();
+    const challenge = auth.findChallenge("dns-01");
     expectToBeDefined(challenge);
     return challenge;
   });
