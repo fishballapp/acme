@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 0.17.0
+
+- Added `http-01` challenge support:
+  `AcmeAuthorization.prototype.findHttp01Challenge()` and the new
+  `Http01Challenge`, whose `getHttpResource()` returns the URL and the key
+  authorization string to serve over HTTP.
+  (https://github.com/fishballapp/acme/pull/33)
+- Added `AcmeChallenge.prototype.keyAuthorization()`, the raw key authorization
+  shared by the `dns-01` and `http-01` flows.
+- `AcmeAccount.prototype.keyRollover(...)` and
+  `AcmeAccount.prototype.createOrder(...)` now throw `AcmeError` on failure
+  instead of the raw parsed JSON response.
+  (https://github.com/fishballapp/acme/pull/32)
+
 ## 0.16.0
 
 - Added External Account Binding (EAB) support to

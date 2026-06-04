@@ -210,6 +210,24 @@ const txtRecordContent = await dns01Challenge.digestToken();
 These 2 methods basically does the same thing, except `.getDnsRecordAnswer()`
 provides slightly more guidance on how to the DNS record should be set up.
 
+#### Using `http-01` instead
+
+Prefer proving control by serving a file over HTTP? Use `findHttp01Challenge()`
+in place of `findDns01Challenge()`:
+
+```ts
+const http01Challenge = authorization.findHttp01Challenge();
+
+const {
+  url, // "http://yourdomain.com/.well-known/acme-challenge/<token>"
+  content, // serve this exact string as the response body
+} = await http01Challenge.getHttpResource();
+```
+
+Serve `content` unmodified at `url` over plain HTTP (port 80), then submit the
+challenge just like below. Note that `http-01` cannot be used for wildcard
+domains.
+
 ### 0x05: Submit challenges and finalize it!
 
 ```ts
@@ -415,7 +433,7 @@ await AcmeWorkflows.requestCertificate({
   - [x] Key Rollover
 - [x] Challenges
   - [x] DNS-01
-  - [ ] ~~HTTP-01~~
+  - [x] HTTP-01
   - [ ] ~~TLS-ALPN-01~~
 - [x] Certificate Management
   - [x] CSR Generation
