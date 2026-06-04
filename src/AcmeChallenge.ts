@@ -131,10 +131,14 @@ export class AcmeChallenge<
    *
    * @example
    * ```ts
-   * if (challenge.is("dns-01")) {
-   *   await challenge.getDnsRecordAnswer();
-   * } else if (challenge.is("http-01")) {
-   *   await challenge.getHttpResource();
+   * import { type AcmeChallenge } from "@fishballpkg/acme";
+   *
+   * async function handle(challenge: AcmeChallenge) {
+   *   if (challenge.is("dns-01")) {
+   *     await challenge.getDnsRecordAnswer();
+   *   } else if (challenge.is("http-01")) {
+   *     await challenge.getHttpResource();
+   *   }
    * }
    * ```
    */
