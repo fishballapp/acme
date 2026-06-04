@@ -204,7 +204,7 @@ export class AcmeAuthorization {
    * Find the {@link AcmeChallenge} as specified in `type`.
    *
    * {@link AcmeAuthorization.prototype.findDns01Challenge} or
-   * {@link AcmeAuthorization.prototype.findDns01Challenge} is
+   * {@link AcmeAuthorization.prototype.findHttp01Challenge} is
    * probably more useful in most cases.
    *
    * To get the list of challenges, use {@link AcmeAuthorization.prototype.challenges}

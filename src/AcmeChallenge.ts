@@ -61,7 +61,7 @@ export class AcmeChallenge {
    * {@link Dns01Challenge.prototype.getDnsRecordAnswer} and
    * {@link Http01Challenge.prototype.getHttpResource}.
    *
-   * This is *NOT* the value you put in your DNS record or HTTP resourcd.
+   * This is *NOT* the value you put in your DNS record or HTTP resource.
    */
   readonly token: string;
   /** The challenge type. E.g. `dns-01`. */
@@ -268,12 +268,13 @@ export class Http01Challenge extends AcmeChallenge {
   }
 
   /**
-   * Digest the challenge token and return a `Promise` that resolves to the
-   * {@link HttpResource} needed to be present to fulfill the challenge.
+   * Returns a `Promise` that resolves to the {@link HttpResource} that must be
+   * served (the key authorization, unhashed) to fulfill the challenge.
    */
   async getHttpResource(): Promise<HttpResource> {
     return {
-      url: `http://${this.authorization.domain}/.well-known/acme-challenge/${this.token}`,
+      url:
+        `http://${this.authorization.domain}/.well-known/acme-challenge/${this.token}`,
       name: this.token,
       content: await this.keyAuthorization(),
     };
