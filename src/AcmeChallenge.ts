@@ -223,6 +223,7 @@ export class AcmeChallenge<
       : this.authorization.domain;
 
     return {
+      domain: this.authorization.domain,
       name: `_acme-challenge.${domain}.`,
       type: "TXT",
       content: await this.digestToken(),
@@ -235,6 +236,7 @@ export class AcmeChallenge<
    */
   async getHttpResource(this: AcmeChallenge<"http-01">): Promise<HttpResource> {
     return {
+      domain: this.authorization.domain,
       url:
         `http://${this.authorization.domain}/.well-known/acme-challenge/${this.token}`,
       name: this.token,
@@ -274,6 +276,7 @@ export type Dns01Challenge = AcmeChallenge<"dns-01">;
  * Represents a DNS `TXT` record
  */
 export interface DnsTxtRecord {
+  domain: string;
   name: string;
   type: "TXT";
   content: string;
@@ -283,6 +286,7 @@ export interface DnsTxtRecord {
  * Represents the HTTP challenge file
  */
 export interface HttpResource {
+  domain: string;
   url: string;
   name: string;
   content: string;
