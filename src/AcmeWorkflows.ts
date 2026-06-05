@@ -86,62 +86,72 @@ export const requestCertificate = async (
 
   const acmeOrder = await acmeAccount.createOrder({ domains });
 
-  if (updateDnsRecords) {
-    const dns01Challenges = acmeOrder.authorizations.map((authorization) => {
-      const challenge = authorization.findChallenge("dns-01");
-      if (challenge === undefined) {
-        throw new Error(
-          `Cannot find dns01 challenge for authorization ${JSON.stringify(authorization)
-          }.`,
-        );
-      }
-      return challenge;
-    });
+  let challengeRequired = true;
+  try {
+    // Just poll once for the 'ready' status (note that the 'newOrder' call initially returns 'pending', so we have to check again for 'ready')
+    await acmeOrder.pollStatus({ pollUntil: "ready", timeout: 1 });
+    // No timeout exception thrown, we're ready to finalize without challenges
+    challengeRequired = false;
+  } catch (e) { }
 
-    const expectedRecords = await Promise.all(
-      dns01Challenges.map(async (dns01Challenge) =>
-        await dns01Challenge.getDnsRecordAnswer()
-      ),
-    );
-
-    await updateDnsRecords(expectedRecords);
-
-    await Promise.all(expectedRecords.map(async (expectedRecord) => {
-      await DnsUtils.pollDnsTxtRecord(expectedRecord.name, {
-        pollUntil: expectedRecord.content,
-        timeout: dnsTimeout,
-        resolveDns,
+  if (challengeRequired) {
+    if (updateDnsRecords) {
+      const dns01Challenges = acmeOrder.authorizations.map((authorization) => {
+        const challenge = authorization.findChallenge("dns-01");
+        if (challenge === undefined) {
+          throw new Error(
+            `Cannot find dns01 challenge for authorization ${JSON.stringify(authorization)
+            }.`,
+          );
+        }
+        return challenge;
       });
-    }));
 
-    await new Promise((res) => setTimeout(res, delayAfterDnsRecordsConfirmed));
+      const expectedRecords = await Promise.all(
+        dns01Challenges.map(async (dns01Challenge) =>
+          await dns01Challenge.getDnsRecordAnswer()
+        ),
+      );
 
-    await Promise.all(
-      dns01Challenges.map(async (challenge) => await challenge.submit()),
-    );
-  } else if (updateHttpResources) {
-    const http01Challenges = acmeOrder.authorizations.map((authorization) => {
-      const challenge = authorization.findChallenge("http-01");
-      if (challenge === undefined) {
-        throw new Error(
-          `Cannot find http01 challenge for authorization ${JSON.stringify(authorization)
-          }.`,
-        );
-      }
-      return challenge;
-    });
+      await updateDnsRecords(expectedRecords);
 
-    const expectedRecords = await Promise.all(
-      http01Challenges.map(async (http01Challenge) =>
-        await http01Challenge.getHttpResource()
-      ),
-    );
+      await Promise.all(expectedRecords.map(async (expectedRecord) => {
+        await DnsUtils.pollDnsTxtRecord(expectedRecord.name, {
+          pollUntil: expectedRecord.content,
+          timeout: dnsTimeout,
+          resolveDns,
+        });
+      }));
 
-    await updateHttpResources(expectedRecords);
+      await new Promise((res) => setTimeout(res, delayAfterDnsRecordsConfirmed));
 
-    await Promise.all(
-      http01Challenges.map(async (challenge) => await challenge.submit()),
-    );
+      await Promise.all(
+        dns01Challenges.map(async (challenge) => await challenge.submit()),
+      );
+    } else if (updateHttpResources) {
+      const http01Challenges = acmeOrder.authorizations.map((authorization) => {
+        const challenge = authorization.findChallenge("http-01");
+        if (challenge === undefined) {
+          throw new Error(
+            `Cannot find http01 challenge for authorization ${JSON.stringify(authorization)
+            }.`,
+          );
+        }
+        return challenge;
+      });
+
+      const expectedRecords = await Promise.all(
+        http01Challenges.map(async (http01Challenge) =>
+          await http01Challenge.getHttpResource()
+        ),
+      );
+
+      await updateHttpResources(expectedRecords);
+
+      await Promise.all(
+        http01Challenges.map(async (challenge) => await challenge.submit()),
+      );
+    }
   }
 
   await acmeOrder.pollStatus({ pollUntil: "ready", timeout });
