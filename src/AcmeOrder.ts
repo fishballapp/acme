@@ -285,7 +285,6 @@ Expected order status: ${pollUntil}`);
       await generateCSR({
         domains: this.domains,
         keyPair: certKeyPair,
-        keyPairAlgorithm: this.account.keyPairAlgorithm,
       }),
     );
 

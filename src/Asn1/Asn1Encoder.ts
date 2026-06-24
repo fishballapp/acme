@@ -49,6 +49,10 @@ export const Asn1Encoder = {
     return Asn1Encoder.custom(ASN1_TAGS.BITSTRING, data);
   },
 
+  // ASN.1 NULL: a 0x05 tag with zero-length content.
+  null: (): Uint8Array<ArrayBuffer> =>
+    Asn1Encoder.custom(ASN1_TAGS.NULL, new Uint8Array(0)),
+
   uintBytes: (bytes: Uint8Array<ArrayBuffer>): Uint8Array<ArrayBuffer> => {
     if (bytes[0] === undefined) {
       throw new Error(

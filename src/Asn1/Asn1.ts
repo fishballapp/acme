@@ -4,6 +4,7 @@ export const ASN1_TAGS = {
   INTEGER: 0x02,
   BITSTRING: 0x03,
   OCTET_STRING: 0x04,
+  NULL: 0x05,
   OID: 0x06,
   UTF8_STRING: 0x0C,
   SEQUENCE: 0x30,

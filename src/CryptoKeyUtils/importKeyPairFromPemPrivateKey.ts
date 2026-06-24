@@ -1,21 +1,24 @@
-import { getAlgorithmProperties, type KeyPairAlgorithm } from "../utils/crypto.ts";
+import {
+  getAlgorithmProperties,
+  type KeyPairAlgorithm,
+} from "../utils/crypto.ts";
 import { extractFirstPemObject } from "../utils/pem.ts";
 
-async function derivePublicKey(
-  privateKey: CryptoKey,
-  keyPairAlgorithm: KeyPairAlgorithm = "ec",
-): Promise<CryptoKey> {
-  // d contains the private info of the key
-  const { d: _discardedPrivateInfo, ...jwkPublic } = {
-    ...await crypto.subtle.exportKey("jwk", privateKey),
-    key_ops: ["verify"],
-  };
+async function derivePublicKey(privateKey: CryptoKey): Promise<CryptoKey> {
+  const jwk = await crypto.subtle.exportKey("jwk", privateKey);
 
-  // Import the modified JWK as a public key
+  // A public JWK must not carry private material. EC private keys expose `d`;
+  // RSA private keys additionally expose the CRT values p, q, dp, dq and qi.
+  for (const field of ["d", "p", "q", "dp", "dq", "qi"] as const) {
+    delete jwk[field];
+  }
+
+  // Reuse the private key's own algorithm so the public key always matches it,
+  // regardless of which KeyPairAlgorithm was requested.
   return crypto.subtle.importKey(
     "jwk",
-    jwkPublic,
-    getAlgorithmProperties(keyPairAlgorithm),
+    { ...jwk, key_ops: ["verify"] },
+    privateKey.algorithm,
     true,
     ["verify"],
   );
@@ -38,6 +41,6 @@ export async function importKeyPairFromPemPrivateKey(
 
   return {
     privateKey,
-    publicKey: await derivePublicKey(privateKey, keyPairAlgorithm),
+    publicKey: await derivePublicKey(privateKey),
   };
 }

@@ -61,4 +61,24 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMp7rnAfFJngRhXaE26+wQo9YM6hZ
       pemKeyPair,
     );
   });
+
+  it("should export and import an RSA key pair", async () => {
+    const keyPair = await generateKeyPair("rsa");
+    const pemKeyPair = await CryptoKeyUtils.exportKeyPairToPem(keyPair);
+
+    const imported = await CryptoKeyUtils.importKeyPairFromPemPrivateKey(
+      pemKeyPair.privateKey,
+      "rsa",
+    );
+
+    expect(imported.privateKey.algorithm.name).toBe("RSASSA-PKCS1-v1_5");
+    expect(imported.publicKey.algorithm.name).toBe("RSASSA-PKCS1-v1_5");
+
+    // Re-exporting must yield the identical PEM, which only holds if the
+    // public key was derived correctly from the RSA private key (i.e. all
+    // private JWK members were stripped, not just `d`).
+    expect(await CryptoKeyUtils.exportKeyPairToPem(imported)).toEqual(
+      pemKeyPair,
+    );
+  });
 });

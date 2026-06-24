@@ -7,7 +7,11 @@ import {
   AcmeError,
   BadNonceError,
 } from "./errors.ts";
-import { generateKeyPair, importHmacKey, type KeyPairAlgorithm } from "./utils/crypto.ts";
+import {
+  generateKeyPair,
+  importHmacKey,
+  type KeyPairAlgorithm,
+} from "./utils/crypto.ts";
 import { emailsToAccountContacts } from "./utils/emailsToAccountContacts.ts";
 import { jws, jwsFetch } from "./utils/jws.ts";
 
@@ -139,7 +143,7 @@ export class AcmeClient {
 
     this.#nonceQueue.push(
       response.headers.get(REPLAY_NONCE_HEADER_KEY) ??
-      await this.#fetchNonce(),
+        await this.#fetchNonce(),
     );
 
     if (!response.ok) {
@@ -200,7 +204,7 @@ export class AcmeClient {
       );
     }
 
-    const keyPair = await generateKeyPair();
+    const keyPair = await generateKeyPair(keyPairAlgorithm);
     const jwk = await crypto.subtle.exportKey("jwk", keyPair.publicKey);
 
     const externalAccountBindingJws = await (async () => {

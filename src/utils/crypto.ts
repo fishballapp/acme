@@ -1,9 +1,24 @@
 import { decodeBase64Url } from "./base64.ts";
 
+/**
+ * The key algorithm used for an account's keys and the certificate keys it
+ * mints.
+ *
+ * - `ec`: ECDSA on the NIST P-256 curve (signed as `ES256`). The default.
+ * - `rsa`: RSASSA-PKCS1-v1_5 with a 2048-bit modulus (signed as `RS256`).
+ * - `rsa-4096`: as `rsa`, but with a 4096-bit modulus.
+ */
 export type KeyPairAlgorithm = "ec" | "rsa" | "rsa-4096";
 
+/**
+ * The signature-scheme family of a key. `rsa` and `rsa-4096` sign and encode
+ * identically (only the modulus size differs), so they collapse into one
+ * family for the purposes of JWS and CSR encoding.
+ */
+export type KeyAlgorithmFamily = "ec" | "rsa";
+
 export function getAlgorithmProperties(keyPairAlgorithm: KeyPairAlgorithm) {
-  switch (keyPairAlgorithm){
+  switch (keyPairAlgorithm) {
     case "ec":
       return {
         name: "ECDSA",
@@ -26,12 +41,25 @@ export function getAlgorithmProperties(keyPairAlgorithm: KeyPairAlgorithm) {
   }
 }
 
-export async function generateKeyPair(keyPairAlgorithm: KeyPairAlgorithm = "ec"): Promise<CryptoKeyPair> {
+export async function generateKeyPair(
+  keyPairAlgorithm: KeyPairAlgorithm = "ec",
+): Promise<CryptoKeyPair> {
   return await crypto.subtle.generateKey(
     getAlgorithmProperties(keyPairAlgorithm),
     true,
     ["sign", "verify"],
   );
+}
+
+/**
+ * Resolve a key's {@link KeyAlgorithmFamily} from the key itself.
+ *
+ * Reading the algorithm off the {@link CryptoKey} — rather than a separately
+ * passed hint that can be omitted — guarantees the JWS `alg` and the CSR
+ * signature encoding can never disagree with the actual key material.
+ */
+export function getKeyAlgorithmFamily(key: CryptoKey): KeyAlgorithmFamily {
+  return key.algorithm.name.startsWith("RSA") ? "rsa" : "ec";
 }
 
 /**

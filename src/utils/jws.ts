@@ -1,5 +1,12 @@
-import { sign } from "../utils/crypto.ts";
+import { getKeyAlgorithmFamily, sign } from "../utils/crypto.ts";
 import { encodeBase64Url } from "./base64.ts";
+
+/**
+ * The JWS `alg` for each key family: `ES256` for EC P-256, `RS256` for RSA
+ * (RFC 7518 §3.3/§3.4). ACME requires a non-MAC `alg` on account requests
+ * (RFC 8555 §6.2), which both satisfy.
+ */
+const JWS_ALG = { ec: "ES256", rsa: "RS256" } as const;
 
 export const jwsFetch = async (url: string, {
   method = "POST",
@@ -42,7 +49,7 @@ export const jws = async (
 }> => {
   const jwsWithoutSignature = {
     protected: encodeBase64Url(JSON.stringify({
-      alg: privateKey.algorithm.name.startsWith("RSA") ? "RS256" : "ES256",
+      alg: JWS_ALG[getKeyAlgorithmFamily(privateKey)],
       ...data.protected,
     })),
     payload: data.payload === undefined

@@ -6,7 +6,11 @@
 
 import { Asn1Encoder } from "../Asn1/Asn1Encoder.ts";
 import { splitAtIndex } from "./array.ts";
-import { type KeyPairAlgorithm, sign } from "./crypto.ts";
+import {
+  getKeyAlgorithmFamily,
+  type KeyAlgorithmFamily,
+  sign,
+} from "./crypto.ts";
 
 const OIDS = {
   COMMON_NAME: "2.5.4.3",
@@ -17,21 +21,57 @@ const OIDS = {
 } as const;
 
 /**
+ * Per-family encoding of the CSR `signatureAlgorithm` field and of the raw
+ * signature WebCrypto produces. The family is derived from the signing key
+ * (see {@link getKeyAlgorithmFamily}), so the CSR always matches its key.
+ *
+ * - `ec`: ECDSA-with-SHA-256 with absent parameters (RFC 5758 §3.2). WebCrypto
+ *   returns the raw `r‖s` pair, which X.509 wraps as `SEQUENCE { r, s }`
+ *   (RFC 3279 §2.2.3).
+ * - `rsa`: sha256WithRSAEncryption whose parameters MUST be explicit NULL
+ *   (RFC 4055 §5); the PKCS#1 v1.5 signature is carried verbatim.
+ */
+const CSR_SIGNATURE_STRATEGY: Record<KeyAlgorithmFamily, {
+  signatureAlgorithm: Uint8Array<ArrayBuffer>;
+  encodeSignatureValue: (
+    signature: Uint8Array<ArrayBuffer>,
+  ) => Uint8Array<ArrayBuffer>;
+}> = {
+  ec: {
+    signatureAlgorithm: Asn1Encoder.sequence(
+      Asn1Encoder.oid(OIDS.ECDSA_WITH_SHA256),
+    ),
+    encodeSignatureValue: (signature) => {
+      const [r, s] = splitAtIndex(signature, signature.byteLength / 2);
+      return Asn1Encoder.sequence(
+        Asn1Encoder.uintBytes(r),
+        Asn1Encoder.uintBytes(s),
+      );
+    },
+  },
+  rsa: {
+    signatureAlgorithm: Asn1Encoder.sequence(
+      Asn1Encoder.oid(OIDS.RSA_WITH_SHA256),
+      Asn1Encoder.null(),
+    ),
+    encodeSignatureValue: (signature) => signature,
+  },
+};
+
+/**
  * Generate a Certificate Signing Request (CSR) in DER format.
+ *
+ * The signature scheme (ECDSA or RSASSA-PKCS1-v1_5) is derived from `keyPair`
+ * itself, so the CSR always matches the key it is built from.
  *
  * @see https://datatracker.ietf.org/doc/html/rfc2986
  */
 export async function generateCSR(
-  {
-    domains,
-    keyPair,
-    keyPairAlgorithm,
-  }: {
-    domains: readonly string[];
-    keyPair: CryptoKeyPair;
-    keyPairAlgorithm?: KeyPairAlgorithm;
-  },
+  { domains, keyPair }: { domains: readonly string[]; keyPair: CryptoKeyPair },
 ): Promise<Uint8Array<ArrayBuffer>> {
+  const { signatureAlgorithm, encodeSignatureValue } =
+    CSR_SIGNATURE_STRATEGY[getKeyAlgorithmFamily(keyPair.privateKey)];
+
   const certificationRequestInfoSequence = encodeCertificationRequestInfo(
     {
       domains,
@@ -53,13 +93,12 @@ export async function generateCSR(
     // certificationRequestInfo
     certificationRequestInfoSequence,
     // signatureAlgorithm
-    Asn1Encoder.sequence(
-      Asn1Encoder.oid(keyPairAlgorithm === "ec" ? OIDS.ECDSA_WITH_SHA256 : OIDS.RSA_WITH_SHA256),
-    ),
+    signatureAlgorithm,
     // signature
-    encodeSignatureBitString(
-      await sign(keyPair.privateKey, certificationRequestInfoSequence),
-      keyPairAlgorithm,
+    Asn1Encoder.bitString(
+      encodeSignatureValue(
+        await sign(keyPair.privateKey, certificationRequestInfoSequence),
+      ),
     ),
   );
 }
@@ -141,18 +180,3 @@ const encodeSubjectAlternativeName = (() => {
     );
   };
 })();
-
-const encodeSignatureBitString = (
-  signature: Uint8Array<ArrayBuffer>,
-  keyPairAlgorithm?: KeyPairAlgorithm,
-): Uint8Array<ArrayBuffer> => {
-  if (keyPairAlgorithm === "ec") {
-    const [r, s] = splitAtIndex(signature, signature.byteLength / 2);
-
-    return Asn1Encoder.bitString(Asn1Encoder.sequence(
-      Asn1Encoder.uintBytes(r),
-      Asn1Encoder.uintBytes(s),
-    ));
-  }
-  return Asn1Encoder.bitString(signature);
-};

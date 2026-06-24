@@ -173,4 +173,42 @@ describe("generateCSR", () => {
       await openssl.verifyCSR(generatedCSR),
     ).toContain("verify OK");
   });
+
+  // Regression guard: a key built with the default algorithm must yield an
+  // ECDSA CSR. A previous iteration defaulted the signatureAlgorithm and
+  // signature encoding to RSA whenever no algorithm hint was threaded through,
+  // producing an invalid CSR for the (default) EC path.
+  it("should default to an ECDSA CSR", async () => {
+    const keyPair = await generateKeyPair();
+
+    const generatedCSR = formatPEM(
+      "CERTIFICATE REQUEST",
+      encodeBase64(await generateCSR({ domains: ["example.com"], keyPair })),
+    );
+
+    expect(await openssl.verifyCSR(generatedCSR)).toContain("verify OK");
+    expect(await openssl.getCSRInfo(generatedCSR)).toContain(
+      "Signature Algorithm: ecdsa-with-SHA256",
+    );
+  });
+
+  for (const keyPairAlgorithm of ["rsa", "rsa-4096"] as const) {
+    it(`should generate a valid CSR for "${keyPairAlgorithm}" keys`, async () => {
+      const domains = ["example.com", "www.example.com"];
+      const keyPair = await generateKeyPair(keyPairAlgorithm);
+
+      const generatedCSR = formatPEM(
+        "CERTIFICATE REQUEST",
+        encodeBase64(await generateCSR({ domains, keyPair })),
+      );
+
+      // OpenSSL re-verifies the CSR self-signature, which only succeeds when
+      // the signatureAlgorithm and the signature encoding match the key.
+      expect(await openssl.verifyCSR(generatedCSR)).toContain("verify OK");
+
+      const csrInfo = await openssl.getCSRInfo(generatedCSR);
+      expect(csrInfo).toContain("Public Key Algorithm: rsaEncryption");
+      expect(csrInfo).toContain("Signature Algorithm: sha256WithRSAEncryption");
+    });
+  }
 });

@@ -168,6 +168,7 @@ export class AcmeAccount {
       client: this.client,
       url: this.url,
       keyPair: newKeyPair,
+      keyPairAlgorithm: this.keyPairAlgorithm,
     });
   }
 
