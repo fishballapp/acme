@@ -54,3 +54,7 @@ it("should decode generalized time correctly", () => {
     ).toISOString(),
   ).toEqual("2195-05-05T05:55:55.000Z");
 });
+
+it("should encode ASN.1 NULL as a 0x05 tag with empty content", () => {
+  expect([...Asn1Encoder.null()]).toEqual([0x05, 0x00]);
+});

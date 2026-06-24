@@ -5,40 +5,67 @@ import { decodeBase64Url } from "./base64.ts";
  * mints.
  *
  * - `ec`: ECDSA on the NIST P-256 curve (signed as `ES256`). The default.
- * - `rsa`: RSASSA-PKCS1-v1_5 with a 2048-bit modulus (signed as `RS256`).
- * - `rsa-4096`: as `rsa`, but with a 4096-bit modulus.
+ * - `rsa-2048`: RSASSA-PKCS1-v1_5 with a 2048-bit modulus (signed as `RS256`).
+ * - `rsa-4096`: as `rsa-2048`, but with a 4096-bit modulus.
  */
-export type KeyPairAlgorithm = "ec" | "rsa" | "rsa-4096";
+export type KeyPairAlgorithm = "ec" | "rsa-2048" | "rsa-4096";
 
 /**
- * The signature-scheme family of a key. `rsa` and `rsa-4096` sign and encode
+ * The signature-scheme family of a key. The RSA variants sign and encode
  * identically (only the modulus size differs), so they collapse into one
  * family for the purposes of JWS and CSR encoding.
  */
 export type KeyAlgorithmFamily = "ec" | "rsa";
 
-export function getAlgorithmProperties(keyPairAlgorithm: KeyPairAlgorithm) {
-  switch (keyPairAlgorithm) {
-    case "ec":
-      return {
-        name: "ECDSA",
-        namedCurve: "P-256",
-      };
-    case "rsa":
-      return {
-        name: "RSASSA-PKCS1-v1_5",
-        modulusLength: 2048,
-        publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-        hash: { name: "SHA-256" },
-      };
-    case "rsa-4096":
-      return {
-        name: "RSASSA-PKCS1-v1_5",
-        modulusLength: 4096,
-        publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-        hash: { name: "SHA-256" },
-      };
-  }
+/**
+ * The RSA public exponent F4 (65537), as the big-endian byte array WebCrypto
+ * expects (`0x010001` = 65537). F4 is the standard exponent for RSA keys
+ * (NIST SP 800-56B Rev. 2 §6.2).
+ */
+const RSA_PUBLIC_EXPONENT = new Uint8Array([0x01, 0x00, 0x01]);
+
+/** The WebCrypto `algorithm.name` reported by each key family. */
+const ALGORITHM_NAME = {
+  ec: "ECDSA",
+  rsa: "RSASSA-PKCS1-v1_5",
+} as const;
+
+/**
+ * Map a {@link KeyPairAlgorithm} to the WebCrypto parameters used to generate
+ * or import it.
+ */
+const ALGORITHM_PROPERTIES: Record<
+  KeyPairAlgorithm,
+  EcKeyGenParams | RsaHashedKeyGenParams
+> = {
+  "ec": {
+    name: ALGORITHM_NAME.ec,
+    namedCurve: "P-256",
+  },
+  "rsa-2048": {
+    name: ALGORITHM_NAME.rsa,
+    modulusLength: 2048,
+    publicExponent: RSA_PUBLIC_EXPONENT,
+    hash: { name: "SHA-256" },
+  },
+  "rsa-4096": {
+    name: ALGORITHM_NAME.rsa,
+    modulusLength: 4096,
+    publicExponent: RSA_PUBLIC_EXPONENT,
+    hash: { name: "SHA-256" },
+  },
+};
+
+/** Map a key's reported WebCrypto `algorithm.name` back to its family. */
+const FAMILY_BY_ALGORITHM_NAME: Record<string, KeyAlgorithmFamily> = {
+  [ALGORITHM_NAME.ec]: "ec",
+  [ALGORITHM_NAME.rsa]: "rsa",
+};
+
+export function getAlgorithmProperties(
+  keyPairAlgorithm: KeyPairAlgorithm,
+): EcKeyGenParams | RsaHashedKeyGenParams {
+  return ALGORITHM_PROPERTIES[keyPairAlgorithm];
 }
 
 export async function generateKeyPair(
@@ -57,9 +84,19 @@ export async function generateKeyPair(
  * Reading the algorithm off the {@link CryptoKey} — rather than a separately
  * passed hint that can be omitted — guarantees the JWS `alg` and the CSR
  * signature encoding can never disagree with the actual key material.
+ *
+ * @throws if the key uses an algorithm this client does not support.
  */
 export function getKeyAlgorithmFamily(key: CryptoKey): KeyAlgorithmFamily {
-  return key.algorithm.name.startsWith("RSA") ? "rsa" : "ec";
+  const family = FAMILY_BY_ALGORITHM_NAME[key.algorithm.name];
+  if (family === undefined) {
+    throw new Error(
+      `Unsupported key algorithm "${key.algorithm.name}". Expected one of: ${
+        Object.keys(FAMILY_BY_ALGORITHM_NAME).join(", ")
+      }.`,
+    );
+  }
+  return family;
 }
 
 /**

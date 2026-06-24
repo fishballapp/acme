@@ -63,12 +63,12 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMp7rnAfFJngRhXaE26+wQo9YM6hZ
   });
 
   it("should export and import an RSA key pair", async () => {
-    const keyPair = await generateKeyPair("rsa");
+    const keyPair = await generateKeyPair("rsa-2048");
     const pemKeyPair = await CryptoKeyUtils.exportKeyPairToPem(keyPair);
 
     const imported = await CryptoKeyUtils.importKeyPairFromPemPrivateKey(
       pemKeyPair.privateKey,
-      "rsa",
+      "rsa-2048",
     );
 
     expect(imported.privateKey.algorithm.name).toBe("RSASSA-PKCS1-v1_5");

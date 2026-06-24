@@ -192,7 +192,7 @@ describe("generateCSR", () => {
     );
   });
 
-  for (const keyPairAlgorithm of ["rsa", "rsa-4096"] as const) {
+  for (const keyPairAlgorithm of ["rsa-2048", "rsa-4096"] as const) {
     it(`should generate a valid CSR for "${keyPairAlgorithm}" keys`, async () => {
       const domains = ["example.com", "www.example.com"];
       const keyPair = await generateKeyPair(keyPairAlgorithm);
