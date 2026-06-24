@@ -1,43 +1,38 @@
 import { decodeBase64Url } from "./base64.ts";
 
 /**
- * The key algorithm used for an account's keys and the certificate keys it
- * mints.
- *
- * - `ec`: ECDSA on the NIST P-256 curve (signed as `ES256`). The default.
- * - `rsa-2048`: RSASSA-PKCS1-v1_5 with a 2048-bit modulus (signed as `RS256`).
- * - `rsa-4096`: as `rsa-2048`, but with a 4096-bit modulus.
- */
-export type KeyPairAlgorithm = "ec" | "rsa-2048" | "rsa-4096";
-
-/**
- * The signature-scheme family of a key. The RSA variants sign and encode
- * identically (only the modulus size differs), so they collapse into one
- * family for the purposes of JWS and CSR encoding.
- */
-export type KeyAlgorithmFamily = "ec" | "rsa";
-
-/**
  * The RSA public exponent F4 (65537), as the big-endian byte array WebCrypto
  * expects (`0x010001` = 65537). F4 is the standard exponent for RSA keys
  * (NIST SP 800-56B Rev. 2 §6.2).
  */
-const RSA_PUBLIC_EXPONENT = new Uint8Array([0x01, 0x00, 0x01]);
+const RSA_PUBLIC_EXPONENT: Uint8Array<ArrayBuffer> = new Uint8Array([
+  0x01,
+  0x00,
+  0x01,
+]);
 
-/** The WebCrypto `algorithm.name` reported by each key family. */
+/**
+ * The WebCrypto `algorithm.name` reported by each key family. Its keys are the
+ * source of truth for {@link KeyAlgorithmFamily}.
+ */
 const ALGORITHM_NAME = {
   ec: "ECDSA",
   rsa: "RSASSA-PKCS1-v1_5",
 } as const;
 
 /**
- * Map a {@link KeyPairAlgorithm} to the WebCrypto parameters used to generate
- * or import it.
+ * The signature-scheme family of a key. The RSA variants sign and encode
+ * identically (only the modulus size differs), so they collapse into one
+ * family for the purposes of JWS and CSR encoding.
  */
-const ALGORITHM_PROPERTIES: Record<
-  KeyPairAlgorithm,
-  EcKeyGenParams | RsaHashedKeyGenParams
-> = {
+export type KeyAlgorithmFamily = keyof typeof ALGORITHM_NAME;
+
+/**
+ * The WebCrypto parameters used to generate or import each supported key
+ * algorithm. Its keys are the source of truth for {@link KeyPairAlgorithm};
+ * `satisfies` validates every entry without widening the literal types away.
+ */
+const ALGORITHM_PROPERTIES = {
   "ec": {
     name: ALGORITHM_NAME.ec,
     namedCurve: "P-256",
@@ -54,7 +49,17 @@ const ALGORITHM_PROPERTIES: Record<
     publicExponent: RSA_PUBLIC_EXPONENT,
     hash: { name: "SHA-256" },
   },
-};
+} as const satisfies Record<string, EcKeyGenParams | RsaHashedKeyGenParams>;
+
+/**
+ * The key algorithm used for an account's keys and the certificate keys it
+ * mints.
+ *
+ * - `ec`: ECDSA on the NIST P-256 curve (signed as `ES256`). The default.
+ * - `rsa-2048`: RSASSA-PKCS1-v1_5 with a 2048-bit modulus (signed as `RS256`).
+ * - `rsa-4096`: as `rsa-2048`, but with a 4096-bit modulus.
+ */
+export type KeyPairAlgorithm = keyof typeof ALGORITHM_PROPERTIES;
 
 /** Map a key's reported WebCrypto `algorithm.name` back to its family. */
 const FAMILY_BY_ALGORITHM_NAME: Record<string, KeyAlgorithmFamily> = {
