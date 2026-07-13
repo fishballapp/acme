@@ -2,14 +2,14 @@ import { describe, expect, it } from "../../test_deps.ts";
 import {
   deriveKeyPairAlgorithm,
   generateKeyPair,
-  getAlgorithmProperties,
-  getKeyAlgorithmFamily,
+  getKeyGenParams,
+  getKeyPairAlgorithmFamily,
   type KeyPairAlgorithm,
 } from "./crypto.ts";
 
-describe("getAlgorithmProperties", () => {
+describe("getKeyGenParams", () => {
   it("should map ec-p256 to ECDSA P-256", () => {
-    expect(getAlgorithmProperties("ec-p256")).toEqual({
+    expect(getKeyGenParams("ec-p256")).toEqual({
       name: "ECDSA",
       namedCurve: "P-256",
     });
@@ -22,7 +22,7 @@ describe("getAlgorithmProperties", () => {
         ["rsa-4096", 4096],
       ] as const
     ) {
-      const props = getAlgorithmProperties(algorithm);
+      const props = getKeyGenParams(algorithm);
       expect(props.name).toBe("RSASSA-PKCS1-v1_5");
       expect((props as RsaHashedKeyGenParams).modulusLength).toBe(
         modulusLength,
@@ -37,7 +37,7 @@ describe("getAlgorithmProperties", () => {
   });
 });
 
-describe("getKeyAlgorithmFamily", () => {
+describe("getKeyPairAlgorithmFamily", () => {
   it("should resolve the family from the generated key", async () => {
     for (
       const [algorithm, family] of [
@@ -47,8 +47,8 @@ describe("getKeyAlgorithmFamily", () => {
       ] as const satisfies [KeyPairAlgorithm, string][]
     ) {
       const { privateKey, publicKey } = await generateKeyPair(algorithm);
-      expect(getKeyAlgorithmFamily(privateKey)).toBe(family);
-      expect(getKeyAlgorithmFamily(publicKey)).toBe(family);
+      expect(getKeyPairAlgorithmFamily(privateKey)).toBe(family);
+      expect(getKeyPairAlgorithmFamily(publicKey)).toBe(family);
     }
   });
 
@@ -61,7 +61,7 @@ describe("getKeyAlgorithmFamily", () => {
       ["sign", "verify"],
     );
 
-    expect(() => getKeyAlgorithmFamily(hmacKey)).toThrow("Unsupported");
+    expect(() => getKeyPairAlgorithmFamily(hmacKey)).toThrow("Unsupported");
   });
 });
 

@@ -7,8 +7,8 @@
 import { Asn1Encoder } from "../Asn1/Asn1Encoder.ts";
 import { splitAtIndex } from "./array.ts";
 import {
-  getKeyAlgorithmFamily,
-  type KeyAlgorithmFamily,
+  getKeyPairAlgorithmFamily,
+  type KeyPairAlgorithmFamily,
   sign,
 } from "./crypto.ts";
 
@@ -23,7 +23,7 @@ const OIDS = {
 /**
  * Per-family encoding of the CSR `signatureAlgorithm` field and of the raw
  * signature WebCrypto produces. The family is derived from the signing key
- * (see {@link getKeyAlgorithmFamily}), so the CSR always matches its key.
+ * (see {@link getKeyPairAlgorithmFamily}), so the CSR always matches its key.
  *
  * - `ec`: ECDSA-with-SHA-256 with absent parameters (RFC 5758 §3.2). WebCrypto
  *   returns the raw `r‖s` pair, which X.509 wraps as `SEQUENCE { r, s }`
@@ -31,7 +31,7 @@ const OIDS = {
  * - `rsa`: sha256WithRSAEncryption whose parameters MUST be explicit NULL
  *   (RFC 4055 §5); the PKCS#1 v1.5 signature is carried verbatim.
  */
-const CSR_SIGNATURE_STRATEGY: Record<KeyAlgorithmFamily, {
+const CSR_SIGNATURE_STRATEGY_BY_FAMILY: Record<KeyPairAlgorithmFamily, {
   signatureAlgorithm: Uint8Array<ArrayBuffer>;
   encodeSignatureValue: (
     signature: Uint8Array<ArrayBuffer>,
@@ -70,7 +70,9 @@ export async function generateCSR(
   { domains, keyPair }: { domains: readonly string[]; keyPair: CryptoKeyPair },
 ): Promise<Uint8Array<ArrayBuffer>> {
   const { signatureAlgorithm, encodeSignatureValue } =
-    CSR_SIGNATURE_STRATEGY[getKeyAlgorithmFamily(keyPair.privateKey)];
+    CSR_SIGNATURE_STRATEGY_BY_FAMILY[
+      getKeyPairAlgorithmFamily(keyPair.privateKey)
+    ];
 
   const certificationRequestInfoSequence = encodeCertificationRequestInfo(
     {

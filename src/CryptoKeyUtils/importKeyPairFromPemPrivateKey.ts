@@ -1,8 +1,9 @@
 import { decodeSequence } from "../Asn1/Asn1DecodeHelpers.ts";
 import { Asn1Encoder } from "../Asn1/Asn1Encoder.ts";
-import { ALGORITHM_NAME } from "../utils/crypto.ts";
+import { WEB_CRYPTO_ALGORITHM_NAME_BY_FAMILY } from "../utils/crypto.ts";
 import { omit } from "../utils/object.ts";
 import { extractFirstPemObject } from "../utils/pem.ts";
+import { isEqualUint8Arrays } from "../utils/Uint8ArrayHelpers.ts";
 
 // JWK members that carry private key material. EC private keys expose `d`;
 // RSA private keys additionally expose the CRT values p, q, dp, dq, qi and —
@@ -16,14 +17,6 @@ const OID_DER = {
   ID_EC_PUBLIC_KEY: Asn1Encoder.oid("1.2.840.10045.2.1"),
   PRIME256V1: Asn1Encoder.oid("1.2.840.10045.3.1.7"),
 } as const;
-
-const isEqualBytes = (
-  a: Uint8Array<ArrayBuffer>,
-  b: Uint8Array<ArrayBuffer> | undefined,
-): boolean =>
-  b !== undefined &&
-  a.byteLength === b.byteLength &&
-  a.every((byte, i) => byte === b[i]);
 
 /**
  * Read the WebCrypto import parameters off the PKCS#8 blob itself, so callers
@@ -48,19 +41,25 @@ function getImportParameters(
     throw new Error("Malformed PKCS#8 private key: empty AlgorithmIdentifier.");
   }
 
-  if (isEqualBytes(OID_DER.RSA_ENCRYPTION, algorithmDer)) {
+  if (isEqualUint8Arrays(algorithmDer, OID_DER.RSA_ENCRYPTION)) {
     // The hash is not part of the key; SHA-256 matches the `RS256` JWS alg
     // and `sha256WithRSAEncryption` CSR signature this client produces.
-    return { name: ALGORITHM_NAME.rsa, hash: "SHA-256" };
+    return { name: WEB_CRYPTO_ALGORITHM_NAME_BY_FAMILY.rsa, hash: "SHA-256" };
   }
 
-  if (isEqualBytes(OID_DER.ID_EC_PUBLIC_KEY, algorithmDer)) {
-    if (!isEqualBytes(OID_DER.PRIME256V1, parametersDer)) {
+  if (isEqualUint8Arrays(algorithmDer, OID_DER.ID_EC_PUBLIC_KEY)) {
+    if (
+      parametersDer === undefined ||
+      !isEqualUint8Arrays(parametersDer, OID_DER.PRIME256V1)
+    ) {
       throw new Error(
         "Unsupported EC curve in PEM private key. Only P-256 (prime256v1) is supported.",
       );
     }
-    return { name: ALGORITHM_NAME.ec, namedCurve: "P-256" };
+    return {
+      name: WEB_CRYPTO_ALGORITHM_NAME_BY_FAMILY.ec,
+      namedCurve: "P-256",
+    };
   }
 
   throw new Error(

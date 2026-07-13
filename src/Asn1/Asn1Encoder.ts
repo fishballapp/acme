@@ -61,14 +61,12 @@ export const Asn1Encoder = {
     }
 
     // DER requires INTEGERs to be minimally encoded: strip leading zero
-    // octets, keeping one when the value itself is zero. Callers pass
-    // fixed-width values (e.g. WebCrypto's zero-padded ECDSA r/s halves),
-    // which strict parsers would otherwise reject.
-    let start = 0;
-    while (start < bytes.byteLength - 1 && bytes[start] === 0) {
-      start++;
-    }
-    const minimalBytes = bytes.slice(start);
+    // octets. Callers pass fixed-width values (e.g. WebCrypto's zero-padded
+    // ECDSA r/s halves), which strict parsers would otherwise reject.
+    const firstNonZeroIndex = bytes.findIndex((byte) => byte !== 0);
+    const minimalBytes = firstNonZeroIndex === -1
+      ? bytes.slice(-1) // all zeros: a single 0x00 is the minimal encoding
+      : bytes.slice(firstNonZeroIndex);
 
     // Add leading zero byte if the most significant bit is 1 so it's not mistaken as negative number!
     return Asn1Encoder.custom(

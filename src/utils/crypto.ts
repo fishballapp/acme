@@ -1,4 +1,20 @@
 import { decodeBase64Url } from "./base64.ts";
+import type { ExclusifyUnion } from "./types.ts";
+
+/**
+ * Naming used throughout this module (and the modules that build on it):
+ *
+ * - A **key pair algorithm** ({@link KeyPairAlgorithm}, e.g. `"ec-p256"`,
+ *   `"rsa-2048"`) is the full recipe for generating a key pair: a family plus
+ *   its parameters (curve or modulus size). This is what users pick.
+ * - Its **family** ({@link KeyPairAlgorithmFamily}: `"ec"` | `"rsa"`) is the
+ *   signature scheme, which is all that JWS and CSR encoding care about.
+ * - The **WebCrypto algorithm name** (`"ECDSA"`, `"RSASSA-PKCS1-v1_5"`) is
+ *   what the runtime reports on `CryptoKey#algorithm.name`; it identifies the
+ *   family but is spelled by the WebCrypto spec, not by us.
+ *
+ * Lookup tables are named `<VALUE>_BY_<KEY>`.
+ */
 
 /**
  * The RSA public exponent F4 (65537), as the big-endian byte array WebCrypto
@@ -13,9 +29,9 @@ const RSA_PUBLIC_EXPONENT: Uint8Array<ArrayBuffer> = new Uint8Array([
 
 /**
  * The WebCrypto `algorithm.name` reported by each key family. Its keys are the
- * source of truth for {@link KeyAlgorithmFamily}.
+ * source of truth for {@link KeyPairAlgorithmFamily}.
  */
-export const ALGORITHM_NAME = {
+export const WEB_CRYPTO_ALGORITHM_NAME_BY_FAMILY = {
   ec: "ECDSA",
   rsa: "RSASSA-PKCS1-v1_5",
 } as const;
@@ -25,26 +41,27 @@ export const ALGORITHM_NAME = {
  * identically (only the modulus size differs), so they collapse into one
  * family for the purposes of JWS and CSR encoding.
  */
-export type KeyAlgorithmFamily = keyof typeof ALGORITHM_NAME;
+export type KeyPairAlgorithmFamily =
+  keyof typeof WEB_CRYPTO_ALGORITHM_NAME_BY_FAMILY;
 
 /**
- * The WebCrypto parameters used to generate or import each supported key
- * algorithm. Its keys are the source of truth for {@link KeyPairAlgorithm};
- * `satisfies` validates every entry without widening the literal types away.
+ * The WebCrypto parameters used to generate each supported key algorithm. Its
+ * keys are the source of truth for {@link KeyPairAlgorithm}; `satisfies`
+ * validates every entry without widening the literal types away.
  */
-const ALGORITHM_PROPERTIES = {
+const KEY_GEN_PARAMS_BY_KEY_PAIR_ALGORITHM = {
   "ec-p256": {
-    name: ALGORITHM_NAME.ec,
+    name: WEB_CRYPTO_ALGORITHM_NAME_BY_FAMILY.ec,
     namedCurve: "P-256",
   },
   "rsa-2048": {
-    name: ALGORITHM_NAME.rsa,
+    name: WEB_CRYPTO_ALGORITHM_NAME_BY_FAMILY.rsa,
     modulusLength: 2048,
     publicExponent: RSA_PUBLIC_EXPONENT,
     hash: "SHA-256",
   },
   "rsa-4096": {
-    name: ALGORITHM_NAME.rsa,
+    name: WEB_CRYPTO_ALGORITHM_NAME_BY_FAMILY.rsa,
     modulusLength: 4096,
     publicExponent: RSA_PUBLIC_EXPONENT,
     hash: "SHA-256",
@@ -59,18 +76,22 @@ const ALGORITHM_PROPERTIES = {
  * - `rsa-2048`: RSASSA-PKCS1-v1_5 with a 2048-bit modulus (signed as `RS256`).
  * - `rsa-4096`: as `rsa-2048`, but with a 4096-bit modulus.
  */
-export type KeyPairAlgorithm = keyof typeof ALGORITHM_PROPERTIES;
+export type KeyPairAlgorithm =
+  keyof typeof KEY_GEN_PARAMS_BY_KEY_PAIR_ALGORITHM;
 
 /** Map a key's reported WebCrypto `algorithm.name` back to its family. */
-const FAMILY_BY_ALGORITHM_NAME: Record<string, KeyAlgorithmFamily> = {
-  [ALGORITHM_NAME.ec]: "ec",
-  [ALGORITHM_NAME.rsa]: "rsa",
+const FAMILY_BY_WEB_CRYPTO_ALGORITHM_NAME: Record<
+  string,
+  KeyPairAlgorithmFamily
+> = {
+  [WEB_CRYPTO_ALGORITHM_NAME_BY_FAMILY.ec]: "ec",
+  [WEB_CRYPTO_ALGORITHM_NAME_BY_FAMILY.rsa]: "rsa",
 };
 
-export function getAlgorithmProperties(
+export function getKeyGenParams(
   keyPairAlgorithm: KeyPairAlgorithm,
 ): EcKeyGenParams | RsaHashedKeyGenParams {
-  return ALGORITHM_PROPERTIES[keyPairAlgorithm];
+  return KEY_GEN_PARAMS_BY_KEY_PAIR_ALGORITHM[keyPairAlgorithm];
 }
 
 /**
@@ -83,17 +104,22 @@ export function getAlgorithmProperties(
 export function deriveKeyPairAlgorithm(
   key: CryptoKey,
 ): KeyPairAlgorithm | undefined {
-  const { name, namedCurve, modulusLength } = key.algorithm as
-    & KeyAlgorithm
-    & Partial<EcKeyAlgorithm & RsaHashedKeyAlgorithm>;
+  const { name, namedCurve, modulusLength } = key.algorithm as ExclusifyUnion<
+    EcKeyAlgorithm | RsaHashedKeyAlgorithm
+  >;
 
-  return (Object.keys(ALGORITHM_PROPERTIES) as KeyPairAlgorithm[]).find(
+  return (Object.keys(
+    KEY_GEN_PARAMS_BY_KEY_PAIR_ALGORITHM,
+  ) as KeyPairAlgorithm[]).find(
     (keyPairAlgorithm) => {
-      const properties = ALGORITHM_PROPERTIES[keyPairAlgorithm];
-      return properties.name === name &&
-        ("namedCurve" in properties
-          ? properties.namedCurve === namedCurve
-          : properties.modulusLength === modulusLength);
+      const params: ExclusifyUnion<EcKeyGenParams | RsaHashedKeyGenParams> =
+        KEY_GEN_PARAMS_BY_KEY_PAIR_ALGORITHM[keyPairAlgorithm];
+      // Members a family lacks are `undefined` on both sides (see
+      // ExclusifyUnion), so the same equalities cover EC (namedCurve)
+      // and RSA (modulusLength) alike.
+      return params.name === name &&
+        params.namedCurve === namedCurve &&
+        params.modulusLength === modulusLength;
     },
   );
 }
@@ -102,14 +128,14 @@ export async function generateKeyPair(
   keyPairAlgorithm: KeyPairAlgorithm = "ec-p256",
 ): Promise<CryptoKeyPair> {
   return await crypto.subtle.generateKey(
-    getAlgorithmProperties(keyPairAlgorithm),
+    getKeyGenParams(keyPairAlgorithm),
     true,
     ["sign", "verify"],
   );
 }
 
 /**
- * Resolve a key's {@link KeyAlgorithmFamily} from the key itself.
+ * Resolve a key's {@link KeyPairAlgorithmFamily} from the key itself.
  *
  * Reading the algorithm off the {@link CryptoKey} — rather than a separately
  * passed hint that can be omitted — guarantees the JWS `alg` and the CSR
@@ -117,12 +143,14 @@ export async function generateKeyPair(
  *
  * @throws if the key uses an algorithm this client does not support.
  */
-export function getKeyAlgorithmFamily(key: CryptoKey): KeyAlgorithmFamily {
-  const family = FAMILY_BY_ALGORITHM_NAME[key.algorithm.name];
+export function getKeyPairAlgorithmFamily(
+  key: CryptoKey,
+): KeyPairAlgorithmFamily {
+  const family = FAMILY_BY_WEB_CRYPTO_ALGORITHM_NAME[key.algorithm.name];
   if (family === undefined) {
     throw new Error(
       `Unsupported key algorithm "${key.algorithm.name}". Expected one of: ${
-        Object.keys(FAMILY_BY_ALGORITHM_NAME).join(", ")
+        Object.keys(FAMILY_BY_WEB_CRYPTO_ALGORITHM_NAME).join(", ")
       }.`,
     );
   }
