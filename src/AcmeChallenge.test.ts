@@ -2,7 +2,7 @@ import { describe, expect, it } from "../test_deps.ts";
 import { encodeBase64Url as stdEncodeBase64Url } from "../test_deps.ts";
 import { AcmeChallenge, type AcmeChallengeType } from "./AcmeChallenge.ts";
 import type { AcmeAuthorization } from "./AcmeAuthorization.ts";
-import { generateKeyPair } from "./utils/crypto.ts";
+import { generateKeyPair, type KeyPairAlgorithm } from "./utils/crypto.ts";
 
 const TOKEN = "test-token-abc123";
 const DOMAIN = "example.com";
@@ -15,8 +15,9 @@ const DOMAIN = "example.com";
  */
 const buildChallenge = async <const T extends AcmeChallengeType>(
   type: T,
+  keyPairAlgorithm?: KeyPairAlgorithm,
 ): Promise<{ challenge: AcmeChallenge<T>; keyPair: CryptoKeyPair }> => {
-  const keyPair = await generateKeyPair();
+  const keyPair = await generateKeyPair(keyPairAlgorithm);
   const authorization = {
     domain: DOMAIN,
     order: { account: { keyPair } },
@@ -37,12 +38,12 @@ const expectedKeyAuthorization = async (
   keyPair: CryptoKeyPair,
 ): Promise<string> => {
   const jwk = await crypto.subtle.exportKey("jwk", keyPair.publicKey);
-  const canonical = JSON.stringify({
-    crv: jwk.crv,
-    kty: jwk.kty,
-    x: jwk.x,
-    y: jwk.y,
-  });
+  // RFC 7638 §3.2: only the key type's required members, sorted.
+  const canonical = JSON.stringify(
+    jwk.kty === "RSA"
+      ? { e: jwk.e, kty: jwk.kty, n: jwk.n }
+      : { crv: jwk.crv, kty: jwk.kty, x: jwk.x, y: jwk.y },
+  );
   const thumbprint = stdEncodeBase64Url(
     await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonical)),
   );
@@ -55,6 +56,23 @@ describe("AcmeChallenge#keyAuthorization", () => {
     expect(await challenge.keyAuthorization()).toBe(
       await expectedKeyAuthorization(keyPair),
     );
+  });
+
+  it("uses the RSA thumbprint members (e, kty, n) for RSA account keys (RFC 7638 §3.2)", async () => {
+    const { challenge, keyPair } = await buildChallenge("dns-01", "rsa-2048");
+
+    const keyAuthorization = await challenge.keyAuthorization();
+
+    expect(keyAuthorization).toBe(await expectedKeyAuthorization(keyPair));
+    // Guard against hashing `{"kty":"RSA"}` — the canonicalization that EC's
+    // members (crv, x, y) would produce on an RSA JWK.
+    const wrongThumbprint = stdEncodeBase64Url(
+      await crypto.subtle.digest(
+        "SHA-256",
+        new TextEncoder().encode(JSON.stringify({ kty: "RSA" })),
+      ),
+    );
+    expect(keyAuthorization).not.toBe(`${TOKEN}.${wrongThumbprint}`);
   });
 
   it("digestToken is the base64url SHA-256 of the key authorization (dns-01, §8.4)", async () => {

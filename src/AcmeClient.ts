@@ -7,7 +7,12 @@ import {
   AcmeError,
   BadNonceError,
 } from "./errors.ts";
-import { generateKeyPair, importHmacKey } from "./utils/crypto.ts";
+import {
+  deriveKeyPairAlgorithm,
+  generateKeyPair,
+  importHmacKey,
+  type KeyPairAlgorithm,
+} from "./utils/crypto.ts";
 import { emailsToAccountContacts } from "./utils/emailsToAccountContacts.ts";
 import { jws, jwsFetch } from "./utils/jws.ts";
 
@@ -177,6 +182,10 @@ export class AcmeClient {
    * If the CA's directory advertises `meta.externalAccountRequired`, omitting it
    * throws before any request is made.
    *
+   * `keyPairAlgorithm` selects the algorithm for the generated account key. It
+   * is also used for every certificate key this account mints and for key
+   * rollover. Defaults to `"ec-p256"` (ECDSA P-256).
+   *
    * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.3
    * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.3.4
    */
@@ -184,9 +193,11 @@ export class AcmeClient {
     {
       emails,
       externalAccountBinding,
+      keyPairAlgorithm,
     }: {
       emails: readonly string[];
       externalAccountBinding?: ExternalAccountBinding;
+      keyPairAlgorithm?: KeyPairAlgorithm;
     },
   ): Promise<AcmeAccount> {
     if (
@@ -198,7 +209,7 @@ export class AcmeClient {
       );
     }
 
-    const keyPair = await generateKeyPair();
+    const keyPair = await generateKeyPair(keyPairAlgorithm);
     const jwk = await crypto.subtle.exportKey("jwk", keyPair.publicKey);
 
     const externalAccountBindingJws = await (async () => {
@@ -253,15 +264,29 @@ export class AcmeClient {
       client: this,
       url: accountUrl,
       keyPair,
+      keyPairAlgorithm,
     });
   }
 
   /**
    * Login with an existing account with a keyPair
    *
+   * `keyPairAlgorithm` selects the algorithm for keys generated later on this
+   * account (certificate keys, key rollover) — it does not affect `keyPair`,
+   * whose JWS algorithm is always derived from the key itself. When omitted,
+   * it is derived from `keyPair` too, so an RSA account keeps minting RSA
+   * certificate keys. If `keyPair` falls outside the supported set (e.g. an
+   * imported RSA-3072 key), generated keys fall back to `"ec-p256"`.
+   *
    * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.3.1
    */
-  async login({ keyPair }: { keyPair: CryptoKeyPair }): Promise<AcmeAccount> {
+  async login({
+    keyPair,
+    keyPairAlgorithm = deriveKeyPairAlgorithm(keyPair.privateKey),
+  }: {
+    keyPair: CryptoKeyPair;
+    keyPairAlgorithm?: KeyPairAlgorithm;
+  }): Promise<AcmeAccount> {
     const response = await this.jwsFetch(this.directory.newAccount, {
       privateKey: keyPair.privateKey,
       protected: {
@@ -298,6 +323,7 @@ export class AcmeClient {
       client: this,
       url: accountUrl,
       keyPair,
+      keyPairAlgorithm,
     });
   }
 }

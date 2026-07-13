@@ -4,7 +4,7 @@ import {
   encodeBase64Url as stdEncodeBase64Url,
 } from "../test_deps.ts";
 import { AcmeClient } from "./AcmeClient.ts";
-import { importHmacKey } from "./utils/crypto.ts";
+import { generateKeyPair, importHmacKey } from "./utils/crypto.ts";
 
 type MockFetch = (
   ...args: Parameters<typeof fetch>
@@ -170,6 +170,49 @@ describe("AcmeClient#createAccount with externalAccountBinding", () => {
     });
 
     expect(newAccountCalled).toBe(false);
+  });
+});
+
+describe("AcmeClient#login", () => {
+  it("derives keyPairAlgorithm from the key pair and signs with the matching alg", async () => {
+    let capturedBody: string | undefined;
+
+    const mockFetch: MockFetch = (input, init) => {
+      const url = input.toString();
+      const method = asInit(init).method ?? "GET";
+
+      if (url === DIRECTORY_URL) {
+        return Response.json(buildDirectory());
+      }
+      if (url === NEW_NONCE_URL) {
+        return new Response(null, {
+          headers: { "Replay-Nonce": "test-nonce" },
+        });
+      }
+      if (url === NEW_ACCOUNT_URL && method === "POST") {
+        capturedBody = asInit(init).body;
+        return Response.json({}, {
+          headers: { Location: "https://ca.test/account/123" },
+        });
+      }
+      throw new Error(`unexpected request: ${method} ${url}`);
+    };
+
+    await withMockFetch(mockFetch, async () => {
+      const client = await AcmeClient.init(DIRECTORY_URL);
+      const keyPair = await generateKeyPair("rsa-2048");
+
+      const account = await client.login({ keyPair });
+
+      // No keyPairAlgorithm was passed: it must be derived from the key, so
+      // certificate keys and key rollover keep using RSA.
+      expect(account.keyPairAlgorithm).toBe("rsa-2048");
+
+      const { protected: protectedB64 } = JSON.parse(capturedBody!) as {
+        protected: string;
+      };
+      expect(decodeJsonSegment(protectedB64).alg).toBe("RS256");
+    });
   });
 });
 

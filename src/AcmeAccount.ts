@@ -1,6 +1,6 @@
 import type { AcmeClient } from "./AcmeClient.ts";
 import { AcmeOrder, type AcmeOrderObjectSnapshot } from "./AcmeOrder.ts";
-import { generateKeyPair } from "./utils/crypto.ts";
+import { generateKeyPair, type KeyPairAlgorithm } from "./utils/crypto.ts";
 import { emailsToAccountContacts } from "./utils/emailsToAccountContacts.ts";
 import { jws } from "./utils/jws.ts";
 import { AcmeError } from "./errors.ts";
@@ -54,6 +54,14 @@ export type AcmeAccountObjectSnapshot = {
 export class AcmeAccount {
   readonly client: AcmeClient;
   readonly keyPair: CryptoKeyPair;
+  /**
+   * The algorithm used to generate keys for this account — the certificate
+   * keys minted by {@link AcmeOrder.prototype.finalize} and the new key on
+   * {@link AcmeAccount.prototype.keyRollover}. Defaults to `"ec-p256"` when
+   * the account was created without specifying one; `undefined` when it was
+   * derived from a `login` key pair that falls outside the supported set.
+   */
+  readonly keyPairAlgorithm?: KeyPairAlgorithm;
   readonly url: string;
 
   /**
@@ -67,10 +75,12 @@ export class AcmeAccount {
   constructor(init: {
     client: AcmeClient;
     keyPair: CryptoKeyPair;
+    keyPairAlgorithm?: KeyPairAlgorithm;
     url: string;
   }) {
     this.client = init.client;
     this.keyPair = init.keyPair;
+    this.keyPairAlgorithm = init.keyPairAlgorithm;
     this.url = init.url;
   }
 
@@ -129,10 +139,11 @@ export class AcmeAccount {
    *
    * After rollover, you will receive a new {@link AcmeAccount} object.
    * You may access to the new key pair via `{@link AcmeAccount.prototype.keyPair}.
+   * The new key uses this account's {@link AcmeAccount.prototype.keyPairAlgorithm}.
    */
   async keyRollover(): Promise<AcmeAccount> {
     const [newKeyPair, oldPublicKeyJwk] = await Promise.all([
-      generateKeyPair(),
+      generateKeyPair(this.keyPairAlgorithm),
       crypto.subtle.exportKey(
         "jwk",
         this.keyPair.publicKey,
@@ -165,6 +176,7 @@ export class AcmeAccount {
       client: this.client,
       url: this.url,
       keyPair: newKeyPair,
+      keyPairAlgorithm: this.keyPairAlgorithm,
     });
   }
 

@@ -52,7 +52,9 @@ key features:
 - **Opinionated by Design**: The package is designed to work out of the box,
   with no complex setup required.
   - Modern cryptography: Encryption keys are generated using [ECDSA P-256], a
-    secure, widely supported industry standard.
+    secure, widely supported industry standard. RSA (2048/4096) is available for
+    environments that require it (see
+    [`keyPairAlgorithm`](#rsa-keys-keypairalgorithm)).
   - [DNS-01 Challenge] only: We focus on the DNS-01 challenge type, which we
     believe is the most versatile. It works for all services, supports wildcard
     certificates, and eliminates complex server configurations by operating at
@@ -162,6 +164,23 @@ We sign the binding with `HS256`, which every EAB-enabled CA supports. If the
 CA's directory advertises `meta.externalAccountRequired`, calling
 `createAccount` without an `externalAccountBinding` throws immediately — before
 any request is made.
+
+#### RSA keys (`keyPairAlgorithm`)
+
+Keys default to ECDSA P-256 (`"ec-p256"`). To use RSA instead — for the account
+key and every certificate key minted from this account — pass
+`keyPairAlgorithm`:
+
+```ts
+const account = await acmeClient.createAccount({
+  emails: ["yo@fishball.app"],
+  keyPairAlgorithm: "rsa-2048", // or "rsa-4096"
+});
+```
+
+When you `login` with a saved key pair (or import one with
+`CryptoKeyUtils.importKeyPairFromPemPrivateKey`), there is nothing extra to pass
+— the algorithm is detected from the key itself.
 
 ### 0x03: Create order and get the challenges
 
@@ -443,7 +462,7 @@ await AcmeWorkflows.requestCertificate({
   - [ ] Revocation
 - [x] Key and Algorithm Support
   - [x] ECDSA P-256
-  - [ ] ~~RSA~~
+  - [x] RSA (2048/4096)
 - [x] ACME Server Interaction
   - [x] ACME Directory Support (staging, production)
   - [x] Bad Nonce Retries

@@ -1,5 +1,20 @@
-import { sign } from "../utils/crypto.ts";
+import {
+  getKeyPairAlgorithmFamily,
+  type KeyPairAlgorithmFamily,
+  sign,
+} from "../utils/crypto.ts";
 import { encodeBase64Url } from "./base64.ts";
+
+/**
+ * The JWS `alg` for each key family: `ES256` for EC P-256, `RS256` for RSA
+ * (RFC 7518 §3.3/§3.4). ACME requires a non-MAC `alg` on account requests
+ * (RFC 8555 §6.2), which both satisfy. `satisfies` keeps this exhaustive over
+ * every {@link KeyPairAlgorithmFamily}.
+ */
+const JWS_ALG_BY_FAMILY = {
+  ec: "ES256",
+  rsa: "RS256",
+} as const satisfies Record<KeyPairAlgorithmFamily, string>;
 
 export const jwsFetch = async (url: string, {
   method = "POST",
@@ -40,10 +55,19 @@ export const jws = async (
   payload: string;
   signature: string;
 }> => {
+  // Default the `alg` from the signing key, but let an explicit `alg` in
+  // `data.protected` win — e.g. External Account Binding signs with an HMAC
+  // key and `HS256`, which has no EC/RSA family. Destructuring defaults are
+  // lazy, so getKeyPairAlgorithmFamily is never asked about such keys.
+  const {
+    alg = JWS_ALG_BY_FAMILY[getKeyPairAlgorithmFamily(privateKey)],
+    ...remainingProtected
+  } = data.protected;
+
   const jwsWithoutSignature = {
     protected: encodeBase64Url(JSON.stringify({
-      alg: "ES256",
-      ...data.protected,
+      alg,
+      ...remainingProtected,
     })),
     payload: data.payload === undefined
       ? ""

@@ -13,6 +13,8 @@ export * from "./AcmeChallenge.ts";
 export * from "./AcmeClient.ts";
 export * from "./AcmeOrder.ts";
 
+export type { KeyPairAlgorithm } from "./utils/crypto.ts";
+
 export * from "./ACME_DIRECTORY_URLS.ts";
 
 export * as AcmeWorkflows from "./AcmeWorkflows.ts";

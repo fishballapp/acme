@@ -49,6 +49,10 @@ export const Asn1Encoder = {
     return Asn1Encoder.custom(ASN1_TAGS.BITSTRING, data);
   },
 
+  // ASN.1 NULL: a 0x05 tag with zero-length content.
+  null: (): Uint8Array<ArrayBuffer> =>
+    Asn1Encoder.custom(ASN1_TAGS.NULL, new Uint8Array(0)),
+
   uintBytes: (bytes: Uint8Array<ArrayBuffer>): Uint8Array<ArrayBuffer> => {
     if (bytes[0] === undefined) {
       throw new Error(
@@ -56,11 +60,21 @@ export const Asn1Encoder = {
       );
     }
 
+    // DER requires INTEGERs to be minimally encoded: strip leading zero
+    // octets. Callers pass fixed-width values (e.g. WebCrypto's zero-padded
+    // ECDSA r/s halves), which strict parsers would otherwise reject.
+    const firstNonZeroIndex = bytes.findIndex((byte) => byte !== 0);
+    const minimalBytes = firstNonZeroIndex === -1
+      ? Uint8Array.from([0]) // all zeros: a single 0x00 is the minimal encoding
+      : bytes.slice(firstNonZeroIndex);
+
     // Add leading zero byte if the most significant bit is 1 so it's not mistaken as negative number!
-    if (bytes[0] & 0b1000_0000) {
-      bytes = concatUint8Arrays([0x00], bytes);
-    }
-    return Asn1Encoder.custom(ASN1_TAGS.INTEGER, bytes);
+    return Asn1Encoder.custom(
+      ASN1_TAGS.INTEGER,
+      (minimalBytes[0] ?? 0) & 0b1000_0000
+        ? concatUint8Arrays([0x00], minimalBytes)
+        : minimalBytes,
+    );
   },
 
   uint: (n: number) => {

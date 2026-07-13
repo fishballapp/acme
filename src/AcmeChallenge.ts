@@ -243,14 +243,28 @@ export class AcmeChallenge<
   }
 }
 
+/**
+ * The required JWK members each key type hashes into its thumbprint
+ * (RFC 7638 §3.2), in lexicographic order — `JSON.stringify` preserves the
+ * literals' member order, so each is spelled pre-sorted.
+ */
+const THUMBPRINT_JWK_MEMBERS_BY_KTY: Record<
+  string,
+  (jwk: JsonWebKey) => Record<string, string | undefined>
+> = {
+  EC: ({ crv, kty, x, y }) => ({ crv, kty, x, y }),
+  RSA: ({ e, kty, n }) => ({ e, kty, n }),
+};
+
 async function getJWKThumbprint(jwk: JsonWebKey): Promise<string> {
-  // Step 1: Create the canonical JSON string from required JWK fields,
-  const canonicalJWK = JSON.stringify({
-    crv: jwk.crv,
-    kty: jwk.kty,
-    x: jwk.x,
-    y: jwk.y,
-  });
+  // Step 1: Create the canonical JSON string from required JWK fields.
+  const pickThumbprintMembers = THUMBPRINT_JWK_MEMBERS_BY_KTY[jwk.kty ?? ""];
+  if (pickThumbprintMembers === undefined) {
+    throw new Error(
+      `Unsupported JWK key type "${jwk.kty}" for thumbprint. Expected "EC" or "RSA".`,
+    );
+  }
+  const canonicalJWK = JSON.stringify(pickThumbprintMembers(jwk));
 
   // Step 2: Hash the canonical JSON using SHA-256
   const hash = await crypto.subtle.digest(

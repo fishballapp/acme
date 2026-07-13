@@ -32,6 +32,12 @@ export const unsignedIntegerToUint8Array = (
   return Uint8Array.from(bytes);
 };
 
+export const isEqualUint8Arrays = (
+  a: Uint8Array<ArrayBuffer>,
+  b: Uint8Array<ArrayBuffer>,
+): boolean =>
+  a.byteLength === b.byteLength && a.every((byte, i) => byte === b[i]);
+
 export const concatUint8Arrays = (
   ...xss: readonly ArrayLike<number>[]
 ): Uint8Array<ArrayBuffer> => {

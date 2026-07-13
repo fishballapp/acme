@@ -61,4 +61,48 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMp7rnAfFJngRhXaE26+wQo9YM6hZ
       pemKeyPair,
     );
   });
+
+  it("should export and import an RSA key pair", async () => {
+    const keyPair = await generateKeyPair("rsa-2048");
+    const pemKeyPair = await CryptoKeyUtils.exportKeyPairToPem(keyPair);
+
+    // No algorithm is passed: it must be detected from the PKCS#8 header.
+    const imported = await CryptoKeyUtils.importKeyPairFromPemPrivateKey(
+      pemKeyPair.privateKey,
+    );
+
+    expect(imported.privateKey.algorithm.name).toBe("RSASSA-PKCS1-v1_5");
+    expect(imported.publicKey.algorithm.name).toBe("RSASSA-PKCS1-v1_5");
+
+    // Re-exporting must yield the identical PEM, which only holds if the
+    // public key was derived correctly from the RSA private key (i.e. all
+    // private JWK members were stripped, not just `d`).
+    expect(await CryptoKeyUtils.exportKeyPairToPem(imported)).toEqual(
+      pemKeyPair,
+    );
+  });
+
+  it("should reject an EC key on an unsupported curve", async () => {
+    const p384KeyPair = await crypto.subtle.generateKey(
+      { name: "ECDSA", namedCurve: "P-384" },
+      true,
+      ["sign", "verify"],
+    );
+    const pemKeyPair = await CryptoKeyUtils.exportKeyPairToPem(p384KeyPair);
+
+    await expect(
+      CryptoKeyUtils.importKeyPairFromPemPrivateKey(pemKeyPair.privateKey),
+    ).rejects.toThrow("Only P-256");
+  });
+
+  it("should reject a non-EC/RSA key", async () => {
+    // A throwaway Ed25519 key: `openssl genpkey -algorithm ed25519`.
+    const ed25519PemPrivateKey = `-----BEGIN PRIVATE KEY-----
+MC4CAQAwBQYDK2VwBCIEIOwlEYbGC38eaOGUtZ7xjjaeKtZ/65qalW+T2F+DAepp
+-----END PRIVATE KEY-----`;
+
+    await expect(
+      CryptoKeyUtils.importKeyPairFromPemPrivateKey(ed25519PemPrivateKey),
+    ).rejects.toThrow("Unsupported algorithm");
+  });
 });
