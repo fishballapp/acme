@@ -4,9 +4,13 @@ on:
     branches:
       - main
 
+# NOTE: these jobs stay on GitHub-hosted runners. `npm publish --provenance`
+# (and JSR's OIDC provenance) require a "github-hosted" runner — npm rejects
+# provenance from Blacksmith's self-hosted runners with a 422. Publish runs
+# only on release, so keeping it here costs effectively no CI quota.
 jobs:
   publish-jsr:
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
 
     permissions:
       contents: read
@@ -19,7 +23,7 @@ jobs:
         run: npx jsr publish
 
   publish-npm:
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
 
     permissions:
       contents: read
