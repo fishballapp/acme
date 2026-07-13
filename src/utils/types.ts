@@ -18,6 +18,16 @@
 export type KeysOfUnion<Union> = Union extends unknown ? keyof Union : never;
 
 /**
+ * Flatten intersections into a plain object type so editor hovers show
+ * `{ a: string; b?: never }` instead of `EcKeyGenParams & { b?: never }`.
+ * The trailing `& {}` is what forces TypeScript to resolve the mapped type.
+ *
+ * @see https://github.com/sindresorhus/type-fest/blob/main/source/simplify.d.ts
+ */
+// deno-lint-ignore ban-types
+export type Simplify<T> = { [K in keyof T]: T[K] } & {};
+
+/**
  * Widen a union so every member also declares the other members' keys as
  * `?: never`. Properties can then be read directly off the union — members
  * that lack a key type it as `undefined` instead of erroring — which makes
@@ -30,5 +40,5 @@ export type ExclusifyUnion<
   Union,
   Keys extends PropertyKey = KeysOfUnion<Union>,
 > = Union extends unknown
-  ? Union & Partial<Record<Exclude<Keys, keyof Union>, never>>
+  ? Simplify<Union & Partial<Record<Exclude<Keys, keyof Union>, never>>>
   : never;

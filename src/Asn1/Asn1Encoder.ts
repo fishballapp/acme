@@ -65,7 +65,7 @@ export const Asn1Encoder = {
     // ECDSA r/s halves), which strict parsers would otherwise reject.
     const firstNonZeroIndex = bytes.findIndex((byte) => byte !== 0);
     const minimalBytes = firstNonZeroIndex === -1
-      ? bytes.slice(-1) // all zeros: a single 0x00 is the minimal encoding
+      ? Uint8Array.from([0]) // all zeros: a single 0x00 is the minimal encoding
       : bytes.slice(firstNonZeroIndex);
 
     // Add leading zero byte if the most significant bit is 1 so it's not mistaken as negative number!
