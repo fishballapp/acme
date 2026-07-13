@@ -57,4 +57,34 @@ describe("requestCertificates", () => {
     expect(notBefore.getTime()).toBeLessThan(Date.now());
     expect(notAfter.getTime()).toBeGreaterThan(Date.now());
   });
+
+  it("should successfully get certs with an RSA account", async () => {
+    const client = await AcmeClient.init(PEBBLE_DIRECTORY_URL);
+
+    const acmeAccount = await client.createAccount({
+      emails: [generateRandomEmail()],
+      keyPairAlgorithm: "rsa-2048",
+    });
+
+    expect(acmeAccount.keyPair.privateKey.algorithm.name).toBe(
+      "RSASSA-PKCS1-v1_5",
+    );
+
+    const { certificate, certKeyPair } = await AcmeWorkflows
+      .requestCertificate({
+        acmeAccount,
+        domains: [generateRandomDomain()],
+        updateDnsRecords: async (dnsRecords) => {
+          await pebbleChallTestSrv.createDnsRecords(dnsRecords);
+        },
+        resolveDns,
+      });
+
+    // The certificate key follows the account's keyPairAlgorithm.
+    expect(certKeyPair.privateKey.algorithm.name).toBe("RSASSA-PKCS1-v1_5");
+
+    const { notBefore, notAfter } = CertUtils.decodeValidity(certificate);
+    expect(notBefore.getTime()).toBeLessThan(Date.now());
+    expect(notAfter.getTime()).toBeGreaterThan(Date.now());
+  });
 });

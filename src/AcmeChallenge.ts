@@ -244,13 +244,22 @@ export class AcmeChallenge<
 }
 
 async function getJWKThumbprint(jwk: JsonWebKey): Promise<string> {
-  // Step 1: Create the canonical JSON string from required JWK fields,
-  const canonicalJWK = JSON.stringify({
-    crv: jwk.crv,
-    kty: jwk.kty,
-    x: jwk.x,
-    y: jwk.y,
-  });
+  // Step 1: Create the canonical JSON string from required JWK fields.
+  // RFC 7638 §3.2: hash ONLY the required members of the key type, in
+  // lexicographic order (JSON.stringify preserves the literal's member
+  // order, so each literal below is spelled pre-sorted).
+  const canonicalJWK = JSON.stringify((() => {
+    switch (jwk.kty) {
+      case "EC":
+        return { crv: jwk.crv, kty: jwk.kty, x: jwk.x, y: jwk.y };
+      case "RSA":
+        return { e: jwk.e, kty: jwk.kty, n: jwk.n };
+      default:
+        throw new Error(
+          `Unsupported JWK key type "${jwk.kty}" for thumbprint. Expected "EC" or "RSA".`,
+        );
+    }
+  })());
 
   // Step 2: Hash the canonical JSON using SHA-256
   const hash = await crypto.subtle.digest(
