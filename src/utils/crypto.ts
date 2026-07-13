@@ -61,10 +61,15 @@ export type KeyPairAlgorithm = "ec-p256" | "rsa-2048" | "rsa-4096";
 
 /**
  * The WebCrypto parameters used to generate each supported key algorithm.
+ *
+ * The value type is {@link ExclusifyUnion}'d so that reading a member another
+ * family lacks (e.g. `.modulusLength` off the EC entry) types as `undefined`
+ * rather than erroring — which is what lets {@link deriveKeyPairAlgorithm}
+ * compare every field uniformly without narrowing first.
  */
 const KEY_GEN_PARAMS_BY_KEY_PAIR_ALGORITHM: Record<
   KeyPairAlgorithm,
-  EcKeyGenParams | RsaHashedKeyGenParams
+  ExclusifyUnion<EcKeyGenParams | RsaHashedKeyGenParams>
 > = {
   "ec-p256": {
     name: WEB_CRYPTO_ALGORITHM_NAME_BY_FAMILY.ec,
@@ -117,8 +122,7 @@ export function deriveKeyPairAlgorithm(
     KEY_GEN_PARAMS_BY_KEY_PAIR_ALGORITHM,
   ) as KeyPairAlgorithm[]).find(
     (keyPairAlgorithm) => {
-      const params: ExclusifyUnion<EcKeyGenParams | RsaHashedKeyGenParams> =
-        KEY_GEN_PARAMS_BY_KEY_PAIR_ALGORITHM[keyPairAlgorithm];
+      const params = KEY_GEN_PARAMS_BY_KEY_PAIR_ALGORITHM[keyPairAlgorithm];
       // Members a family lacks are `undefined` on both sides (see
       // ExclusifyUnion), so the same equalities cover EC (namedCurve)
       // and RSA (modulusLength) alike.
