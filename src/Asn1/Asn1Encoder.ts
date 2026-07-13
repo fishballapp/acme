@@ -60,11 +60,23 @@ export const Asn1Encoder = {
       );
     }
 
-    // Add leading zero byte if the most significant bit is 1 so it's not mistaken as negative number!
-    if (bytes[0] & 0b1000_0000) {
-      bytes = concatUint8Arrays([0x00], bytes);
+    // DER requires INTEGERs to be minimally encoded: strip leading zero
+    // octets, keeping one when the value itself is zero. Callers pass
+    // fixed-width values (e.g. WebCrypto's zero-padded ECDSA r/s halves),
+    // which strict parsers would otherwise reject.
+    let start = 0;
+    while (start < bytes.byteLength - 1 && bytes[start] === 0) {
+      start++;
     }
-    return Asn1Encoder.custom(ASN1_TAGS.INTEGER, bytes);
+    const minimalBytes = bytes.slice(start);
+
+    // Add leading zero byte if the most significant bit is 1 so it's not mistaken as negative number!
+    return Asn1Encoder.custom(
+      ASN1_TAGS.INTEGER,
+      (minimalBytes[0] ?? 0) & 0b1000_0000
+        ? concatUint8Arrays([0x00], minimalBytes)
+        : minimalBytes,
+    );
   },
 
   uint: (n: number) => {

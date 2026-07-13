@@ -58,3 +58,15 @@ it("should decode generalized time correctly", () => {
 it("should encode ASN.1 NULL as a 0x05 tag with empty content", () => {
   expect([...Asn1Encoder.null()]).toEqual([0x05, 0x00]);
 });
+
+it("should encode INTEGERs minimally per DER", () => {
+  // Leading zero octets are stripped...
+  expect([...Asn1Encoder.uintBytes(Uint8Array.from([0x00, 0x01]))])
+    .toEqual([0x02, 0x01, 0x01]);
+  // ...but one is re-added when the most significant bit is set...
+  expect([...Asn1Encoder.uintBytes(Uint8Array.from([0x00, 0x8F]))])
+    .toEqual([0x02, 0x02, 0x00, 0x8F]);
+  // ...and a single 0x00 remains when the value is zero.
+  expect([...Asn1Encoder.uintBytes(Uint8Array.from([0x00, 0x00, 0x00]))])
+    .toEqual([0x02, 0x01, 0x00]);
+});
