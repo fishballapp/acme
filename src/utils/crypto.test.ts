@@ -1,5 +1,6 @@
 import { describe, expect, it } from "../../test_deps.ts";
 import {
+  deriveKeyPairAlgorithm,
   generateKeyPair,
   getAlgorithmProperties,
   getKeyAlgorithmFamily,
@@ -61,5 +62,31 @@ describe("getKeyAlgorithmFamily", () => {
     );
 
     expect(() => getKeyAlgorithmFamily(hmacKey)).toThrow("Unsupported");
+  });
+});
+
+describe("deriveKeyPairAlgorithm", () => {
+  it("should round-trip every supported algorithm", async () => {
+    for (
+      const algorithm of [
+        "ec",
+        "rsa-2048",
+        "rsa-4096",
+      ] as const satisfies KeyPairAlgorithm[]
+    ) {
+      const { privateKey, publicKey } = await generateKeyPair(algorithm);
+      expect(deriveKeyPairAlgorithm(privateKey)).toBe(algorithm);
+      expect(deriveKeyPairAlgorithm(publicKey)).toBe(algorithm);
+    }
+  });
+
+  it("should return undefined for keys outside the supported set", async () => {
+    const p384KeyPair = await crypto.subtle.generateKey(
+      { name: "ECDSA", namedCurve: "P-384" },
+      false,
+      ["sign", "verify"],
+    );
+
+    expect(deriveKeyPairAlgorithm(p384KeyPair.privateKey)).toBe(undefined);
   });
 });

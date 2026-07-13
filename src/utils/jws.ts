@@ -55,14 +55,19 @@ export const jws = async (
   payload: string;
   signature: string;
 }> => {
+  // Default the `alg` from the signing key, but let an explicit `alg` in
+  // `data.protected` win — e.g. External Account Binding signs with an HMAC
+  // key and `HS256`, which has no EC/RSA family. Destructuring defaults are
+  // lazy, so getKeyAlgorithmFamily is never asked about such keys.
+  const {
+    alg = JWS_ALG[getKeyAlgorithmFamily(privateKey)],
+    ...remainingProtected
+  } = data.protected;
+
   const jwsWithoutSignature = {
     protected: encodeBase64Url(JSON.stringify({
-      // Default the `alg` from the signing key, but let an explicit `alg` in
-      // `data.protected` win — e.g. External Account Binding signs with an
-      // HMAC key and `HS256`, which has no EC/RSA family. `??` short-circuits
-      // so getKeyAlgorithmFamily is never asked about such keys.
-      alg: data.protected.alg ?? JWS_ALG[getKeyAlgorithmFamily(privateKey)],
-      ...data.protected,
+      alg,
+      ...remainingProtected,
     })),
     payload: data.payload === undefined
       ? ""

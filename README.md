@@ -163,6 +163,22 @@ CA's directory advertises `meta.externalAccountRequired`, calling
 `createAccount` without an `externalAccountBinding` throws immediately — before
 any request is made.
 
+#### RSA keys (`keyPairAlgorithm`)
+
+Keys default to ECDSA P-256 (`"ec"`). To use RSA instead — for the account key
+and every certificate key minted from this account — pass `keyPairAlgorithm`:
+
+```ts
+const account = await acmeClient.createAccount({
+  emails: ["yo@fishball.app"],
+  keyPairAlgorithm: "rsa-2048", // or "rsa-4096"
+});
+```
+
+When you `login` with a saved key pair (or import one with
+`CryptoKeyUtils.importKeyPairFromPemPrivateKey`), there is nothing extra to pass
+— the algorithm is detected from the key itself.
+
 ### 0x03: Create order and get the challenges
 
 ```ts

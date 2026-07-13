@@ -73,6 +73,31 @@ export function getAlgorithmProperties(
   return ALGORITHM_PROPERTIES[keyPairAlgorithm];
 }
 
+/**
+ * Derive the {@link KeyPairAlgorithm} that would generate a key like this one,
+ * or `undefined` when the key falls outside the supported set (e.g. an
+ * imported RSA-3072 or P-384 key). Such keys can still sign JWS requests —
+ * only key generation (certificate keys, key rollover) needs a
+ * {@link KeyPairAlgorithm}.
+ */
+export function deriveKeyPairAlgorithm(
+  key: CryptoKey,
+): KeyPairAlgorithm | undefined {
+  const { name, namedCurve, modulusLength } = key.algorithm as
+    & KeyAlgorithm
+    & Partial<EcKeyAlgorithm & RsaHashedKeyAlgorithm>;
+
+  return (Object.keys(ALGORITHM_PROPERTIES) as KeyPairAlgorithm[]).find(
+    (keyPairAlgorithm) => {
+      const properties = ALGORITHM_PROPERTIES[keyPairAlgorithm];
+      return properties.name === name &&
+        ("namedCurve" in properties
+          ? properties.namedCurve === namedCurve
+          : properties.modulusLength === modulusLength);
+    },
+  );
+}
+
 export async function generateKeyPair(
   keyPairAlgorithm: KeyPairAlgorithm = "ec",
 ): Promise<CryptoKeyPair> {

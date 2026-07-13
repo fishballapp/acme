@@ -8,6 +8,7 @@ import {
   BadNonceError,
 } from "./errors.ts";
 import {
+  deriveKeyPairAlgorithm,
   generateKeyPair,
   importHmacKey,
   type KeyPairAlgorithm,
@@ -181,6 +182,10 @@ export class AcmeClient {
    * If the CA's directory advertises `meta.externalAccountRequired`, omitting it
    * throws before any request is made.
    *
+   * `keyPairAlgorithm` selects the algorithm for the generated account key. It
+   * is also used for every certificate key this account mints and for key
+   * rollover. Defaults to `"ec"` (ECDSA P-256).
+   *
    * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.3
    * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.3.4
    */
@@ -266,11 +271,18 @@ export class AcmeClient {
   /**
    * Login with an existing account with a keyPair
    *
+   * `keyPairAlgorithm` selects the algorithm for keys generated later on this
+   * account (certificate keys, key rollover) — it does not affect `keyPair`,
+   * whose JWS algorithm is always derived from the key itself. When omitted,
+   * it is derived from `keyPair` too, so an RSA account keeps minting RSA
+   * certificate keys. If `keyPair` falls outside the supported set (e.g. an
+   * imported RSA-3072 key), generated keys fall back to `"ec"`.
+   *
    * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.3.1
    */
   async login({
     keyPair,
-    keyPairAlgorithm,
+    keyPairAlgorithm = deriveKeyPairAlgorithm(keyPair.privateKey),
   }: {
     keyPair: CryptoKeyPair;
     keyPairAlgorithm?: KeyPairAlgorithm;
