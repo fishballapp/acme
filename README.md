@@ -52,7 +52,9 @@ key features:
 - **Opinionated by Design**: The package is designed to work out of the box,
   with no complex setup required.
   - Modern cryptography: Encryption keys are generated using [ECDSA P-256], a
-    secure, widely supported industry standard.
+    secure, widely supported industry standard. RSA (2048/4096) is available for
+    environments that require it (see
+    [`keyPairAlgorithm`](#rsa-keys-keypairalgorithm)).
   - [DNS-01 Challenge] only: We focus on the DNS-01 challenge type, which we
     believe is the most versatile. It works for all services, supports wildcard
     certificates, and eliminates complex server configurations by operating at

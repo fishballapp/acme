@@ -15,7 +15,7 @@ const RSA_PUBLIC_EXPONENT: Uint8Array<ArrayBuffer> = new Uint8Array([
  * The WebCrypto `algorithm.name` reported by each key family. Its keys are the
  * source of truth for {@link KeyAlgorithmFamily}.
  */
-const ALGORITHM_NAME = {
+export const ALGORITHM_NAME = {
   ec: "ECDSA",
   rsa: "RSASSA-PKCS1-v1_5",
 } as const;
@@ -41,13 +41,13 @@ const ALGORITHM_PROPERTIES = {
     name: ALGORITHM_NAME.rsa,
     modulusLength: 2048,
     publicExponent: RSA_PUBLIC_EXPONENT,
-    hash: { name: "SHA-256" },
+    hash: "SHA-256",
   },
   "rsa-4096": {
     name: ALGORITHM_NAME.rsa,
     modulusLength: 4096,
     publicExponent: RSA_PUBLIC_EXPONENT,
-    hash: { name: "SHA-256" },
+    hash: "SHA-256",
   },
 } as const satisfies Record<string, EcKeyGenParams | RsaHashedKeyGenParams>;
 

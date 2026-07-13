@@ -1,5 +1,6 @@
 import { decodeSequence } from "../Asn1/Asn1DecodeHelpers.ts";
 import { Asn1Encoder } from "../Asn1/Asn1Encoder.ts";
+import { ALGORITHM_NAME } from "../utils/crypto.ts";
 import { omit } from "../utils/object.ts";
 import { extractFirstPemObject } from "../utils/pem.ts";
 
@@ -50,7 +51,7 @@ function getImportParameters(
   if (isEqualBytes(OID_DER.RSA_ENCRYPTION, algorithmDer)) {
     // The hash is not part of the key; SHA-256 matches the `RS256` JWS alg
     // and `sha256WithRSAEncryption` CSR signature this client produces.
-    return { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" };
+    return { name: ALGORITHM_NAME.rsa, hash: "SHA-256" };
   }
 
   if (isEqualBytes(OID_DER.ID_EC_PUBLIC_KEY, algorithmDer)) {
@@ -59,7 +60,7 @@ function getImportParameters(
         "Unsupported EC curve in PEM private key. Only P-256 (prime256v1) is supported.",
       );
     }
-    return { name: "ECDSA", namedCurve: "P-256" };
+    return { name: ALGORITHM_NAME.ec, namedCurve: "P-256" };
   }
 
   throw new Error(
