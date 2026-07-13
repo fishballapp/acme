@@ -9,7 +9,7 @@ on:
 jobs:
   deno:
     name: Deno
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v6
 
@@ -23,7 +23,7 @@ jobs:
       - run: deno task test:integration
   node:
     name: Node
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v6
 
