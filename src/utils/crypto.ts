@@ -33,7 +33,7 @@ export type KeyAlgorithmFamily = keyof typeof ALGORITHM_NAME;
  * `satisfies` validates every entry without widening the literal types away.
  */
 const ALGORITHM_PROPERTIES = {
-  "ec": {
+  "ec-p256": {
     name: ALGORITHM_NAME.ec,
     namedCurve: "P-256",
   },
@@ -55,7 +55,7 @@ const ALGORITHM_PROPERTIES = {
  * The key algorithm used for an account's keys and the certificate keys it
  * mints.
  *
- * - `ec`: ECDSA on the NIST P-256 curve (signed as `ES256`). The default.
+ * - `ec-p256`: ECDSA on the NIST P-256 curve (signed as `ES256`). The default.
  * - `rsa-2048`: RSASSA-PKCS1-v1_5 with a 2048-bit modulus (signed as `RS256`).
  * - `rsa-4096`: as `rsa-2048`, but with a 4096-bit modulus.
  */
@@ -99,7 +99,7 @@ export function deriveKeyPairAlgorithm(
 }
 
 export async function generateKeyPair(
-  keyPairAlgorithm: KeyPairAlgorithm = "ec",
+  keyPairAlgorithm: KeyPairAlgorithm = "ec-p256",
 ): Promise<CryptoKeyPair> {
   return await crypto.subtle.generateKey(
     getAlgorithmProperties(keyPairAlgorithm),

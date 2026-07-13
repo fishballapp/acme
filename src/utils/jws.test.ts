@@ -10,7 +10,7 @@ describe("jws", () => {
   it("should pick ES256 for EC keys and RS256 for RSA keys", async () => {
     for (
       const [algorithm, expectedAlg] of [
-        ["ec", "ES256"],
+        ["ec-p256", "ES256"],
         ["rsa-2048", "RS256"],
       ] as const
     ) {
@@ -46,7 +46,7 @@ describe("jws", () => {
   it("should produce a signature that verifies against the public key", async () => {
     for (
       const [algorithm, verifyParams] of [
-        ["ec", { name: "ECDSA", hash: "SHA-256" }],
+        ["ec-p256", { name: "ECDSA", hash: "SHA-256" }],
         ["rsa-2048", { name: "RSASSA-PKCS1-v1_5" }],
       ] as const
     ) {

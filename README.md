@@ -165,8 +165,9 @@ any request is made.
 
 #### RSA keys (`keyPairAlgorithm`)
 
-Keys default to ECDSA P-256 (`"ec"`). To use RSA instead — for the account key
-and every certificate key minted from this account — pass `keyPairAlgorithm`:
+Keys default to ECDSA P-256 (`"ec-p256"`). To use RSA instead — for the account
+key and every certificate key minted from this account — pass
+`keyPairAlgorithm`:
 
 ```ts
 const account = await acmeClient.createAccount({

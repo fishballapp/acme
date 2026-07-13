@@ -8,8 +8,8 @@ import {
 } from "./crypto.ts";
 
 describe("getAlgorithmProperties", () => {
-  it("should map ec to ECDSA P-256", () => {
-    expect(getAlgorithmProperties("ec")).toEqual({
+  it("should map ec-p256 to ECDSA P-256", () => {
+    expect(getAlgorithmProperties("ec-p256")).toEqual({
       name: "ECDSA",
       namedCurve: "P-256",
     });
@@ -41,7 +41,7 @@ describe("getKeyAlgorithmFamily", () => {
   it("should resolve the family from the generated key", async () => {
     for (
       const [algorithm, family] of [
-        ["ec", "ec"],
+        ["ec-p256", "ec"],
         ["rsa-2048", "rsa"],
         ["rsa-4096", "rsa"],
       ] as const satisfies [KeyPairAlgorithm, string][]
@@ -69,7 +69,7 @@ describe("deriveKeyPairAlgorithm", () => {
   it("should round-trip every supported algorithm", async () => {
     for (
       const algorithm of [
-        "ec",
+        "ec-p256",
         "rsa-2048",
         "rsa-4096",
       ] as const satisfies KeyPairAlgorithm[]

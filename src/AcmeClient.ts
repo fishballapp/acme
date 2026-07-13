@@ -184,7 +184,7 @@ export class AcmeClient {
    *
    * `keyPairAlgorithm` selects the algorithm for the generated account key. It
    * is also used for every certificate key this account mints and for key
-   * rollover. Defaults to `"ec"` (ECDSA P-256).
+   * rollover. Defaults to `"ec-p256"` (ECDSA P-256).
    *
    * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.3
    * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.3.4
@@ -276,7 +276,7 @@ export class AcmeClient {
    * whose JWS algorithm is always derived from the key itself. When omitted,
    * it is derived from `keyPair` too, so an RSA account keeps minting RSA
    * certificate keys. If `keyPair` falls outside the supported set (e.g. an
-   * imported RSA-3072 key), generated keys fall back to `"ec"`.
+   * imported RSA-3072 key), generated keys fall back to `"ec-p256"`.
    *
    * @see https://datatracker.ietf.org/doc/html/rfc8555#section-7.3.1
    */
