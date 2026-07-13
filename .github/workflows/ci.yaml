@@ -18,6 +18,9 @@ jobs:
       - run: deno fmt --check
       - run: deno lint
       - run: deno check --doc .
+      # Catch JSR "slow types" and packaging errors on PRs — the real
+      # `jsr publish` only runs on main, too late to block a bad merge.
+      - run: deno publish --dry-run
   deno-unit:
     name: "Unit Test (Deno)"
     runs-on: blacksmith-2vcpu-ubuntu-2404

@@ -45,11 +45,32 @@ export type KeyPairAlgorithmFamily =
   keyof typeof WEB_CRYPTO_ALGORITHM_NAME_BY_FAMILY;
 
 /**
- * The WebCrypto parameters used to generate each supported key algorithm. Its
- * keys are the source of truth for {@link KeyPairAlgorithm}; `satisfies`
- * validates every entry without widening the literal types away.
+ * The key algorithm used for an account's keys and the certificate keys it
+ * mints.
+ *
+ * - `ec-p256`: ECDSA on the NIST P-256 curve (signed as `ES256`). The default.
+ * - `rsa-2048`: RSASSA-PKCS1-v1_5 with a 2048-bit modulus (signed as `RS256`).
+ * - `rsa-4096`: as `rsa-2048`, but with a 4096-bit modulus.
+ *
+ * Spelled as an explicit union rather than `keyof typeof
+ * KEY_GEN_PARAMS_BY_KEY_PAIR_ALGORITHM`: JSR forbids inferred types in the
+ * public API ("slow types"), and the `Record<KeyPairAlgorithm, …>` on that
+ * table keeps the two in sync — a missing or extra entry fails to compile.
  */
-const KEY_GEN_PARAMS_BY_KEY_PAIR_ALGORITHM = {
+export type KeyPairAlgorithm = "ec-p256" | "rsa-2048" | "rsa-4096";
+
+/**
+ * The WebCrypto parameters used to generate each supported key algorithm.
+ *
+ * The value type is {@link ExclusifyUnion}'d so that reading a member another
+ * family lacks (e.g. `.modulusLength` off the EC entry) types as `undefined`
+ * rather than erroring — which is what lets {@link deriveKeyPairAlgorithm}
+ * compare every field uniformly without narrowing first.
+ */
+const KEY_GEN_PARAMS_BY_KEY_PAIR_ALGORITHM: Record<
+  KeyPairAlgorithm,
+  ExclusifyUnion<EcKeyGenParams | RsaHashedKeyGenParams>
+> = {
   "ec-p256": {
     name: WEB_CRYPTO_ALGORITHM_NAME_BY_FAMILY.ec,
     namedCurve: "P-256",
@@ -66,18 +87,7 @@ const KEY_GEN_PARAMS_BY_KEY_PAIR_ALGORITHM = {
     publicExponent: RSA_PUBLIC_EXPONENT,
     hash: "SHA-256",
   },
-} as const satisfies Record<string, EcKeyGenParams | RsaHashedKeyGenParams>;
-
-/**
- * The key algorithm used for an account's keys and the certificate keys it
- * mints.
- *
- * - `ec-p256`: ECDSA on the NIST P-256 curve (signed as `ES256`). The default.
- * - `rsa-2048`: RSASSA-PKCS1-v1_5 with a 2048-bit modulus (signed as `RS256`).
- * - `rsa-4096`: as `rsa-2048`, but with a 4096-bit modulus.
- */
-export type KeyPairAlgorithm =
-  keyof typeof KEY_GEN_PARAMS_BY_KEY_PAIR_ALGORITHM;
+};
 
 /** Map a key's reported WebCrypto `algorithm.name` back to its family. */
 const FAMILY_BY_WEB_CRYPTO_ALGORITHM_NAME: Record<
@@ -112,8 +122,7 @@ export function deriveKeyPairAlgorithm(
     KEY_GEN_PARAMS_BY_KEY_PAIR_ALGORITHM,
   ) as KeyPairAlgorithm[]).find(
     (keyPairAlgorithm) => {
-      const params: ExclusifyUnion<EcKeyGenParams | RsaHashedKeyGenParams> =
-        KEY_GEN_PARAMS_BY_KEY_PAIR_ALGORITHM[keyPairAlgorithm];
+      const params = KEY_GEN_PARAMS_BY_KEY_PAIR_ALGORITHM[keyPairAlgorithm];
       // Members a family lacks are `undefined` on both sides (see
       // ExclusifyUnion), so the same equalities cover EC (namedCurve)
       // and RSA (modulusLength) alike.
