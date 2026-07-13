@@ -54,6 +54,13 @@ export type AcmeAccountObjectSnapshot = {
 export class AcmeAccount {
   readonly client: AcmeClient;
   readonly keyPair: CryptoKeyPair;
+  /**
+   * The algorithm used to generate keys for this account — the certificate
+   * keys minted by {@link AcmeOrder.prototype.finalize} and the new key on
+   * {@link AcmeAccount.prototype.keyRollover}. Defaults to `"ec-p256"` when
+   * the account was created without specifying one; `undefined` when it was
+   * derived from a `login` key pair that falls outside the supported set.
+   */
   readonly keyPairAlgorithm?: KeyPairAlgorithm;
   readonly url: string;
 
@@ -132,6 +139,7 @@ export class AcmeAccount {
    *
    * After rollover, you will receive a new {@link AcmeAccount} object.
    * You may access to the new key pair via `{@link AcmeAccount.prototype.keyPair}.
+   * The new key uses this account's {@link AcmeAccount.prototype.keyPairAlgorithm}.
    */
   async keyRollover(): Promise<AcmeAccount> {
     const [newKeyPair, oldPublicKeyJwk] = await Promise.all([

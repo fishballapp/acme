@@ -462,7 +462,7 @@ await AcmeWorkflows.requestCertificate({
   - [ ] Revocation
 - [x] Key and Algorithm Support
   - [x] ECDSA P-256
-  - [ ] ~~RSA~~
+  - [x] RSA (2048/4096)
 - [x] ACME Server Interaction
   - [x] ACME Directory Support (staging, production)
   - [x] Bad Nonce Retries
