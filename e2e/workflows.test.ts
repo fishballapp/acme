@@ -4,7 +4,7 @@ import {
   AcmeOrder,
   AcmeWorkflows,
 } from "@fishballpkg/acme";
-import { resolveDns } from "@fishballpkg/acme/resolveDns.deno";
+import { resolveDns } from "./utils/resolveDns.ts";
 import { describe, expect, it } from "../test_deps.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
 import { randomFishballTestingSubdomain } from "./utils/randomFishballTestingSubdomain.ts";

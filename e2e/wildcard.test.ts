@@ -5,7 +5,7 @@ import {
   AcmeOrder,
   DnsUtils,
 } from "../src/mod.ts";
-import { resolveDns } from "../src/resolveDns.deno.ts";
+import { resolveDns } from "./utils/resolveDns.ts";
 import { expect, it } from "../test_deps.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
 import { expectToBeDefined } from "./utils/expectToBeDefined.ts";
