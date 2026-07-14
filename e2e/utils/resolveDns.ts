@@ -52,6 +52,9 @@ export const resolveDns: ResolveDnsFunction = async (domain, recordType) => {
       // polling budget. Purge so the next attempt re-queries the
       // authoritative servers.
       try {
+        console.log(
+          `🧹 Purging 1.1.1.1 cache for ${domain} (${recordType})...`,
+        );
         await purgeCloudflareDnsCache(domain, recordType);
       } catch (error) {
         console.warn(
