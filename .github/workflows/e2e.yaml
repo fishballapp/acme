@@ -13,6 +13,15 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v6
+        with:
+          # `pull_request_target` runs in the base-repo context and, with a bare
+          # checkout, checks out the base branch (`main`) rather than the PR head
+          # -- so a labeled run would test `main`'s code, not the PR's. Check out
+          # the PR head SHA so the E2E actually exercises the PR. This is gated by
+          # the `e2e:approve` label above: a maintainer must approve the PR before
+          # its code runs here with secrets. For `push` events this expression is
+          # empty and checkout falls back to the pushed ref (`main`).
+          ref: ${{ github.event.pull_request.head.sha }}
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x # Run with latest stable Deno.
