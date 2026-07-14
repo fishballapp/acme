@@ -4,9 +4,9 @@ import {
   AcmeOrder,
   AcmeWorkflows,
 } from "@fishballpkg/acme";
-import { resolveDns } from "@fishballpkg/acme/resolveDns.deno";
 import { describe, expect, it } from "../test_deps.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
+import { resolveDns } from "./utils/resolveDns.ts";
 import { randomFishballTestingSubdomain } from "./utils/randomFishballTestingSubdomain.ts";
 
 const EMAIL = "e2e@test.acme.pkg.fishball.dev";
