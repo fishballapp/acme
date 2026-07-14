@@ -26,21 +26,44 @@ const RESOLVERS = [
   },
 ];
 
+/**
+ * Queries all resolvers in parallel and merges their answers: a record counts
+ * as propagated as soon as ANY public resolver sees it. A resolver that got an
+ * early NXDOMAIN stuck in its negative cache would otherwise stall polling for
+ * the zone's full negative TTL — longer than the polling budget. (The ACME
+ * server validates against the zone's authoritative servers anyway, so one
+ * resolver seeing the record is a good-enough propagation signal for e2e.)
+ */
 export const resolveDns: ResolveDnsFunction = async (domain, recordType) => {
-  for (const { name, resolve } of RESOLVERS) {
-    try {
-      return await resolve(domain, recordType);
-    } catch (error) {
-      console.warn(
-        `⚠️ DoH lookup via ${name} failed for ${domain} (${recordType}): ${error}`,
-      );
-    }
-  }
+  const results = await Promise.allSettled(
+    RESOLVERS.map(({ resolve }) => resolve(domain, recordType)),
+  );
 
-  // Treat unreachable resolvers as "record not visible yet":
-  // pollDnsTxtRecord surfaces thrown errors immediately, so returning []
-  // keeps it retrying and a full DoH outage shows up as its regular polling
-  // timeout with the warnings above in the log, instead of aborting the test.
-  // deno-lint-ignore no-explicit-any -- Empty result preserves the resolver contract.
-  return [] as any;
+  const answerss = results.flatMap((result, i) => {
+    if (result.status === "rejected") {
+      console.warn(
+        `⚠️ DoH lookup via ${
+          RESOLVERS[i]?.name
+        } failed for ${domain} (${recordType}): ${result.reason}`,
+      );
+      return [];
+    }
+    return [result.value];
+  });
+
+  // All resolvers failed: treat as "record not visible yet" so
+  // pollDnsTxtRecord retries (it surfaces thrown errors immediately) — a full
+  // DoH outage then shows up as its regular polling timeout with the warnings
+  // above in the log, instead of aborting the test.
+  // deno-lint-ignore no-explicit-any -- Merged result preserves the resolver contract.
+  return answerss.flat() as any;
 };
+
+/**
+ * Give the DNS provider a moment to propagate freshly created records to its
+ * authoritative edge before the first lookup. Querying too early seeds public
+ * resolvers' negative caches with NXDOMAIN, which can outlive the polling
+ * budget entirely.
+ */
+export const waitForDnsPropagationGrace = (): Promise<void> =>
+  new Promise((res) => setTimeout(res, 15_000));
