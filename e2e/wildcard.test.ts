@@ -5,7 +5,7 @@ import {
   AcmeOrder,
   DnsUtils,
 } from "../src/mod.ts";
-import { resolveDns } from "./utils/resolveDns.ts";
+import { resolveDns, waitForDnsPropagation } from "./utils/resolveDns.ts";
 import { expect, it } from "../test_deps.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
 import { expectToBeDefined } from "./utils/expectToBeDefined.ts";
@@ -62,6 +62,8 @@ it("can talk to ACME server and successfully retrieve a wildcard certificate", a
   // Create DNS records (likely 2 TXT records on the same name)
   await cloudflareZone.createDnsRecords(dnsTxtRecords);
   console.log("⏳ Creating DNS records for _acme-challenge...");
+
+  await waitForDnsPropagation();
 
   await DnsUtils.pollDnsTxtRecord(`_acme-challenge.${DOMAIN}.`, {
     pollUntil: dnsTxtRecords.map(({ content }) => content),

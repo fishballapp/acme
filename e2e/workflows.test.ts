@@ -4,7 +4,7 @@ import {
   AcmeOrder,
   AcmeWorkflows,
 } from "@fishballpkg/acme";
-import { resolveDns } from "./utils/resolveDns.ts";
+import { resolveDns, waitForDnsPropagation } from "./utils/resolveDns.ts";
 import { describe, expect, it } from "../test_deps.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
 import { randomFishballTestingSubdomain } from "./utils/randomFishballTestingSubdomain.ts";
@@ -35,6 +35,9 @@ describe("requestCertificates", () => {
       domains: DOMAINS,
       updateDnsRecords: async (dnsRecords) => {
         await cloudflareZone.createDnsRecords(dnsRecords);
+        // requestCertificate awaits this callback before it starts polling,
+        // so waiting here holds off the first lookup until the record is live.
+        await waitForDnsPropagation();
       },
       resolveDns,
     });

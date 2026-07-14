@@ -6,7 +6,7 @@ import {
   AcmeOrder,
   DnsUtils,
 } from "../src/mod.ts";
-import { resolveDns } from "./utils/resolveDns.ts";
+import { resolveDns, waitForDnsPropagation } from "./utils/resolveDns.ts";
 import { expect, it } from "../test_deps.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
 import { expectToBeDefined } from "./utils/expectToBeDefined.ts";
@@ -52,6 +52,8 @@ it("can talk to ACME server and successfully create an account, order then all t
     content: expectedRecord.content,
   }]);
   console.log("⏳ Creating DNS record for _acme-challenge...");
+
+  await waitForDnsPropagation();
 
   await DnsUtils.pollDnsTxtRecord(expectedRecord.name, {
     pollUntil: expectedRecord.content,
