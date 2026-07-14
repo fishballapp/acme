@@ -8,7 +8,7 @@ import {
 import { expect, it } from "../test_deps.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
 import { expectToBeDefined } from "./utils/expectToBeDefined.ts";
-import { resolveDns, waitForDnsPropagationGrace } from "./utils/resolveDns.ts";
+import { resolveDns } from "./utils/resolveDns.ts";
 import { randomFishballTestingSubdomain } from "./utils/randomFishballTestingSubdomain.ts";
 
 const EMAIL = "e2e-wildcard@test.acme.pkg.fishball.dev";
@@ -62,8 +62,6 @@ it("can talk to ACME server and successfully retrieve a wildcard certificate", a
   // Create DNS records (likely 2 TXT records on the same name)
   await cloudflareZone.createDnsRecords(dnsTxtRecords);
   console.log("⏳ Creating DNS records for _acme-challenge...");
-
-  await waitForDnsPropagationGrace();
 
   await DnsUtils.pollDnsTxtRecord(`_acme-challenge.${DOMAIN}.`, {
     pollUntil: dnsTxtRecords.map(({ content }) => content),

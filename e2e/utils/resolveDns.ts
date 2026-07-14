@@ -58,12 +58,3 @@ export const resolveDns: ResolveDnsFunction = async (domain, recordType) => {
   // deno-lint-ignore no-explicit-any -- Merged result preserves the resolver contract.
   return answerss.flat() as any;
 };
-
-/**
- * Give the DNS provider a moment to propagate freshly created records to its
- * authoritative edge before the first lookup. Querying too early seeds public
- * resolvers' negative caches with NXDOMAIN, which can outlive the polling
- * budget entirely.
- */
-export const waitForDnsPropagationGrace = (): Promise<void> =>
-  new Promise((res) => setTimeout(res, 15_000));
