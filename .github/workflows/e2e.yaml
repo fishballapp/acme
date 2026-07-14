@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     # The `e2e` environment holds CLOUDFLARE_API_KEY / CLOUDFLARE_ZONE_ID and
     # requires manual approval, gating secret access for every run (including
     # fork PRs) while still testing the PR's own code.
