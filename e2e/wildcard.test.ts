@@ -5,8 +5,8 @@ import {
   AcmeOrder,
   DnsUtils,
 } from "../src/mod.ts";
-import { resolveDns } from "../src/resolveDns.deno.ts";
 import { expect, it } from "../test_deps.ts";
+import { createAuthoritativeResolveDns } from "./utils/authoritativeResolveDns.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
 import { expectToBeDefined } from "./utils/expectToBeDefined.ts";
 import { randomFishballTestingSubdomain } from "./utils/randomFishballTestingSubdomain.ts";
@@ -15,6 +15,7 @@ const EMAIL = "e2e-wildcard@test.acme.pkg.fishball.dev";
 const DOMAIN = randomFishballTestingSubdomain(); // e.g., "abc.fishball-testing.dev"
 
 const cloudflareZone = await CloudflareZone.init();
+const resolveDns = await createAuthoritativeResolveDns(DOMAIN);
 
 it("can talk to ACME server and successfully retrieve a wildcard certificate", async () => {
   const acmeClient = await AcmeClient.init(

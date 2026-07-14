@@ -6,8 +6,8 @@ import {
   AcmeOrder,
   DnsUtils,
 } from "../src/mod.ts";
-import { resolveDns } from "../src/resolveDns.deno.ts";
 import { expect, it } from "../test_deps.ts";
+import { createAuthoritativeResolveDns } from "./utils/authoritativeResolveDns.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
 import { expectToBeDefined } from "./utils/expectToBeDefined.ts";
 import { randomFishballTestingSubdomain } from "./utils/randomFishballTestingSubdomain.ts";
@@ -16,6 +16,7 @@ const EMAIL = "e2e@test.acme.pkg.fishball.dev";
 const DOMAIN = randomFishballTestingSubdomain();
 
 const cloudflareZone = await CloudflareZone.init();
+const resolveDns = await createAuthoritativeResolveDns(DOMAIN);
 
 it("can talk to ACME server and successfully create an account, order then all the way to retrieve the certificate for 1 domain", async () => {
   const acmeClient = await AcmeClient.init(

@@ -4,10 +4,13 @@ import {
   AcmeOrder,
   AcmeWorkflows,
 } from "@fishballpkg/acme";
-import { resolveDns } from "@fishballpkg/acme/resolveDns.deno";
 import { describe, expect, it } from "../test_deps.ts";
+import { createAuthoritativeResolveDns } from "./utils/authoritativeResolveDns.ts";
 import { CloudflareZone } from "./utils/cloudflare.ts";
-import { randomFishballTestingSubdomain } from "./utils/randomFishballTestingSubdomain.ts";
+import {
+  FISHBALL_SUBDOMAIN,
+  randomFishballTestingSubdomain,
+} from "./utils/randomFishballTestingSubdomain.ts";
 
 const EMAIL = "e2e@test.acme.pkg.fishball.dev";
 const DOMAINS = [
@@ -17,6 +20,7 @@ const DOMAINS = [
 ];
 
 const cloudflareZone = await CloudflareZone.init();
+const resolveDns = await createAuthoritativeResolveDns(FISHBALL_SUBDOMAIN);
 
 describe("requestCertificates", () => {
   it("should successfully get the certs for the given domains", async () => {
