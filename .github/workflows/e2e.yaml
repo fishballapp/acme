@@ -9,9 +9,12 @@ on:
 jobs:
   build:
     runs-on: blacksmith-2vcpu-ubuntu-2404
-    # The `e2e` environment holds CLOUDFLARE_API_KEY / CLOUDFLARE_ZONE_ID and
-    # requires manual approval, gating secret access for every run (including
-    # fork PRs) while still testing the PR's own code.
+    # The `e2e` environment holds CLOUDFLARE_API_KEY / CLOUDFLARE_ZONE_ID.
+    # Environment secrets (unlike repo secrets) are also passed to fork PR
+    # runs, which is what allows external contributions to run e2e. Fork runs
+    # are gated by the repo's "require approval for all outside collaborators"
+    # Actions setting — approving such a run hands the PR's code these
+    # secrets, so review the diff first.
     environment: e2e
     steps:
       - uses: actions/checkout@v6
