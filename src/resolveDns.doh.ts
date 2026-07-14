@@ -21,6 +21,11 @@ export type ResolveDnsDohOptions = {
    * or provide your own compatible endpoint.
    */
   endpoint: string;
+  /**
+   * Abort each DoH request after this many milliseconds, rejecting with a
+   * `TimeoutError` `DOMException`. When omitted, requests have no timeout.
+   */
+  timeout?: number;
 };
 
 type DnsRecordType = "A" | "AAAA" | "NS" | "TXT";
@@ -61,7 +66,7 @@ const DNS_RESPONSE_CODES = {
 export const createResolveDns = (
   options: ResolveDnsDohOptions,
 ): ResolveDnsFunction => {
-  const { endpoint } = options;
+  const { endpoint, timeout } = options;
 
   return async (domain, recordType) => {
     const url = new URL(endpoint);
@@ -72,6 +77,7 @@ export const createResolveDns = (
       headers: {
         Accept: "application/dns-json",
       },
+      signal: timeout === undefined ? undefined : AbortSignal.timeout(timeout),
     });
 
     if (!res.ok) {
