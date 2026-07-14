@@ -4,13 +4,15 @@ on:
   push:
     branches:
       - main
-  pull_request_target:
-    types: [labeled]
+  pull_request:
 
 jobs:
   build:
-    if: ${{ github.event_name != 'pull_request_target' || github.event.label.name == 'e2e:approve' }}
     runs-on: ubuntu-latest
+    # The `e2e` environment holds CLOUDFLARE_API_KEY / CLOUDFLARE_ZONE_ID and
+    # requires manual approval, gating secret access for every run (including
+    # fork PRs) while still testing the PR's own code.
+    environment: e2e
     steps:
       - uses: actions/checkout@v6
       - uses: denoland/setup-deno@v2
