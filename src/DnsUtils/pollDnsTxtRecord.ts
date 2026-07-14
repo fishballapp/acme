@@ -12,7 +12,7 @@ export type PollDnsTxtRecordOptions = {
   /**
    * Delay (ms) between DNS lookup attempts.
    *
-   * Default: `5000`
+   * Default: `10000`
    */
   interval?: number;
   /**
@@ -134,5 +134,5 @@ ${JSON.stringify(latestRecordss, null, 2)}
 Expected record: ${pollUntil}`);
 };
 
-const DEFAULT_INTERVAL = 5_000;
+const DEFAULT_INTERVAL = 10_000;
 const DEFAULT_TIMEOUT = 10 * 60_000;

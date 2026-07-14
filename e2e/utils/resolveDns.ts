@@ -7,11 +7,8 @@ import { PUBLIC_DNS } from "../../src/resolveDns.nameServers.ts";
 // for longer than our polling timeout. Resolving over DoH (plain HTTPS)
 // bypasses the runner's DNS path entirely, so propagation polling behaves the
 // same on any runner.
-const ATTEMPT_TIMEOUT_MS = 10_000;
-
 const dohResolveDns = createResolveDns({
   endpoint: PUBLIC_DNS.cloudflare.doh[0],
-  timeout: ATTEMPT_TIMEOUT_MS,
 });
 
 /**
@@ -32,7 +29,9 @@ const purgeCloudflareDnsCache = async (
 
   const res = await fetch(url, {
     method: "POST",
-    signal: AbortSignal.timeout(ATTEMPT_TIMEOUT_MS),
+    // This endpoint is unofficial, so don't let a stalled request block the
+    // polling loop indefinitely.
+    signal: AbortSignal.timeout(10_000),
   });
   await res.text(); // consume the body to avoid leaking the connection
 
