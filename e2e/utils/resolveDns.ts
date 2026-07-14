@@ -9,52 +9,66 @@ import { PUBLIC_DNS } from "../../src/resolveDns.nameServers.ts";
 // same on any runner.
 const ATTEMPT_TIMEOUT_MS = 10_000;
 
-const RESOLVERS = [
-  {
-    name: "cloudflare",
-    resolve: createResolveDns({
-      endpoint: PUBLIC_DNS.cloudflare.doh[0],
-      timeout: ATTEMPT_TIMEOUT_MS,
-    }),
-  },
-  {
-    name: "google",
-    resolve: createResolveDns({
-      endpoint: PUBLIC_DNS.google.doh[0],
-      timeout: ATTEMPT_TIMEOUT_MS,
-    }),
-  },
-];
+const dohResolveDns = createResolveDns({
+  endpoint: PUBLIC_DNS.cloudflare.doh[0],
+  timeout: ATTEMPT_TIMEOUT_MS,
+});
 
 /**
- * Queries all resolvers in parallel and merges their answers: a record counts
- * as propagated as soon as ANY public resolver sees it. A resolver that got an
- * early NXDOMAIN stuck in its negative cache would otherwise stall polling for
- * the zone's full negative TTL — longer than the polling budget. (The ACME
- * server validates against the zone's authoritative servers anyway, so one
- * resolver seeing the record is a good-enough propagation signal for e2e.)
+ * Flushes a record from 1.1.1.1's cache via the endpoint behind
+ * https://one.one.one.one/purge-cache/.
+ *
+ * Unofficial and undocumented — Cloudflare may gate or change it without
+ * notice. If e2e starts timing out on DNS polling with purge warnings in the
+ * log, this endpoint is the first thing to check.
  */
-export const resolveDns: ResolveDnsFunction = async (domain, recordType) => {
-  const results = await Promise.allSettled(
-    RESOLVERS.map(({ resolve }) => resolve(domain, recordType)),
-  );
+const purgeCloudflareDnsCache = async (
+  domain: string,
+  recordType: string,
+): Promise<void> => {
+  const url = new URL("https://one.one.one.one/api/v1/purge");
+  url.searchParams.set("domain", domain.replace(/\.$/, ""));
+  url.searchParams.set("type", recordType);
 
-  const answerss = results.flatMap((result, i) => {
-    if (result.status === "rejected") {
-      console.warn(
-        `⚠️ DoH lookup via ${
-          RESOLVERS[i]?.name
-        } failed for ${domain} (${recordType}): ${result.reason}`,
-      );
-      return [];
-    }
-    return [result.value];
+  const res = await fetch(url, {
+    method: "POST",
+    signal: AbortSignal.timeout(ATTEMPT_TIMEOUT_MS),
   });
+  await res.text(); // consume the body to avoid leaking the connection
 
-  // All resolvers failed: treat as "record not visible yet" so
-  // pollDnsTxtRecord retries (it surfaces thrown errors immediately) — a full
-  // DoH outage then shows up as its regular polling timeout with the warnings
-  // above in the log, instead of aborting the test.
-  // deno-lint-ignore no-explicit-any -- Merged result preserves the resolver contract.
-  return answerss.flat() as any;
+  if (!res.ok) {
+    throw new Error(`unexpected response: ${res.status} ${res.statusText}`);
+  }
+};
+
+export const resolveDns: ResolveDnsFunction = async (domain, recordType) => {
+  try {
+    const records = await dohResolveDns(domain, recordType);
+
+    if (records.length === 0) {
+      // An empty answer may be a negatively cached NXDOMAIN seeded by a
+      // lookup that raced record propagation — 1.1.1.1 would otherwise keep
+      // serving it for the zone's full negative TTL, which outlives the
+      // polling budget. Purge so the next attempt re-queries the
+      // authoritative servers.
+      try {
+        await purgeCloudflareDnsCache(domain, recordType);
+      } catch (error) {
+        console.warn(
+          `⚠️ Failed to purge 1.1.1.1 cache for ${domain} (${recordType}): ${error}`,
+        );
+      }
+    }
+
+    return records;
+  } catch (error) {
+    console.warn(
+      `⚠️ DoH lookup failed for ${domain} (${recordType}): ${error}`,
+    );
+    // Treat failures as "record not visible yet" so pollDnsTxtRecord retries
+    // (it surfaces thrown errors immediately) — an outage then shows up as
+    // its regular polling timeout with the warnings above in the log.
+    // deno-lint-ignore no-explicit-any -- Empty result preserves the resolver contract.
+    return [] as any;
+  }
 };
